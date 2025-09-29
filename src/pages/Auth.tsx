@@ -58,10 +58,10 @@ const Auth = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            DataForSEO Research
+            Keyword Research Pro
           </h1>
           <p className="text-foreground/80">
-            Professional keyword analysis powered by DataForSEO APIs
+            Professional keyword analysis and SEO insights
           </p>
         </div>
 
@@ -111,7 +111,7 @@ const Auth = () => {
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                     <Zap className="w-4 h-4 text-primary" />
                   </div>
-                  <span>Real-time DataForSEO API integration</span>
+                  <span>Real-time keyword data and analytics</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">

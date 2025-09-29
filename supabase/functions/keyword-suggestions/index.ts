@@ -6,9 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// DataForSEO credentials
-const dataForSeoLogin = Deno.env.get('DATAFORSEO_LOGIN');
-const dataForSeoPassword = Deno.env.get('DATAFORSEO_PASSWORD');
+// Keyword research API credentials
+const apiLogin = Deno.env.get('DATAFORSEO_LOGIN');
+const apiPassword = Deno.env.get('DATAFORSEO_PASSWORD');
 
 interface SuggestionsRequest {
   keyword: string;
@@ -36,29 +36,29 @@ serve(async (req) => {
 
     console.log(`Getting keyword suggestions for: ${keyword}`);
 
-    // Prepare DataForSEO API request for keyword suggestions
-    const dataForSeoPayload = [{
+    // Prepare API request for keyword suggestions
+    const apiPayload = [{
       "language_code": languageCode,
       "location_code": locationCode,
       "keyword": keyword.trim(),
       "limit": 10
     }];
 
-    // Call DataForSEO Labs API for keyword suggestions
+    // Call keyword research API for suggestions
     const suggestionsResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_suggestions/live', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${btoa(`${dataForSeoLogin}:${dataForSeoPassword}`)}`,
+        'Authorization': `Basic ${btoa(`${apiLogin}:${apiPassword}`)}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(dataForSeoPayload)
+      body: JSON.stringify(apiPayload)
     });
 
     const suggestionsData = await suggestionsResponse.json();
-    console.log('DataForSEO suggestions response received');
+    console.log('Keyword suggestions response received');
 
     if (!suggestionsData.tasks || suggestionsData.tasks[0].status_code !== 20000) {
-      throw new Error(`DataForSEO API error: ${suggestionsData.tasks?.[0]?.status_message || 'Unknown error'}`);
+      throw new Error(`API error: ${suggestionsData.tasks?.[0]?.status_message || 'Unknown error'}`);
     }
 
     const suggestions = suggestionsData.tasks[0].result || [];

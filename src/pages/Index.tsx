@@ -129,11 +129,11 @@ const Index = () => {
           <div className="flex items-center justify-between mb-8">
             <div className="text-center flex-1">
               <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-                DataForSEO Keyword Research
+                Keyword Research Pro
               </h1>
               <p className="text-lg md:text-2xl text-foreground/80 mb-8 max-w-3xl mx-auto">
-                Professional keyword analysis powered by DataForSEO APIs. 
-                Get comprehensive insights including search volume, difficulty, CPC, and intent analysis.
+                Professional keyword analysis and SEO insights. 
+                Get comprehensive data including search volume, difficulty, CPC, and intent analysis.
               </p>
             </div>
             {user && (
@@ -163,7 +163,7 @@ const Index = () => {
       <footer className="border-t border-border/50 bg-card/30 py-8 mt-20">
         <div className="container mx-auto px-4 text-center">
           <p className="text-muted-foreground">
-            Powered by DataForSEO APIs • Built with Lovable
+            Professional SEO Research Tool
           </p>
         </div>
       </footer>

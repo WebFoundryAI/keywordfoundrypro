@@ -12,9 +12,9 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// DataForSEO credentials
-const dataForSeoLogin = Deno.env.get('DATAFORSEO_LOGIN');
-const dataForSeoPassword = Deno.env.get('DATAFORSEO_PASSWORD');
+// Keyword research API credentials
+const apiLogin = Deno.env.get('DATAFORSEO_LOGIN');
+const apiPassword = Deno.env.get('DATAFORSEO_PASSWORD');
 
 interface KeywordRequest {
   keyword: string;
@@ -65,29 +65,29 @@ serve(async (req) => {
       throw new Error('Failed to create research record');
     }
 
-    // Prepare DataForSEO API request
-    const dataForSeoPayload = [{
+    // Prepare API request
+    const apiPayload = [{
       "language_code": languageCode,
       "location_code": locationCode,
       "keyword": keyword,
       "limit": limit
     }];
 
-    // Call DataForSEO Labs API for keyword ideas
+    // Call keyword research API for ideas
     const keywordIdeasResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_ideas/live', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${btoa(`${dataForSeoLogin}:${dataForSeoPassword}`)}`,
+        'Authorization': `Basic ${btoa(`${apiLogin}:${apiPassword}`)}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(dataForSeoPayload)
+      body: JSON.stringify(apiPayload)
     });
 
     const keywordIdeasData = await keywordIdeasResponse.json();
-    console.log('DataForSEO keyword ideas response received');
+    console.log('Keyword ideas response received');
 
     if (!keywordIdeasData.tasks || keywordIdeasData.tasks[0].status_code !== 20000) {
-      throw new Error(`DataForSEO API error: ${keywordIdeasData.tasks?.[0]?.status_message || 'Unknown error'}`);
+      throw new Error(`API error: ${keywordIdeasData.tasks?.[0]?.status_message || 'Unknown error'}`);
     }
 
     const keywordResults = keywordIdeasData.tasks[0].result || [];
@@ -122,7 +122,7 @@ serve(async (req) => {
         intent: intent,
         difficulty: difficulty,
         cluster_id: `cluster_${Math.floor(index / 10) + 1}`,
-        metrics_source: 'dataforseo_labs'
+        metrics_source: 'keyword_research_api'
       };
     });
 

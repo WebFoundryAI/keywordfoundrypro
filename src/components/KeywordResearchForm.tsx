@@ -73,7 +73,7 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
           Keyword Research Tool
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          Powered by DataForSEO APIs - Get comprehensive keyword insights
+          Professional SEO analysis - Get comprehensive keyword insights
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -159,7 +159,7 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
               <span className="text-primary font-bold">${estimatedCost.toFixed(2)}</span>
             </div>
             <div className="text-xs text-muted-foreground">
-              Based on DataForSEO Labs API pricing. Actual cost may vary.
+              Based on API usage pricing. Actual cost may vary.
             </div>
           </div>
 
