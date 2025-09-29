@@ -41,7 +41,7 @@ const getIntentColor = (intent: string) => {
 
 const getDifficultyColor = (difficulty: number) => {
   if (difficulty < 30) return 'text-success';
-  if (difficulty < 60) return 'text-warning';
+  if (difficulty < 40) return 'text-warning';
   return 'text-destructive';
 };
 

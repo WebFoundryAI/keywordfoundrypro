@@ -3,14 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { KeywordResearchForm, KeywordFormData } from "@/components/KeywordResearchForm";
 import { KeywordResultsTable, KeywordResult } from "@/components/KeywordResultsTable";
 import { UserMenu } from "@/components/UserMenu";
+import { Navigation } from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const Research = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
+  const [seedKeyword, setSeedKeyword] = useState<KeywordResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user, loading } = useAuth();
@@ -58,7 +62,16 @@ const Research = () => {
           metricsSource: result.metrics_source || 'dataforseo_labs'
         }));
         
-        setResults(convertedResults);
+        // Separate seed keyword from other results
+        const seedKeywordResult = convertedResults.find(r => 
+          r.keyword.toLowerCase() === formData.keyword.toLowerCase()
+        );
+        const otherResults = convertedResults.filter(r => 
+          r.keyword.toLowerCase() !== formData.keyword.toLowerCase()
+        );
+        
+        setSeedKeyword(seedKeywordResult || null);
+        setResults(otherResults);
         toast({
           title: "Analysis Complete",
           description: `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`,
@@ -157,7 +170,10 @@ const Research = () => {
                 <p className="text-xs text-muted-foreground">Professional SEO Analysis</p>
               </div>
             </div>
-            {user && <UserMenu />}
+            <div className="flex items-center gap-4">
+              <Navigation />
+              {user && <UserMenu />}
+            </div>
           </div>
         </div>
       </header>
@@ -169,6 +185,42 @@ const Research = () => {
             onSubmit={handleFormSubmit}
             isLoading={isLoading}
           />
+          
+          {/* Seed Keyword Display */}
+          {seedKeyword && (
+            <Card className="bg-gradient-card shadow-card border-border/50">
+              <CardHeader>
+                <CardTitle>Seed Keyword Analysis</CardTitle>
+                <CardDescription>
+                  Analysis for your primary keyword: "{seedKeyword.keyword}"
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-background/50 rounded-lg p-4">
+                    <div className="text-sm text-muted-foreground">Search Volume</div>
+                    <div className="text-2xl font-bold">{seedKeyword.searchVolume.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-background/50 rounded-lg p-4">
+                    <div className="text-sm text-muted-foreground">Difficulty</div>
+                    <div className="text-2xl font-bold text-warning">{seedKeyword.difficulty}</div>
+                  </div>
+                  <div className="bg-background/50 rounded-lg p-4">
+                    <div className="text-sm text-muted-foreground">CPC</div>
+                    <div className="text-2xl font-bold">${seedKeyword.cpc.toFixed(2)}</div>
+                  </div>
+                  <div className="bg-background/50 rounded-lg p-4">
+                    <div className="text-sm text-muted-foreground">Intent</div>
+                    <div className="text-lg font-medium">
+                      <Badge variant="outline" className="text-xs">
+                        {seedKeyword.intent}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           <KeywordResultsTable 
             results={results}

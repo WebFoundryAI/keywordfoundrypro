@@ -7,6 +7,8 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Research from "./pages/Research";
+import SerpAnalysis from "./pages/SerpAnalysis";
+import RelatedKeywords from "./pages/RelatedKeywords";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +25,8 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/research" element={<Research />} />
+              <Route path="/serp-analysis" element={<SerpAnalysis />} />
+              <Route path="/related-keywords" element={<RelatedKeywords />} />
               <Route path="/auth" element={<Auth />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
