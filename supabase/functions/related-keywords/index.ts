@@ -62,13 +62,23 @@ serve(async (req) => {
     console.log('Calling DataForSEO API with payload:', apiPayload)
 
     // Call DataForSEO API for keyword ideas
-    const response = await fetch('https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live', {
+    const response = await fetch('https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_site/live', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${btoa(`${Deno.env.get('DATAFORSEO_LOGIN')}:${Deno.env.get('DATAFORSEO_PASSWORD')}`)}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify([apiPayload])
+      body: JSON.stringify([{
+        "language_code": languageCode,
+        "location_code": locationCode,
+        "target": keyword,
+        "limit": 100,
+        "offset": 0,
+        "filters": [
+          ["search_volume", ">", 0]
+        ],
+        "order_by": ["search_volume,desc"]
+      }])
     })
 
     if (!response.ok) {

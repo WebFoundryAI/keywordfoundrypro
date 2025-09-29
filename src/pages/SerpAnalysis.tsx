@@ -8,6 +8,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ArrowLeft, ExternalLink, Globe, BarChart } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
+import { Navigation } from "@/components/Navigation";
 
 interface SerpResult {
   position: number;
@@ -25,7 +26,9 @@ interface SerpResult {
 }
 
 const SerpAnalysis = () => {
-  const [keyword, setKeyword] = useState("");
+  const [keyword, setKeyword] = useState(() => {
+    return localStorage.getItem('lastKeyword') || '';
+  });
   const [results, setResults] = useState<SerpResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -102,15 +105,6 @@ const SerpAnalysis = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/research')}
-                className="mr-2"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Back
-              </Button>
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <BarChart className="w-5 h-5 text-primary-foreground" />
               </div>
@@ -118,8 +112,11 @@ const SerpAnalysis = () => {
                 <h1 className="text-xl font-bold tracking-tight">SERP Analysis</h1>
                 <p className="text-xs text-muted-foreground">Top 10 Organic Results</p>
               </div>
+              <Navigation />
             </div>
-            {user && <UserMenu />}
+            <div className="flex items-center gap-4">
+              {user && <UserMenu />}
+            </div>
           </div>
         </div>
       </header>

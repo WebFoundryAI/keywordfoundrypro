@@ -72,6 +72,8 @@ const Research = () => {
         
         setSeedKeyword(seedKeywordResult || null);
         setResults(otherResults);
+        // Store the keyword for other pages
+        localStorage.setItem('lastKeyword', formData.keyword);
         toast({
           title: "Analysis Complete",
           description: `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`,
@@ -153,15 +155,6 @@ const Research = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/')}
-                className="mr-2"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Back
-              </Button>
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <Search className="w-5 h-5 text-primary-foreground" />
               </div>
@@ -169,9 +162,9 @@ const Research = () => {
                 <h1 className="text-xl font-bold tracking-tight">Keyword Research</h1>
                 <p className="text-xs text-muted-foreground">Professional SEO Analysis</p>
               </div>
+              <Navigation />
             </div>
             <div className="flex items-center gap-4">
-              <Navigation />
               {user && <UserMenu />}
             </div>
           </div>
