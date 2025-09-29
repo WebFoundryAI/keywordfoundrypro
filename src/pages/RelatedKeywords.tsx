@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
-import { Search } from "lucide-react";
+import { Search, ChevronUp, ChevronDown } from "lucide-react";
 
 interface RelatedKeyword {
   keyword: string;
@@ -24,8 +24,13 @@ const RelatedKeywords = () => {
   const [keyword, setKeyword] = useState(() => {
     return localStorage.getItem('lastKeyword') || '';
   });
-  const [results, setResults] = useState<RelatedKeyword[]>([]);
+  const [results, setResults] = useState<RelatedKeyword[]>(() => {
+    const stored = localStorage.getItem('relatedKeywordsResults');
+    return stored ? JSON.parse(stored) : [];
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [sortBy, setSortBy] = useState<keyof RelatedKeyword>("relevance");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -63,6 +68,8 @@ const RelatedKeywords = () => {
 
       if (data.success && data.results) {
         setResults(data.results);
+        localStorage.setItem('relatedKeywordsResults', JSON.stringify(data.results));
+        localStorage.setItem('lastKeyword', keyword.trim());
         toast({
           title: "Analysis Complete",
           description: `Found ${data.total_results} related keywords for "${keyword}" (Cost: $${data.estimated_cost})`,
@@ -107,6 +114,41 @@ const RelatedKeywords = () => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
+  };
+
+  const sortedResults = [...results].sort((a, b) => {
+    const aValue = a[sortBy];
+    const bValue = b[sortBy];
+    
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      return sortOrder === "asc" 
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    }
+    
+    if (typeof aValue === "number" && typeof bValue === "number") {
+      return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+    }
+    
+    return 0;
+  });
+
+  const handleSort = (column: keyof RelatedKeyword) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("desc");
+    }
+  };
+
+  const getSortIcon = (column: keyof RelatedKeyword) => {
+    if (sortBy === column) {
+      return sortOrder === "asc" ? 
+        <ChevronUp className="w-4 h-4 inline ml-1" /> : 
+        <ChevronDown className="w-4 h-4 inline ml-1" />;
+    }
+    return <ChevronUp className="w-4 h-4 inline ml-1 opacity-30" />;
   };
 
   if (loading) {
@@ -173,16 +215,64 @@ const RelatedKeywords = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
-                        <TableHead>Keyword</TableHead>
-                        <TableHead className="text-right">Volume</TableHead>
-                        <TableHead className="text-right">Difficulty</TableHead>
-                        <TableHead className="text-right">CPC</TableHead>
-                        <TableHead>Intent</TableHead>
-                        <TableHead className="text-right">Relevance</TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none"
+                          onClick={() => handleSort("keyword")}
+                        >
+                          <div className="flex items-center">
+                            Keyword
+                            {getSortIcon("keyword")}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                          onClick={() => handleSort("searchVolume")}
+                        >
+                          <div className="flex items-center justify-end">
+                            Volume
+                            {getSortIcon("searchVolume")}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                          onClick={() => handleSort("difficulty")}
+                        >
+                          <div className="flex items-center justify-end">
+                            Difficulty
+                            {getSortIcon("difficulty")}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                          onClick={() => handleSort("cpc")}
+                        >
+                          <div className="flex items-center justify-end">
+                            CPC
+                            {getSortIcon("cpc")}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none"
+                          onClick={() => handleSort("intent")}
+                        >
+                          <div className="flex items-center">
+                            Intent
+                            {getSortIcon("intent")}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                          onClick={() => handleSort("relevance")}
+                        >
+                          <div className="flex items-center justify-end">
+                            Relevance
+                            {getSortIcon("relevance")}
+                          </div>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {results.map((result, index) => (
+                      {sortedResults.map((result, index) => (
                         <TableRow key={index} className="hover:bg-muted/20 transition-smooth">
                           <TableCell className="font-medium max-w-xs">
                             <div className="truncate" title={result.keyword}>

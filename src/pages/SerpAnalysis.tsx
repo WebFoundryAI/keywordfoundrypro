@@ -28,7 +28,10 @@ const SerpAnalysis = () => {
   const [keyword, setKeyword] = useState(() => {
     return localStorage.getItem('lastKeyword') || '';
   });
-  const [results, setResults] = useState<SerpResult[]>([]);
+  const [results, setResults] = useState<SerpResult[]>(() => {
+    const stored = localStorage.getItem('serpAnalysisResults');
+    return stored ? JSON.parse(stored) : [];
+  });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user, loading } = useAuth();
@@ -67,6 +70,8 @@ const SerpAnalysis = () => {
 
       if (data.success && data.results) {
         setResults(data.results);
+        localStorage.setItem('serpAnalysisResults', JSON.stringify(data.results));
+        localStorage.setItem('lastKeyword', keyword.trim());
         toast({
           title: "Analysis Complete",
           description: `Found ${data.total_results} organic results for "${keyword}" (Cost: $${data.estimated_cost})`,
