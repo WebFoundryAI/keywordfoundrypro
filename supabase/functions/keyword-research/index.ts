@@ -12,7 +12,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Keyword research API credentials
+// API credentials
 const apiLogin = Deno.env.get('DATAFORSEO_LOGIN');
 const apiPassword = Deno.env.get('DATAFORSEO_PASSWORD');
 
@@ -65,13 +65,17 @@ serve(async (req) => {
       throw new Error('Failed to create research record');
     }
 
-    // Prepare API request - keywords must be an array
+    // Prepare API request - FIXED: Use correct field name
     const apiPayload = [{
-      "keywords": [keyword],
+      "keywords": [keyword],  // Changed from "keyword" to "keywords" array
       "location_code": locationCode,
       "language_code": languageCode,
-      "limit": limit
+      "limit": limit,
+      "include_serp_info": false,
+      "include_clickstream_data": false
     }];
+
+    console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
 
     // Call keyword research API for ideas
     const keywordIdeasResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_ideas/live', {
@@ -84,13 +88,21 @@ serve(async (req) => {
     });
 
     const keywordIdeasData = await keywordIdeasResponse.json();
-    console.log('Keyword ideas response received');
+    console.log('Keyword ideas API response status:', keywordIdeasResponse.status);
+
+    if (!keywordIdeasResponse.ok) {
+      console.error('API response error:', keywordIdeasData);
+      throw new Error(`API request failed: ${keywordIdeasResponse.status} ${keywordIdeasResponse.statusText}`);
+    }
 
     if (!keywordIdeasData.tasks || keywordIdeasData.tasks[0].status_code !== 20000) {
-      throw new Error(`API error: ${keywordIdeasData.tasks?.[0]?.status_message || 'Unknown error'}`);
+      const errorMsg = keywordIdeasData.tasks?.[0]?.status_message || 'Unknown API error';
+      console.error('API error:', errorMsg);
+      throw new Error(`API error: ${errorMsg}`);
     }
 
     const keywordResults = keywordIdeasData.tasks[0].result || [];
+    console.log(`Received ${keywordResults.length} keyword results`);
     
     // Process and categorize keywords
     const processedResults = keywordResults.map((item: any, index: number) => {
@@ -159,7 +171,7 @@ serve(async (req) => {
       research_id: research.id,
       results: processedResults,
       total_results: processedResults.length,
-      estimated_cost: estimatedCost
+      estimated_cost: estimatedCost.toFixed(2)
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

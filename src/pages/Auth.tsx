@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { Chrome, Shield, Zap, TrendingUp } from 'lucide-react';
+import { Search, Chrome, Shield, Zap, TrendingUp, Database } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -76,81 +76,110 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Keyword Research Pro
-          </h1>
-          <p className="text-foreground/80">
-            Professional keyword analysis and SEO insights
+    <div className="min-h-screen bg-background flex">
+      {/* Left Side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-secondary p-12 flex-col justify-center">
+        <div className="max-w-md">
+          <div className="flex items-center space-x-3 mb-8">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <Search className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">KeywordSpark</h1>
+              <p className="text-sm text-muted-foreground">Professional SEO Research</p>
+            </div>
+          </div>
+          
+          <h2 className="text-3xl font-bold mb-4">
+            Advanced Keyword Intelligence for Technical SEO
+          </h2>
+          <p className="text-muted-foreground mb-8 leading-relaxed">
+            Join thousands of SEO professionals using real-time data and advanced analytics 
+            to dominate search rankings. Get started with comprehensive keyword research today.
           </p>
+          
+          {/* Features */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <Database className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-sm">Real-time search volume and competition data</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <TrendingUp className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-sm">Advanced difficulty scoring algorithms</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Zap className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-sm">Automated intent classification</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Shield className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-sm">Secure data export and storage</span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Sign In Card */}
-        <Card className="bg-gradient-card shadow-card border-border/50">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl font-semibold">
-              Sign in to get started
-            </CardTitle>
-            <CardDescription>
-              Access comprehensive keyword insights and analytics
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <Button
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              className="w-full h-12 bg-gradient-primary hover:shadow-button transition-smooth"
-              size="lg"
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Signing in...
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Chrome className="w-5 h-5" />
-                  Continue with Google
-                </div>
-              )}
-            </Button>
+      {/* Right Side - Authentication */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-sm space-y-6">
+          {/* Mobile header */}
+          <div className="lg:hidden text-center mb-8">
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Search className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <h1 className="text-xl font-bold">KeywordSpark</h1>
+            </div>
+            <p className="text-sm text-muted-foreground">Professional SEO Research Tool</p>
+          </div>
 
-            {/* Features */}
-            <div className="space-y-4 pt-4 border-t border-border/30">
-              <h3 className="font-medium text-center text-muted-foreground">
-                What you'll get access to:
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4 text-primary" />
+          {/* Sign In Card */}
+          <Card className="glass border-border/50">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+              <CardDescription>
+                Sign in to access your keyword research dashboard
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Button
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground"
+                size="lg"
+              >
+                {loading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span>Connecting...</span>
                   </div>
-                  <span>Comprehensive keyword research with search volume & CPC data</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-primary" />
+                ) : (
+                  <div className="flex items-center space-x-3">
+                    <Chrome className="w-5 h-5" />
+                    <span>Continue with Google</span>
                   </div>
-                  <span>Real-time keyword data and analytics</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Shield className="w-4 h-4 text-primary" />
-                  </div>
-                  <span>Secure data storage and export capabilities</span>
+                )}
+              </Button>
+
+              {/* Security Note */}
+              <div className="text-center space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Secure authentication powered by Google OAuth
+                </p>
+                <div className="flex items-center justify-center space-x-1 text-xs text-muted-foreground">
+                  <Shield className="w-3 h-3" />
+                  <span>Your data is encrypted and secure</span>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Footer */}
-        <p className="text-center text-sm text-muted-foreground">
-          By signing in, you agree to our terms of service and privacy policy
-        </p>
+          {/* Legal */}
+          <p className="text-center text-xs text-muted-foreground">
+            By signing in, you agree to our terms of service and privacy policy
+          </p>
+        </div>
       </div>
     </div>
   );
