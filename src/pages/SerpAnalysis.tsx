@@ -5,10 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
+import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowLeft, ExternalLink, Globe, BarChart } from "lucide-react";
-import { UserMenu } from "@/components/UserMenu";
-import { Navigation } from "@/components/Navigation";
+import { Search, ExternalLink, Globe } from "lucide-react";
 
 interface SerpResult {
   position: number;
@@ -100,26 +99,7 @@ const SerpAnalysis = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <BarChart className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight">SERP Analysis</h1>
-                <p className="text-xs text-muted-foreground">Top 10 Organic Results</p>
-              </div>
-              <Navigation />
-            </div>
-            <div className="flex items-center gap-4">
-              {user && <UserMenu />}
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header user={user} />
 
       {/* Search Form */}
       <section className="px-6 py-8">

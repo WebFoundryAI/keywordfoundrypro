@@ -8,9 +8,15 @@ export const Navigation = () => {
   const navItems = [
     {
       path: "/research",
-      label: "Keyword Research",
+      label: "Seed Keyword",
       icon: Search,
-      description: "Find keywords and analyze competition"
+      description: "Enter keyword for analysis"
+    },
+    {
+      path: "/keyword-results",
+      label: "Keyword Results",
+      icon: Search,
+      description: "View keyword analysis results"
     },
     {
       path: "/serp-analysis", 

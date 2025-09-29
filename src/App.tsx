@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Research from "./pages/Research";
+import KeywordResults from "./pages/KeywordResults";
 import SerpAnalysis from "./pages/SerpAnalysis";
 import RelatedKeywords from "./pages/RelatedKeywords";
 import Auth from "./pages/Auth";
@@ -25,6 +26,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/research" element={<Research />} />
+              <Route path="/keyword-results" element={<KeywordResults />} />
               <Route path="/serp-analysis" element={<SerpAnalysis />} />
               <Route path="/related-keywords" element={<RelatedKeywords />} />
               <Route path="/auth" element={<Auth />} />
