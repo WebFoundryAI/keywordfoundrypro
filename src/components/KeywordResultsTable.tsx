@@ -23,6 +23,7 @@ interface KeywordResultsTableProps {
   isLoading?: boolean;
   onExport?: (format: 'csv' | 'json') => void;
   seedKeyword?: KeywordResult | null;
+  keywordAnalyzed?: string;
 }
 
 const getIntentColor = (intent: string) => {
@@ -52,7 +53,7 @@ const formatNumber = (num: number) => {
   return num.toString();
 };
 
-export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword }: KeywordResultsTableProps) => {
+export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword, keywordAnalyzed }: KeywordResultsTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<keyof KeywordResult>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -127,7 +128,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword 
       <Card className="bg-gradient-card shadow-card border-border/50 border-primary/20">
         <CardHeader>
           <CardTitle className="text-primary">
-            {seedKeyword ? `"${seedKeyword.keyword}"` : 'Original Keyword'}
+            {seedKeyword ? `"${seedKeyword.keyword}"` : keywordAnalyzed ? `"${keywordAnalyzed}"` : 'Original Keyword'}
             <Badge variant="outline" className="ml-2 text-xs">SEED KEYWORD</Badge>
           </CardTitle>
           <CardDescription>
@@ -160,7 +161,9 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword 
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="text-muted-foreground">Seed keyword metrics not available</div>
+              <div className="text-muted-foreground">
+                {keywordAnalyzed ? `Metrics for "${keywordAnalyzed}" not available in results` : 'Seed keyword metrics not available'}
+              </div>
             </div>
           )}
         </CardContent>

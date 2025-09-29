@@ -140,6 +140,7 @@ const KeywordResults = () => {
               isLoading={false}
               onExport={handleExport}
               seedKeyword={seedKeyword}
+              keywordAnalyzed={keywordAnalyzed}
             />
           )}
           
