@@ -65,11 +65,11 @@ serve(async (req) => {
       throw new Error('Failed to create research record');
     }
 
-    // Prepare API request
+    // Prepare API request - keywords must be an array
     const apiPayload = [{
-      "language_code": languageCode,
+      "keywords": [keyword],
       "location_code": locationCode,
-      "keyword": keyword,
+      "language_code": languageCode,
       "limit": limit
     }];
 
