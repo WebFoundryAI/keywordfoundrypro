@@ -1,1 +1,7 @@
 project_id = "vhjffdzroebdkbmvcpgv"
+
+[functions.keyword-research]
+verify_jwt = false
+
+[functions.keyword-suggestions]
+verify_jwt = false

@@ -14,7 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      keyword_research: {
+        Row: {
+          api_cost: number | null
+          created_at: string
+          id: string
+          language_code: string
+          location_code: number
+          results_limit: number
+          seed_keyword: string
+          total_results: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_cost?: number | null
+          created_at?: string
+          id?: string
+          language_code?: string
+          location_code?: number
+          results_limit?: number
+          seed_keyword: string
+          total_results?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_cost?: number | null
+          created_at?: string
+          id?: string
+          language_code?: string
+          location_code?: number
+          results_limit?: number
+          seed_keyword?: string
+          total_results?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      keyword_results: {
+        Row: {
+          cluster_id: string | null
+          cpc: number | null
+          created_at: string
+          difficulty: number | null
+          id: string
+          intent: string | null
+          keyword: string
+          metrics_source: string | null
+          related_keywords: string[] | null
+          research_id: string
+          search_volume: number | null
+          suggestions: string[] | null
+        }
+        Insert: {
+          cluster_id?: string | null
+          cpc?: number | null
+          created_at?: string
+          difficulty?: number | null
+          id?: string
+          intent?: string | null
+          keyword: string
+          metrics_source?: string | null
+          related_keywords?: string[] | null
+          research_id: string
+          search_volume?: number | null
+          suggestions?: string[] | null
+        }
+        Update: {
+          cluster_id?: string | null
+          cpc?: number | null
+          created_at?: string
+          difficulty?: number | null
+          id?: string
+          intent?: string | null
+          keyword?: string
+          metrics_source?: string | null
+          related_keywords?: string[] | null
+          research_id?: string
+          search_volume?: number | null
+          suggestions?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_results_research_id_fkey"
+            columns: ["research_id"]
+            isOneToOne: false
+            referencedRelation: "keyword_research"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

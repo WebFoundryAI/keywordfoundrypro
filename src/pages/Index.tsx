@@ -1,55 +1,62 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { KeywordResearchForm, KeywordFormData } from "@/components/KeywordResearchForm";
 import { KeywordResultsTable, KeywordResult } from "@/components/KeywordResultsTable";
+import { UserMenu } from "@/components/UserMenu";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-image.jpg";
 
 const Index = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-  // Mock data for demonstration - in real implementation, this would call DataForSEO APIs
-  const generateMockResults = (keyword: string, limit: number): KeywordResult[] => {
-    const mockResults: KeywordResult[] = [];
-    const intents = ['commercial', 'informational', 'navigational', 'transactional'];
-    
-    for (let i = 0; i < Math.min(limit, 50); i++) {
-      mockResults.push({
-        keyword: `${keyword} ${['best', 'top', 'reviews', 'guide', 'tips', 'how to', 'vs', 'cheap', 'online', 'near me'][i % 10]}`,
-        searchVolume: Math.floor(Math.random() * 50000) + 1000,
-        cpc: parseFloat((Math.random() * 5 + 0.1).toFixed(2)),
-        intent: intents[Math.floor(Math.random() * intents.length)],
-        difficulty: Math.floor(Math.random() * 100) + 1,
-        suggestions: [],
-        related: [],
-        clusterId: `cluster_${Math.floor(i / 10) + 1}`,
-        metricsSource: 'dataforseo_labs + keywords_data'
-      });
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
     }
-    
-    return mockResults.sort((a, b) => b.searchVolume - a.searchVolume);
-  };
+  }, [user, loading, navigate]);
 
   const handleFormSubmit = async (formData: KeywordFormData) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // In real implementation, this would call DataForSEO APIs
-      const mockResults = generateMockResults(formData.keyword, formData.limit);
-      setResults(mockResults);
-      
-      toast({
-        title: "Analysis Complete",
-        description: `Found ${mockResults.length} keywords for "${formData.keyword}"`,
+      const { data, error } = await supabase.functions.invoke('keyword-research', {
+        body: {
+          keyword: formData.keyword,
+          languageCode: formData.languageCode,
+          locationCode: formData.locationCode,
+          limit: formData.limit
+        }
       });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to analyze keywords');
+      }
+
+      if (data.success && data.results) {
+        setResults(data.results);
+        toast({
+          title: "Analysis Complete",
+          description: `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`,
+        });
+      } else {
+        throw new Error(data.error || 'No results found');
+      }
     } catch (error) {
+      console.error('Keyword research error:', error);
       toast({
         title: "Error",
-        description: "Failed to analyze keywords. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to analyze keywords. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -101,6 +108,14 @@ const Index = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -110,14 +125,23 @@ const Index = () => {
           style={{ backgroundImage: `url(${heroImage})` }}
         />
         <div className="absolute inset-0 bg-gradient-hero opacity-90" />
-        <div className="relative container mx-auto px-4 py-20 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-            DataForSEO Keyword Research
-          </h1>
-          <p className="text-xl md:text-2xl text-foreground/80 mb-8 max-w-3xl mx-auto">
-            Professional keyword analysis powered by DataForSEO APIs. 
-            Get comprehensive insights including search volume, difficulty, CPC, and intent analysis.
-          </p>
+        <div className="relative container mx-auto px-4 py-12 md:py-20">
+          <div className="flex items-center justify-between mb-8">
+            <div className="text-center flex-1">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
+                DataForSEO Keyword Research
+              </h1>
+              <p className="text-lg md:text-2xl text-foreground/80 mb-8 max-w-3xl mx-auto">
+                Professional keyword analysis powered by DataForSEO APIs. 
+                Get comprehensive insights including search volume, difficulty, CPC, and intent analysis.
+              </p>
+            </div>
+            {user && (
+              <div className="absolute top-6 right-6">
+                <UserMenu />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
