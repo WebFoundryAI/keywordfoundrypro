@@ -112,6 +112,65 @@ serve(async (req) => {
     const totalResults = relatedKeywords.length
     const estimatedCost = 0.02 // Estimated cost per request
 
+    // Store results in database if any exist
+    if (relatedKeywords.length > 0) {
+      // First create a research record
+      const { data: research, error: researchError } = await supabaseClient
+        .from('keyword_research')
+        .insert({
+          user_id: user.id,
+          seed_keyword: keyword,
+          language_code: languageCode,
+          location_code: locationCode,
+          results_limit: relatedKeywords.length,
+          total_results: relatedKeywords.length,
+          api_cost: estimatedCost
+        })
+        .select()
+        .single();
+
+      if (researchError) {
+        console.error('Error creating research record:', researchError);
+        throw new Error('Failed to create research record');
+      }
+
+      // Then store the keyword results
+      const resultsWithResearchId = relatedKeywords.map((result: any) => ({
+        research_id: research.id,
+        keyword: result.keyword,
+        search_volume: result.searchVolume,
+        cpc: result.cpc,
+        intent: result.intent,
+        difficulty: result.difficulty,
+        metrics_source: 'dataforseo_related'
+      }));
+
+      const { error: resultsError } = await supabaseClient
+        .from('keyword_results')
+        .insert(resultsWithResearchId);
+
+      if (resultsError) {
+        console.error('Error storing keyword results:', resultsError);
+        throw new Error('Failed to store keyword results');
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          research_id: research.id,
+          results: relatedKeywords,
+          total_results: totalResults,
+          estimated_cost: estimatedCost.toFixed(4)
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 

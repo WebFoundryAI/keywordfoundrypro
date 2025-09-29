@@ -116,8 +116,29 @@ serve(async (req) => {
     // Calculate estimated cost (SERP requests are typically $0.002 each)
     const estimatedCost = 0.002;
 
+    // Store SERP results as a special research record (optional - you can modify this based on needs)
+    const { data: research, error: researchError } = await supabase
+      .from('keyword_research')
+      .insert({
+        user_id: user.id,
+        seed_keyword: keyword,
+        language_code: languageCode,
+        location_code: locationCode,
+        results_limit: organicResults.length,
+        total_results: organicResults.length,
+        api_cost: estimatedCost
+      })
+      .select()
+      .single();
+
+    if (researchError) {
+      console.error('Error creating SERP research record:', researchError);
+      // Don't throw error for SERP analysis, just continue without storing
+    }
+
     return new Response(JSON.stringify({
       success: true,
+      research_id: research?.id || null,
       keyword: keyword,
       results: organicResults,
       total_results: organicResults.length,

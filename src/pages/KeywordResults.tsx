@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 const KeywordResults = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
@@ -22,46 +23,65 @@ const KeywordResults = () => {
       return;
     }
 
-    console.log('KeywordResults - Starting to load from localStorage...');
-    
-    // Load results from localStorage
-    const storedResults = localStorage.getItem('keywordResults');
-    const storedSeedKeyword = localStorage.getItem('seedKeyword');
-    const storedKeywordAnalyzed = localStorage.getItem('keywordAnalyzed');
-
-    console.log('KeywordResults - Raw localStorage data:', {
-      storedResults,
-      storedSeedKeyword,
-      storedKeywordAnalyzed,
-      hasResults: !!storedResults,
-      hasSeedKeyword: !!storedSeedKeyword,
-      hasKeywordAnalyzed: !!storedKeywordAnalyzed
-    });
-
-    if (storedResults) {
-      try {
-        const parsedResults = JSON.parse(storedResults);
-        console.log('KeywordResults - Parsed results:', parsedResults);
-        setResults(parsedResults);
-      } catch (error) {
-        console.error('Error parsing stored results:', error);
+    const loadKeywordResults = async () => {
+      const researchId = localStorage.getItem('currentResearchId');
+      const storedKeywordAnalyzed = localStorage.getItem('keywordAnalyzed');
+      
+      if (researchId && storedKeywordAnalyzed) {
+        try {
+          // Fetch results from database
+          const { data: keywordResults, error } = await supabase
+            .from('keyword_results')
+            .select('*')
+            .eq('research_id', researchId);
+            
+          if (error) {
+            console.error('Error fetching keyword results:', error);
+            toast({
+              title: "Error",
+              description: "Failed to load keyword results",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          // Convert to frontend format
+          const convertedResults = keywordResults.map(result => ({
+            keyword: result.keyword,
+            searchVolume: result.search_volume || 0,
+            cpc: result.cpc || 0,
+            intent: result.intent || 'informational',
+            difficulty: result.difficulty || 0,
+            suggestions: result.suggestions || [],
+            related: result.related_keywords || [],
+            clusterId: result.cluster_id,
+            metricsSource: result.metrics_source || 'dataforseo_labs'
+          }));
+          
+          // Separate seed keyword from other results
+          const seedKeywordResult = convertedResults.find(r => 
+            r.keyword.toLowerCase() === storedKeywordAnalyzed.toLowerCase()
+          );
+          const otherResults = convertedResults.filter(r => 
+            r.keyword.toLowerCase() !== storedKeywordAnalyzed.toLowerCase()
+          );
+          
+          setResults(otherResults);
+          setSeedKeyword(seedKeywordResult || null);
+          setKeywordAnalyzed(storedKeywordAnalyzed);
+          
+        } catch (error) {
+          console.error('Error loading keyword results:', error);
+          toast({
+            title: "Error", 
+            description: "Failed to load keyword results",
+            variant: "destructive",
+          });
+        }
       }
-    }
+    };
     
-    if (storedSeedKeyword) {
-      try {
-        const parsedSeedKeyword = JSON.parse(storedSeedKeyword);
-        console.log('KeywordResults - Parsed seed keyword:', parsedSeedKeyword);
-        setSeedKeyword(parsedSeedKeyword);
-      } catch (error) {
-        console.error('Error parsing stored seed keyword:', error);
-      }
-    }
-    
-    if (storedKeywordAnalyzed) {
-      console.log('KeywordResults - Setting keyword analyzed:', storedKeywordAnalyzed);
-      setKeywordAnalyzed(storedKeywordAnalyzed);
-    }
+    loadKeywordResults();
 
     // Also log final state
     setTimeout(() => {

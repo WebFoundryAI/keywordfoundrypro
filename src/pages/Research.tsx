@@ -63,9 +63,8 @@ const Research = () => {
           r.keyword.toLowerCase() !== formData.keyword.toLowerCase()
         );
         
-        // Store results in localStorage for persistence
-        localStorage.setItem('keywordResults', JSON.stringify(otherResults));
-        localStorage.setItem('seedKeyword', JSON.stringify(seedKeywordResult));
+        // Store research ID for fetching from database
+        localStorage.setItem('currentResearchId', data.research_id);
         localStorage.setItem('keywordAnalyzed', formData.keyword);
         localStorage.setItem('lastKeyword', formData.keyword);
         
