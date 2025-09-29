@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search, TrendingUp, DollarSign, Target, Filter } from "lucide-react";
+import { Download, Search, TrendingUp, DollarSign, Target, Filter, ChevronUp, ChevronDown } from "lucide-react";
 
 export interface KeywordResult {
   keyword: string;
@@ -84,6 +84,13 @@ export const KeywordResultsTable = ({ results, isLoading, onExport }: KeywordRes
       setSortBy(column);
       setSortOrder("desc");
     }
+  };
+
+  const getSortIcon = (column: keyof KeywordResult) => {
+    if (sortBy !== column) return null;
+    return sortOrder === "asc" ? 
+      <ChevronUp className="w-4 h-4 inline ml-1" /> : 
+      <ChevronDown className="w-4 h-4 inline ml-1" />;
   };
 
   const totalVolume = results.reduce((sum, result) => sum + result.searchVolume, 0);
@@ -226,28 +233,40 @@ export const KeywordResultsTable = ({ results, isLoading, onExport }: KeywordRes
               <TableHeader>
                 <TableRow className="bg-muted/30">
                   <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none"
                     onClick={() => handleSort("keyword")}
                   >
-                    Keyword {sortBy === "keyword" && (sortOrder === "asc" ? "↑" : "↓")}
+                    <div className="flex items-center">
+                      Keyword
+                      {getSortIcon("keyword")}
+                    </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
                     onClick={() => handleSort("searchVolume")}
                   >
-                    Volume {sortBy === "searchVolume" && (sortOrder === "asc" ? "↑" : "↓")}
+                    <div className="flex items-center justify-end">
+                      Volume
+                      {getSortIcon("searchVolume")}
+                    </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
                     onClick={() => handleSort("difficulty")}
                   >
-                    Difficulty {sortBy === "difficulty" && (sortOrder === "asc" ? "↑" : "↓")}
+                    <div className="flex items-center justify-end">
+                      Difficulty
+                      {getSortIcon("difficulty")}
+                    </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
                     onClick={() => handleSort("cpc")}
                   >
-                    CPC {sortBy === "cpc" && (sortOrder === "asc" ? "↑" : "↓")}
+                    <div className="flex items-center justify-end">
+                      CPC
+                      {getSortIcon("cpc")}
+                    </div>
                   </TableHead>
                   <TableHead>Intent</TableHead>
                 </TableRow>
