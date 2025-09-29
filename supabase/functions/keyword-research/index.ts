@@ -101,44 +101,47 @@ serve(async (req) => {
       throw new Error(`API error: ${errorMsg}`);
     }
 
-    const keywordResults = keywordIdeasData.tasks[0].result || [];
+    // DataForSEO Labs returns results nested in items array
+    const rawResults = keywordIdeasData.tasks[0].result || [];
+    const keywordResults = rawResults[0]?.items || [];
+    
     console.log(`Received ${keywordResults.length} keyword results`);
     console.log('Sample result structure:', JSON.stringify(keywordResults[0], null, 2));
     
     // Process and categorize keywords
     const processedResults = keywordResults.map((item: any, index: number) => {
-      console.log(`Processing item ${index}:`, JSON.stringify(item, null, 2));
-      
-      // DataForSEO Labs API returns data directly in the item, not in keyword_info
-      const keywordData = item;
+      // Extract data from the correct structure
+      const keywordData = item.keyword_info || {};
+      const keywordText = item.keyword || keyword;
       const searchVolume = keywordData.search_volume || 0;
       const cpc = keywordData.cpc || 0;
+      const competition = keywordData.competition || 0;
+      const keywordDifficulty = item.keyword_properties?.keyword_difficulty || 0;
       
       // Determine intent based on keyword patterns
       let intent = 'informational';
-      const keyword_text = keywordData.keyword?.toLowerCase() || '';
+      const keyword_text = keywordText.toLowerCase();
       
-      if (keyword_text.includes('buy') || keyword_text.includes('purchase') || keyword_text.includes('order')) {
+      if (keyword_text.includes('buy') || keyword_text.includes('purchase') || keyword_text.includes('order') || keyword_text.includes('shop')) {
         intent = 'transactional';
-      } else if (keyword_text.includes('best') || keyword_text.includes('top') || keyword_text.includes('review')) {
+      } else if (keyword_text.includes('best') || keyword_text.includes('top') || keyword_text.includes('review') || keyword_text.includes('compare')) {
         intent = 'commercial';
-      } else if (keyword_text.includes('near me') || keyword_text.includes('location')) {
+      } else if (keyword_text.includes('near me') || keyword_text.includes('location') || keyword_text.includes('where')) {
         intent = 'navigational';
       }
 
-      // Calculate difficulty score (0-100) based on competition and search volume
-      const competition = keywordData.competition || 0;
-      const difficulty = Math.min(100, Math.floor(competition * 100 + (searchVolume > 10000 ? 20 : 0)));
+      // Use DataForSEO's keyword difficulty if available, otherwise calculate from competition
+      const difficulty = keywordDifficulty || Math.min(100, Math.floor(competition * 100 + (searchVolume > 10000 ? 20 : 0)));
 
       return {
         research_id: research.id,
-        keyword: keywordData.keyword || keyword,
+        keyword: keywordText,
         search_volume: searchVolume,
         cpc: cpc,
         intent: intent,
         difficulty: difficulty,
         cluster_id: `cluster_${Math.floor(index / 10) + 1}`,
-        metrics_source: 'keyword_research_api'
+        metrics_source: 'dataforseo_labs'
       };
     });
 
