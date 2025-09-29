@@ -100,7 +100,7 @@ serve(async (req) => {
         searchVolume: item.search_volume || 0,
         cpc: item.cpc || 0,
         competition: item.competition || 0,
-        difficulty: Math.round((item.competition || 0) * 100),
+        difficulty: item.competition_level || 0, // Use API competition_level directly
         intent: determineIntent(item.keyword),
         relevance: Math.round(Math.random() * 40 + 60) // Simple relevance score for now
       }))

@@ -211,12 +211,12 @@ const RelatedKeywords = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="rounded-lg border border-border/50 overflow-hidden">
+                <div className="rounded-lg border border-border/50 overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none min-w-[200px]"
                           onClick={() => handleSort("keyword")}
                         >
                           <div className="flex items-center">
@@ -225,7 +225,7 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
                           onClick={() => handleSort("searchVolume")}
                         >
                           <div className="flex items-center justify-end">
@@ -234,7 +234,7 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
                           onClick={() => handleSort("difficulty")}
                         >
                           <div className="flex items-center justify-end">
@@ -243,7 +243,7 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[80px]"
                           onClick={() => handleSort("cpc")}
                         >
                           <div className="flex items-center justify-end">
@@ -252,7 +252,7 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none min-w-[120px]"
                           onClick={() => handleSort("intent")}
                         >
                           <div className="flex items-center">
@@ -261,11 +261,11 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
                           onClick={() => handleSort("relevance")}
                         >
                           <div className="flex items-center justify-end">
-                            Relevance Score
+                            Relevance
                             {getSortIcon("relevance")}
                           </div>
                         </TableHead>
@@ -274,8 +274,8 @@ const RelatedKeywords = () => {
                     <TableBody>
                       {sortedResults.map((result, index) => (
                         <TableRow key={index} className="hover:bg-muted/20 transition-smooth">
-                          <TableCell className="font-medium max-w-xs">
-                            <div className="truncate" title={result.keyword}>
+                          <TableCell className="font-medium">
+                            <div className="truncate max-w-[180px]" title={result.keyword}>
                               {result.keyword}
                             </div>
                           </TableCell>
