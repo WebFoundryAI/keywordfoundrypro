@@ -27,6 +27,12 @@ const KeywordResults = () => {
     const storedSeedKeyword = localStorage.getItem('seedKeyword');
     const storedKeywordAnalyzed = localStorage.getItem('keywordAnalyzed');
 
+    console.log('KeywordResults - Loading from localStorage:', {
+      storedResults: storedResults ? JSON.parse(storedResults) : null,
+      storedSeedKeyword: storedSeedKeyword ? JSON.parse(storedSeedKeyword) : null,
+      storedKeywordAnalyzed
+    });
+
     if (storedResults) {
       setResults(JSON.parse(storedResults));
     }
