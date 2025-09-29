@@ -22,6 +22,7 @@ interface KeywordResultsTableProps {
   results: KeywordResult[];
   isLoading?: boolean;
   onExport?: (format: 'csv' | 'json') => void;
+  seedKeyword?: KeywordResult | null;
 }
 
 const getIntentColor = (intent: string) => {
@@ -51,7 +52,7 @@ const formatNumber = (num: number) => {
   return num.toString();
 };
 
-export const KeywordResultsTable = ({ results, isLoading, onExport }: KeywordResultsTableProps) => {
+export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword }: KeywordResultsTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<keyof KeywordResult>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -122,64 +123,41 @@ export const KeywordResultsTable = ({ results, isLoading, onExport }: KeywordRes
 
   return (
     <div className="w-full space-y-6">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Seed Keyword Section */}
+      {seedKeyword && (
         <Card className="bg-gradient-card shadow-card border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/20 rounded-lg">
-                <Search className="w-5 h-5 text-primary" />
+          <CardHeader>
+            <CardTitle>Seed Keyword: "{seedKeyword.keyword}"</CardTitle>
+            <CardDescription>
+              Core metrics for your primary keyword
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-background/50 rounded-lg p-4 text-center">
+                <div className="text-sm text-muted-foreground mb-1">Search Volume</div>
+                <div className="text-2xl font-bold text-success">{seedKeyword.searchVolume.toLocaleString()}</div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Keywords</p>
-                <p className="text-2xl font-bold">{results.length}</p>
+              <div className="bg-background/50 rounded-lg p-4 text-center">
+                <div className="text-sm text-muted-foreground mb-1">Difficulty</div>
+                <div className="text-2xl font-bold text-warning">{seedKeyword.difficulty}</div>
+              </div>
+              <div className="bg-background/50 rounded-lg p-4 text-center">
+                <div className="text-sm text-muted-foreground mb-1">CPC</div>
+                <div className="text-2xl font-bold text-primary">${seedKeyword.cpc.toFixed(2)}</div>
+              </div>
+              <div className="bg-background/50 rounded-lg p-4 text-center">
+                <div className="text-sm text-muted-foreground mb-1">Intent</div>
+                <div className="text-lg font-medium">
+                  <Badge variant="outline" className="text-xs">
+                    {seedKeyword.intent}
+                  </Badge>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        <Card className="bg-gradient-card shadow-card border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-success/20 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-success" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Volume</p>
-                <p className="text-2xl font-bold">{formatNumber(totalVolume)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card shadow-card border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-warning/20 rounded-lg">
-                <Target className="w-5 h-5 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Avg Difficulty</p>
-                <p className="text-2xl font-bold">{avgDifficulty}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card shadow-card border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/20 rounded-lg">
-                <DollarSign className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Avg CPC</p>
-                <p className="text-2xl font-bold">${avgCpc.toFixed(2)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      )}
 
       {/* Results Table */}
       <Card className="bg-gradient-card shadow-card border-border/50">
