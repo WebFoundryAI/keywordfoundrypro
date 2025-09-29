@@ -22,26 +22,55 @@ const KeywordResults = () => {
       return;
     }
 
+    console.log('KeywordResults - Starting to load from localStorage...');
+    
     // Load results from localStorage
     const storedResults = localStorage.getItem('keywordResults');
     const storedSeedKeyword = localStorage.getItem('seedKeyword');
     const storedKeywordAnalyzed = localStorage.getItem('keywordAnalyzed');
 
-    console.log('KeywordResults - Loading from localStorage:', {
-      storedResults: storedResults ? JSON.parse(storedResults) : null,
-      storedSeedKeyword: storedSeedKeyword ? JSON.parse(storedSeedKeyword) : null,
-      storedKeywordAnalyzed
+    console.log('KeywordResults - Raw localStorage data:', {
+      storedResults,
+      storedSeedKeyword,
+      storedKeywordAnalyzed,
+      hasResults: !!storedResults,
+      hasSeedKeyword: !!storedSeedKeyword,
+      hasKeywordAnalyzed: !!storedKeywordAnalyzed
     });
 
     if (storedResults) {
-      setResults(JSON.parse(storedResults));
+      try {
+        const parsedResults = JSON.parse(storedResults);
+        console.log('KeywordResults - Parsed results:', parsedResults);
+        setResults(parsedResults);
+      } catch (error) {
+        console.error('Error parsing stored results:', error);
+      }
     }
+    
     if (storedSeedKeyword) {
-      setSeedKeyword(JSON.parse(storedSeedKeyword));
+      try {
+        const parsedSeedKeyword = JSON.parse(storedSeedKeyword);
+        console.log('KeywordResults - Parsed seed keyword:', parsedSeedKeyword);
+        setSeedKeyword(parsedSeedKeyword);
+      } catch (error) {
+        console.error('Error parsing stored seed keyword:', error);
+      }
     }
+    
     if (storedKeywordAnalyzed) {
+      console.log('KeywordResults - Setting keyword analyzed:', storedKeywordAnalyzed);
       setKeywordAnalyzed(storedKeywordAnalyzed);
     }
+
+    // Also log final state
+    setTimeout(() => {
+      console.log('KeywordResults - Final component state:', {
+        resultsLength: results.length,
+        seedKeyword,
+        keywordAnalyzed
+      });
+    }, 100);
   }, [user, loading, navigate]);
 
   const handleExport = (format: 'csv' | 'json') => {
