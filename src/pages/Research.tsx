@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { KeywordResearchForm, KeywordFormData } from "@/components/KeywordResearchForm";
 import { KeywordResultsTable, KeywordResult } from "@/components/KeywordResultsTable";
+import { KeywordMetricsSummary } from "@/components/KeywordMetricsSummary";
 import { UserMenu } from "@/components/UserMenu";
 import { Navigation } from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -16,9 +17,11 @@ const Research = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
   const [seedKeyword, setSeedKeyword] = useState<KeywordResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [keywordAnalyzed, setKeywordAnalyzed] = useState<string>("");
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const metricsSummaryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -72,12 +75,21 @@ const Research = () => {
         
         setSeedKeyword(seedKeywordResult || null);
         setResults(otherResults);
+        setKeywordAnalyzed(formData.keyword);
         // Store the keyword for other pages
         localStorage.setItem('lastKeyword', formData.keyword);
         toast({
           title: "Analysis Complete",
           description: `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`,
         });
+        
+        // Scroll to metrics summary after successful analysis
+        setTimeout(() => {
+          metricsSummaryRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }, 100);
       } else {
         throw new Error(data.error || 'No results found');
       }
@@ -162,9 +174,9 @@ const Research = () => {
                 <h1 className="text-xl font-bold tracking-tight">Keyword Research</h1>
                 <p className="text-xs text-muted-foreground">Professional SEO Analysis</p>
               </div>
-              <Navigation />
             </div>
             <div className="flex items-center gap-4">
+              <Navigation />
               {user && <UserMenu />}
             </div>
           </div>
@@ -178,6 +190,19 @@ const Research = () => {
             onSubmit={handleFormSubmit}
             isLoading={isLoading}
           />
+          
+          {/* Metrics Summary - shown after analysis */}
+          {keywordAnalyzed && results.length > 0 && (
+            <div ref={metricsSummaryRef} className="mb-6">
+              <KeywordMetricsSummary
+                keyword={keywordAnalyzed}
+                totalKeywords={results.length + (seedKeyword ? 1 : 0)}
+                totalVolume={results.reduce((sum, r) => sum + r.searchVolume, 0) + (seedKeyword?.searchVolume || 0)}
+                avgDifficulty={results.length > 0 ? results.reduce((sum, r) => sum + r.difficulty, 0) / results.length : 0}
+                avgCpc={results.length > 0 ? results.reduce((sum, r) => sum + r.cpc, 0) / results.length : 0}
+              />
+            </div>
+          )}
           
           {/* Seed Keyword Display */}
           {seedKeyword && (
