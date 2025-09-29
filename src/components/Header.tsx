@@ -26,7 +26,7 @@ export const Header = ({ user }: HeaderProps) => {
               <Search className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Keyword Research</h1>
+              <h1 className="text-xl font-bold tracking-tight">Keyword Foundry Pro</h1>
               <p className="text-xs text-muted-foreground">Professional SEO Analysis</p>
             </div>
           </div>
