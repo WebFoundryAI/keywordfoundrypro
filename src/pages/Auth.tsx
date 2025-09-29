@@ -26,7 +26,7 @@ const Auth = () => {
       
       // More robust redirect URL construction
       const currentUrl = new URL(window.location.href);
-      const redirectUrl = `${currentUrl.protocol}//${currentUrl.host}/`;
+      const redirectUrl = `${currentUrl.origin}/`;
       
       console.log('Attempting Google sign-in with redirect:', redirectUrl);
       

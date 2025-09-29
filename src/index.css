@@ -6,7 +6,54 @@
 
 @layer base {
   :root {
-    /* Dark Professional Theme */
+    /* Light Professional Theme */
+    --background: 0 0% 100%;
+    --foreground: 222 84% 4.9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222 84% 4.9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 84% 4.9%;
+    
+    /* Modern accent colors */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 222 84% 4.9%;
+    
+    --muted: 210 40% 98%;
+    --muted-foreground: 215 16% 46.9%;
+    
+    --accent: 210 40% 98%;
+    --accent-foreground: 222 84% 4.9%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 217 91% 60%;
+    
+    /* Professional gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(242 91% 70%));
+    --gradient-secondary: linear-gradient(135deg, hsl(210 40% 98%), hsl(0 0% 100%));
+    --gradient-accent: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 50%, hsl(0 0% 100%) 100%);
+    
+    /* Modern shadows */
+    --shadow-lg: 0 10px 15px -3px hsl(222 84% 4.9% / 0.1), 0 4px 6px -2px hsl(222 84% 4.9% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(222 84% 4.9% / 0.15), 0 10px 10px -5px hsl(222 84% 4.9% / 0.1);
+    --shadow-glow: 0 0 30px hsl(217 91% 60% / 0.3);
+    
+    /* Smooth transitions */
+    --transition-all: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease-out;
+    
+    --radius: 0.75rem;
+  }
+
+  .dark {
     --background: 222 84% 4.9%;
     --foreground: 210 40% 98%;
     
@@ -16,7 +63,6 @@
     --popover: 222 84% 4.9%;
     --popover-foreground: 210 40% 98%;
     
-    /* Modern accent colors */
     --primary: 217 91% 60%;
     --primary-foreground: 222 84% 4.9%;
     
@@ -36,26 +82,13 @@
     --input: 217 32% 17%;
     --ring: 217 91% 60%;
     
-    /* Professional gradients */
     --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(242 91% 70%));
     --gradient-secondary: linear-gradient(135deg, hsl(217 32% 17%), hsl(222 84% 4.9%));
     --gradient-accent: linear-gradient(135deg, hsl(222 84% 4.9%) 0%, hsl(217 32% 17%) 50%, hsl(222 84% 4.9%) 100%);
     
-    /* Modern shadows */
     --shadow-lg: 0 10px 15px -3px hsl(222 84% 4.9% / 0.3), 0 4px 6px -2px hsl(222 84% 4.9% / 0.1);
     --shadow-xl: 0 20px 25px -5px hsl(222 84% 4.9% / 0.4), 0 10px 10px -5px hsl(222 84% 4.9% / 0.2);
     --shadow-glow: 0 0 30px hsl(217 91% 60% / 0.3);
-    
-    /* Smooth transitions */
-    --transition-all: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.15s ease-out;
-    
-    --radius: 0.75rem;
-  }
-
-  .dark {
-    --background: 222 84% 4.9%;
-    --foreground: 210 40% 98%;
   }
 }
 
@@ -65,7 +98,7 @@
   }
   
   body {
-    @apply bg-background text-foreground font-mono;
+    @apply bg-background text-foreground font-mono transition-colors;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   
