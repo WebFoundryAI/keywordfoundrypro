@@ -67,6 +67,13 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.keyword.trim()) return;
+    
+    // Clear previous results from all pages
+    localStorage.removeItem('keywordResults');
+    localStorage.removeItem('keywordAnalyzed');
+    localStorage.removeItem('serpAnalysisResults');
+    localStorage.removeItem('relatedKeywordsResults');
+    
     // Store the limit for future searches
     localStorage.setItem('lastSearchLimit', formData.limit.toString());
     onSubmit(formData);
