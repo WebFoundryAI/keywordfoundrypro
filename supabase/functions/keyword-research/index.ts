@@ -145,6 +145,13 @@ serve(async (req) => {
       };
     });
 
+    // Ensure seed keyword appears first by sorting
+    processedResults.sort((a: any, b: any) => {
+      if (a.keyword.toLowerCase() === keyword.toLowerCase()) return -1;
+      if (b.keyword.toLowerCase() === keyword.toLowerCase()) return 1;
+      return 0;
+    });
+
     // Store results in database
     if (processedResults.length > 0) {
       const { error: resultsError } = await supabase
