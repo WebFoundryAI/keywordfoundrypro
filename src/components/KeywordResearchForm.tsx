@@ -48,11 +48,17 @@ const LOCATION_OPTIONS = [
 ];
 
 export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchFormProps) => {
+  // Load previous limit from localStorage if available
+  const getPreviousLimit = () => {
+    const stored = localStorage.getItem('lastSearchLimit');
+    return stored ? parseInt(stored) : 100;
+  };
+
   const [formData, setFormData] = useState<KeywordFormData>({
     keyword: "",
     languageCode: "en",
     locationCode: 2840,
-    limit: 100,
+    limit: getPreviousLimit(),
     includeSuggestions: true,
     includeRelated: true,
     includeSerp: false,
@@ -61,6 +67,8 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.keyword.trim()) return;
+    // Store the limit for future searches
+    localStorage.setItem('lastSearchLimit', formData.limit.toString());
     onSubmit(formData);
   };
 

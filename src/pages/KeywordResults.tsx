@@ -135,56 +135,48 @@ const KeywordResults = () => {
       <section className="px-6 py-8">
         <div className="container mx-auto max-w-4xl space-y-6">
           {keywordAnalyzed && results.length > 0 && (
-            <>
-              <KeywordMetricsSummary
-                keyword={keywordAnalyzed}
-                totalKeywords={results.length + (seedKeyword ? 1 : 0)}
-                totalVolume={results.reduce((sum, r) => sum + r.searchVolume, 0) + (seedKeyword?.searchVolume || 0)}
-                avgDifficulty={results.length > 0 ? results.reduce((sum, r) => sum + r.difficulty, 0) / results.length : 0}
-                avgCpc={results.length > 0 ? results.reduce((sum, r) => sum + r.cpc, 0) / results.length : 0}
-              />
-              
-              {seedKeyword && (
-                <Card className="bg-gradient-card shadow-card border-border/50">
-                  <CardHeader>
-                    <CardTitle>Seed Keyword Analysis</CardTitle>
-                    <CardDescription>
-                      Analysis for your primary keyword: "{seedKeyword.keyword}"
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="bg-background/50 rounded-lg p-4">
-                        <div className="text-sm text-muted-foreground">Search Volume</div>
-                        <div className="text-2xl font-bold">{seedKeyword.searchVolume.toLocaleString()}</div>
-                      </div>
-                      <div className="bg-background/50 rounded-lg p-4">
-                        <div className="text-sm text-muted-foreground">Difficulty</div>
-                        <div className="text-2xl font-bold text-warning">{seedKeyword.difficulty}</div>
-                      </div>
-                      <div className="bg-background/50 rounded-lg p-4">
-                        <div className="text-sm text-muted-foreground">CPC</div>
-                        <div className="text-2xl font-bold">${seedKeyword.cpc.toFixed(2)}</div>
-                      </div>
-                      <div className="bg-background/50 rounded-lg p-4">
-                        <div className="text-sm text-muted-foreground">Intent</div>
-                        <div className="text-lg font-medium">
-                          <Badge variant="outline" className="text-xs">
-                            {seedKeyword.intent}
-                          </Badge>
+              <>
+                {seedKeyword && (
+                  <Card className="bg-gradient-card shadow-card border-border/50 mb-6">
+                    <CardHeader>
+                      <CardTitle>Seed Keyword: "{seedKeyword.keyword}"</CardTitle>
+                      <CardDescription>
+                        Core metrics for your primary keyword
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-background/50 rounded-lg p-4 text-center">
+                          <div className="text-sm text-muted-foreground mb-1">Search Volume</div>
+                          <div className="text-2xl font-bold text-success">{seedKeyword.searchVolume.toLocaleString()}</div>
+                        </div>
+                        <div className="bg-background/50 rounded-lg p-4 text-center">
+                          <div className="text-sm text-muted-foreground mb-1">Difficulty</div>
+                          <div className="text-2xl font-bold text-warning">{seedKeyword.difficulty}</div>
+                        </div>
+                        <div className="bg-background/50 rounded-lg p-4 text-center">
+                          <div className="text-sm text-muted-foreground mb-1">CPC</div>
+                          <div className="text-2xl font-bold text-primary">${seedKeyword.cpc.toFixed(2)}</div>
+                        </div>
+                        <div className="bg-background/50 rounded-lg p-4 text-center">
+                          <div className="text-sm text-muted-foreground mb-1">Intent</div>
+                          <div className="text-lg font-medium">
+                            <Badge variant="outline" className="text-xs">
+                              {seedKeyword.intent}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              <KeywordResultsTable 
-                results={results}
-                isLoading={false}
-                onExport={handleExport}
-              />
-            </>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                <KeywordResultsTable 
+                  results={results}
+                  isLoading={false}
+                  onExport={handleExport}
+                />
+              </>
           )}
           
           {!keywordAnalyzed && (

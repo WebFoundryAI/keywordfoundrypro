@@ -87,10 +87,12 @@ export const KeywordResultsTable = ({ results, isLoading, onExport }: KeywordRes
   };
 
   const getSortIcon = (column: keyof KeywordResult) => {
-    if (sortBy !== column) return null;
-    return sortOrder === "asc" ? 
-      <ChevronUp className="w-4 h-4 inline ml-1" /> : 
-      <ChevronDown className="w-4 h-4 inline ml-1" />;
+    if (sortBy === column) {
+      return sortOrder === "asc" ? 
+        <ChevronUp className="w-4 h-4 inline ml-1" /> : 
+        <ChevronDown className="w-4 h-4 inline ml-1" />;
+    }
+    return <ChevronUp className="w-4 h-4 inline ml-1 opacity-30" />;
   };
 
   const totalVolume = results.reduce((sum, result) => sum + result.searchVolume, 0);
@@ -268,7 +270,15 @@ export const KeywordResultsTable = ({ results, isLoading, onExport }: KeywordRes
                       {getSortIcon("cpc")}
                     </div>
                   </TableHead>
-                  <TableHead>Intent</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none"
+                    onClick={() => handleSort("intent")}
+                  >
+                    <div className="flex items-center">
+                      Intent
+                      {getSortIcon("intent")}
+                    </div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
