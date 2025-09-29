@@ -103,10 +103,14 @@ serve(async (req) => {
 
     const keywordResults = keywordIdeasData.tasks[0].result || [];
     console.log(`Received ${keywordResults.length} keyword results`);
+    console.log('Sample result structure:', JSON.stringify(keywordResults[0], null, 2));
     
     // Process and categorize keywords
     const processedResults = keywordResults.map((item: any, index: number) => {
-      const keywordData = item.keyword_info || {};
+      console.log(`Processing item ${index}:`, JSON.stringify(item, null, 2));
+      
+      // DataForSEO Labs API returns data directly in the item, not in keyword_info
+      const keywordData = item;
       const searchVolume = keywordData.search_volume || 0;
       const cpc = keywordData.cpc || 0;
       
