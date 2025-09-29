@@ -135,14 +135,12 @@ const KeywordResults = () => {
       <section className="px-6 py-8">
         <div className="container mx-auto max-w-4xl">
           {keywordAnalyzed && results.length > 0 && (
-              <>
-                <KeywordResultsTable 
-                  results={results}
-                  isLoading={false}
-                  onExport={handleExport}
-                  seedKeyword={seedKeyword}
-                />
-              </>
+            <KeywordResultsTable 
+              results={results}
+              isLoading={false}
+              onExport={handleExport}
+              seedKeyword={seedKeyword}
+            />
           )}
           
           {!keywordAnalyzed && (

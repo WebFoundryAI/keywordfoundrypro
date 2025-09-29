@@ -123,50 +123,57 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword 
 
   return (
     <div className="w-full space-y-6">
-      {/* Seed Keyword Section */}
-      {seedKeyword && (
-        <Card className="bg-gradient-card shadow-card border-border/50">
-          <CardHeader>
-            <CardTitle>Seed Keyword: "{seedKeyword.keyword}"</CardTitle>
-            <CardDescription>
-              Core metrics for your primary keyword
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      {/* Seed Keyword Section - Always show if we have results */}
+      <Card className="bg-gradient-card shadow-card border-border/50 border-primary/20">
+        <CardHeader>
+          <CardTitle className="text-primary">
+            {seedKeyword ? `"${seedKeyword.keyword}"` : 'Original Keyword'}
+            <Badge variant="outline" className="ml-2 text-xs">SEED KEYWORD</Badge>
+          </CardTitle>
+          <CardDescription>
+            Core metrics for your primary keyword
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {seedKeyword ? (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-background/50 rounded-lg p-4 text-center">
+              <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
                 <div className="text-sm text-muted-foreground mb-1">Search Volume</div>
                 <div className="text-2xl font-bold text-success">{seedKeyword.searchVolume.toLocaleString()}</div>
               </div>
-              <div className="bg-background/50 rounded-lg p-4 text-center">
+              <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
                 <div className="text-sm text-muted-foreground mb-1">Difficulty</div>
-                <div className="text-2xl font-bold text-warning">{seedKeyword.difficulty}</div>
+                <div className={`text-2xl font-bold ${getDifficultyColor(seedKeyword.difficulty)}`}>{seedKeyword.difficulty}</div>
               </div>
-              <div className="bg-background/50 rounded-lg p-4 text-center">
+              <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
                 <div className="text-sm text-muted-foreground mb-1">CPC</div>
                 <div className="text-2xl font-bold text-primary">${seedKeyword.cpc.toFixed(2)}</div>
               </div>
-              <div className="bg-background/50 rounded-lg p-4 text-center">
+              <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
                 <div className="text-sm text-muted-foreground mb-1">Intent</div>
                 <div className="text-lg font-medium">
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className={`${getIntentColor(seedKeyword.intent)} text-xs`}>
                     {seedKeyword.intent}
                   </Badge>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-muted-foreground">Seed keyword metrics not available</div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Results Table */}
       <Card className="bg-gradient-card shadow-card border-border/50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl">Keyword Results</CardTitle>
+              <CardTitle className="text-xl">Related Keywords</CardTitle>
               <CardDescription>
-                {results.length} keywords found with comprehensive metrics
+                {results.length} additional keywords found with comprehensive metrics
               </CardDescription>
             </div>
             <div className="flex gap-2">
