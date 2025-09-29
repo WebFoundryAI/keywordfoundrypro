@@ -23,22 +23,45 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      // More robust redirect URL construction
+      const currentUrl = new URL(window.location.href);
+      const redirectUrl = `${currentUrl.protocol}//${currentUrl.host}/`;
+      
+      console.log('Attempting Google sign-in with redirect:', redirectUrl);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
 
       if (error) {
         console.error('Google sign-in error:', error);
+        
+        // More specific error handling
+        let errorMessage = "Failed to sign in with Google. Please try again.";
+        
+        if (error.message.includes('provider is not enabled')) {
+          errorMessage = "Google authentication is not configured. Please contact support.";
+        } else if (error.message.includes('Invalid redirect URL')) {
+          errorMessage = "Authentication configuration error. Please contact support.";
+        } else if (error.message.includes('network')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        }
+        
         toast({
           title: "Authentication Error",
-          description: error.message || "Failed to sign in with Google. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
+      } else {
+        console.log('OAuth redirect initiated successfully:', data);
       }
     } catch (error) {
       console.error('Unexpected error during Google sign-in:', error);

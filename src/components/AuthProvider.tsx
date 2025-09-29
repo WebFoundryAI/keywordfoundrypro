@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -39,7 +40,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+      } else {
+        console.log('Initial session:', session?.user?.id);
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -49,9 +55,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+        throw error;
+      }
+      console.log('Successfully signed out');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
