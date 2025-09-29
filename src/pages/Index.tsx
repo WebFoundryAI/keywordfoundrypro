@@ -44,7 +44,20 @@ const Index = () => {
       }
 
       if (data.success && data.results) {
-        setResults(data.results);
+        // Convert snake_case API response to camelCase for frontend
+        const convertedResults = data.results.map((result: any) => ({
+          keyword: result.keyword,
+          searchVolume: result.search_volume || 0,
+          cpc: result.cpc || 0,
+          intent: result.intent || 'informational',
+          difficulty: result.difficulty || 0,
+          suggestions: result.suggestions || [],
+          related: result.related_keywords || [],
+          clusterId: result.cluster_id,
+          metricsSource: result.metrics_source || 'dataforseo_labs'
+        }));
+        
+        setResults(convertedResults);
         toast({
           title: "Analysis Complete",
           description: `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`,
@@ -140,7 +153,7 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-16 px-6">
+      <section className="py-8 px-6">
         <div className="container mx-auto max-w-4xl text-center">
           <div className="inline-flex items-center px-3 py-1 mb-6 text-xs rounded-full bg-primary/10 text-primary border border-primary/20">
             <Zap className="w-3 h-3 mr-1" />
@@ -156,29 +169,29 @@ const Index = () => {
           </p>
           
           {/* Feature highlights */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <div className="glass rounded-xl p-6 text-center hover-lift">
-              <Database className="w-8 h-8 text-primary mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Real-time Data</h3>
-              <p className="text-sm text-muted-foreground">Live search volume and competition metrics</p>
+          <div className="grid md:grid-cols-3 gap-4 mb-8 max-w-3xl mx-auto">
+            <div className="glass rounded-lg p-4 text-center hover-lift">
+              <Database className="w-6 h-6 text-primary mx-auto mb-2" />
+              <h3 className="font-medium mb-1 text-sm">Real-time Data</h3>
+              <p className="text-xs text-muted-foreground">Live search volume metrics</p>
             </div>
-            <div className="glass rounded-xl p-6 text-center hover-lift">
-              <Target className="w-8 h-8 text-primary mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Intent Analysis</h3>
-              <p className="text-sm text-muted-foreground">Automated classification of search intent</p>
+            <div className="glass rounded-lg p-4 text-center hover-lift">
+              <Target className="w-6 h-6 text-primary mx-auto mb-2" />
+              <h3 className="font-medium mb-1 text-sm">Intent Analysis</h3>
+              <p className="text-xs text-muted-foreground">Automated search intent classification</p>
             </div>
-            <div className="glass rounded-xl p-6 text-center hover-lift">
-              <TrendingUp className="w-8 h-8 text-primary mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Difficulty Score</h3>
-              <p className="text-sm text-muted-foreground">Comprehensive ranking difficulty analysis</p>
+            <div className="glass rounded-lg p-4 text-center hover-lift">
+              <TrendingUp className="w-6 h-6 text-primary mx-auto mb-2" />
+              <h3 className="font-medium mb-1 text-sm">Difficulty Score</h3>
+              <p className="text-xs text-muted-foreground">Ranking difficulty analysis</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Research Tool */}
-      <section className="px-6 pb-16">
-        <div className="container mx-auto max-w-6xl space-y-8">
+      <section className="px-6 pb-8">
+        <div className="container mx-auto max-w-4xl space-y-6">
           <KeywordResearchForm 
             onSubmit={handleFormSubmit}
             isLoading={isLoading}
