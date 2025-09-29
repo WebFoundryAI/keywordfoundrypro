@@ -100,7 +100,7 @@ serve(async (req) => {
         searchVolume: item.search_volume || 0,
         cpc: item.cpc || 0,
         competition: item.competition || 0,
-        difficulty: item.competition_level || 0, // Use API competition_level directly
+        difficulty: convertCompetitionToDifficulty(item.competition_level, item.competition_index),
         intent: determineIntent(item.keyword),
         relevance: Math.round(Math.random() * 40 + 60) // Simple relevance score for now
       }))
@@ -144,6 +144,25 @@ serve(async (req) => {
     )
   }
 })
+
+function convertCompetitionToDifficulty(competition_level: string, competition_index: number): number {
+  // Use competition_index if available (0-100 scale)
+  if (competition_index !== null && competition_index !== undefined) {
+    return Math.round(competition_index)
+  }
+  
+  // Fallback to competition_level string conversion
+  switch (competition_level?.toUpperCase()) {
+    case 'HIGH':
+      return 80
+    case 'MEDIUM':
+      return 50
+    case 'LOW':
+      return 20
+    default:
+      return 0
+  }
+}
 
 function determineIntent(keyword: string): string {
   const lowerKeyword = keyword.toLowerCase()
