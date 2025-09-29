@@ -265,7 +265,7 @@ const RelatedKeywords = () => {
                           onClick={() => handleSort("relevance")}
                         >
                           <div className="flex items-center justify-end">
-                            Relevance
+                            Relevance Score
                             {getSortIcon("relevance")}
                           </div>
                         </TableHead>
@@ -284,7 +284,7 @@ const RelatedKeywords = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <span className={`font-bold ${getDifficultyColor(result.difficulty)}`}>
-                              {result.difficulty}
+                              {result.difficulty || 0}
                             </span>
                           </TableCell>
                           <TableCell className="text-right font-mono">
@@ -298,18 +298,8 @@ const RelatedKeywords = () => {
                               {result.intent}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <div className="w-12 bg-muted rounded-full h-2">
-                                <div 
-                                  className="bg-primary rounded-full h-2 transition-all"
-                                  style={{ width: `${result.relevance}%` }}
-                                />
-                              </div>
-                              <span className="text-xs text-muted-foreground w-8">
-                                {result.relevance}%
-                              </span>
-                            </div>
+                          <TableCell className="text-right font-mono">
+                            {result.relevance || 0}
                           </TableCell>
                         </TableRow>
                       ))}
