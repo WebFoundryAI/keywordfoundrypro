@@ -85,7 +85,7 @@ const Auth = () => {
               <Search className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">KeywordSpark</h1>
+              <h1 className="text-2xl font-bold">Keyword Foundry Pro</h1>
               <p className="text-sm text-muted-foreground">Professional SEO Research</p>
             </div>
           </div>
@@ -129,7 +129,7 @@ const Auth = () => {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Search className="w-5 h-5 text-primary-foreground" />
               </div>
-              <h1 className="text-xl font-bold">KeywordSpark</h1>
+              <h1 className="text-xl font-bold">Keyword Foundry Pro</h1>
             </div>
             <p className="text-sm text-muted-foreground">Professional SEO Research Tool</p>
           </div>

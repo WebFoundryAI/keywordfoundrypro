@@ -17,7 +17,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="dark" storageKey="keywordspark-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="keyword-foundry-pro-theme">
       <TooltipProvider>
         <AuthProvider>
           <Toaster />
