@@ -46,17 +46,26 @@ const Auth = () => {
         
         // More specific error handling
         let errorMessage = "Failed to sign in with Google. Please try again.";
+        let errorTitle = "Authentication Error";
         
-        if (error.message.includes('provider is not enabled')) {
-          errorMessage = "Google authentication is not configured. Please contact support.";
-        } else if (error.message.includes('Invalid redirect URL')) {
-          errorMessage = "Authentication configuration error. Please contact support.";
-        } else if (error.message.includes('network')) {
-          errorMessage = "Network error. Please check your connection and try again.";
+        if (error.message.includes('provider is not enabled') || error.message.includes('not enabled for this project')) {
+          errorMessage = "Google authentication is not enabled. Please ensure Google OAuth is configured in your Supabase project settings.";
+          errorTitle = "Configuration Required";
+        } else if (error.message.includes('Invalid redirect URL') || error.message.includes('redirect_to')) {
+          errorMessage = "Redirect URL configuration error. Please verify your domain is added to the allowed redirect URLs in Supabase Authentication settings.";
+          errorTitle = "Configuration Error";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your internet connection and try again.";
+          errorTitle = "Connection Error";
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "Request timed out. Please try again.";
+          errorTitle = "Timeout Error";
+        } else if (error.message) {
+          errorMessage = `${error.message}`;
         }
         
         toast({
-          title: "Authentication Error",
+          title: errorTitle,
           description: errorMessage,
           variant: "destructive",
         });

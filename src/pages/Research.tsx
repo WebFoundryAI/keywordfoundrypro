@@ -21,7 +21,22 @@ const Research = () => {
 
   const handleFormSubmit = async (formData: KeywordFormData) => {
     if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to perform keyword research.",
+        variant: "destructive",
+      });
       navigate('/auth');
+      return;
+    }
+
+    // Input validation
+    if (!formData.keyword || formData.keyword.trim().length < 2) {
+      toast({
+        title: "Invalid Keyword",
+        description: "Please enter a keyword with at least 2 characters.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -30,7 +45,7 @@ const Research = () => {
     try {
       const { data, error } = await supabase.functions.invoke('keyword-research', {
         body: {
-          keyword: formData.keyword,
+          keyword: formData.keyword.trim(),
           languageCode: formData.languageCode,
           locationCode: formData.locationCode,
           limit: formData.limit
@@ -38,51 +53,83 @@ const Research = () => {
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to analyze keywords');
+        console.error('Function invocation error:', error);
+        
+        // Provide specific error messages
+        let errorMessage = 'Failed to analyze keywords. Please try again.';
+        
+        if (error.message.includes('FunctionsRelayError')) {
+          errorMessage = 'API service temporarily unavailable. Please try again in a moment.';
+        } else if (error.message.includes('FunctionsFetchError')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('Unauthorized')) {
+          errorMessage = 'Session expired. Please sign in again.';
+          setTimeout(() => navigate('/auth'), 2000);
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      if (data.success && data.results) {
-        // Convert snake_case API response to camelCase for frontend
-        const convertedResults = data.results.map((result: any) => ({
-          keyword: result.keyword,
-          searchVolume: result.search_volume || 0,
-          cpc: result.cpc || 0,
-          intent: result.intent || 'informational',
-          difficulty: result.difficulty || 0,
-          suggestions: result.suggestions || [],
-          related: result.related_keywords || [],
-          clusterId: result.cluster_id,
-          metricsSource: result.metrics_source || 'dataforseo_labs'
-        }));
-        
-        // Separate seed keyword from other results
-        const seedKeywordResult = convertedResults.find(r => 
-          r.keyword.toLowerCase() === formData.keyword.toLowerCase()
-        );
-        const otherResults = convertedResults.filter(r => 
-          r.keyword.toLowerCase() !== formData.keyword.toLowerCase()
-        );
-        
-        // Store research ID for fetching from database
-        localStorage.setItem('currentResearchId', data.research_id);
-        localStorage.setItem('keywordAnalyzed', formData.keyword);
-        localStorage.setItem('lastKeyword', formData.keyword);
-        
-        toast({
-          title: "Analysis Complete",
-          description: `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`,
-        });
-        
-        // Navigate to results page
-        navigate('/keyword-results');
-      } else {
-        throw new Error(data.error || 'No results found');
+      // Check for API response errors
+      if (!data) {
+        throw new Error('No response received from server. Please try again.');
       }
+
+      if (!data.success) {
+        const errorMsg = data.error || 'Analysis failed. Please try again.';
+        throw new Error(errorMsg);
+      }
+
+      if (!data.results || data.results.length === 0) {
+        toast({
+          title: "No Results Found",
+          description: `No keyword data found for "${formData.keyword}". Try a different keyword.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Convert snake_case API response to camelCase for frontend
+      const convertedResults = data.results.map((result: any) => ({
+        keyword: result.keyword,
+        searchVolume: result.search_volume || 0,
+        cpc: result.cpc || 0,
+        intent: result.intent || 'informational',
+        difficulty: result.difficulty || 0,
+        suggestions: result.suggestions || [],
+        related: result.related_keywords || [],
+        clusterId: result.cluster_id,
+        metricsSource: result.metrics_source || 'dataforseo_labs'
+      }));
+      
+      // Separate seed keyword from other results
+      const seedKeywordResult = convertedResults.find(r => 
+        r.keyword.toLowerCase() === formData.keyword.toLowerCase()
+      );
+      const otherResults = convertedResults.filter(r => 
+        r.keyword.toLowerCase() !== formData.keyword.toLowerCase()
+      );
+      
+      // Store research ID for fetching from database
+      localStorage.setItem('currentResearchId', data.research_id);
+      localStorage.setItem('keywordAnalyzed', formData.keyword);
+      localStorage.setItem('lastKeyword', formData.keyword);
+      
+      toast({
+        title: "Analysis Complete",
+        description: `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`,
+      });
+      
+      // Navigate to results page
+      navigate('/keyword-results');
+      
     } catch (error) {
       console.error('Keyword research error:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to analyze keywords. Please try again.",
+        title: "Analysis Failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {

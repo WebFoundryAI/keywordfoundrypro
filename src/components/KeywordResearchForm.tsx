@@ -66,7 +66,20 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.keyword.trim()) return;
+    
+    // Validate keyword input
+    const trimmedKeyword = formData.keyword.trim();
+    if (!trimmedKeyword) {
+      return;
+    }
+    
+    if (trimmedKeyword.length < 2) {
+      return;
+    }
+    
+    if (trimmedKeyword.length > 200) {
+      return;
+    }
     
     // Clear previous results from all pages
     localStorage.removeItem('keywordResults');
