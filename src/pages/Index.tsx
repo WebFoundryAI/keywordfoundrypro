@@ -1,15 +1,13 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserMenu } from "@/components/UserMenu";
 import { useAuth } from "@/components/AuthProvider";
-import { Search, Zap, Target, TrendingUp, Database } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Search, Database, Target, TrendingUp, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-
-  // No need to redirect unauthenticated users on landing page
 
   if (loading) {
     return (
@@ -37,67 +35,108 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">Professional SEO Research</p>
               </div>
             </div>
-            {user ? (
-              <UserMenu />
-            ) : (
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
-                  Log In
-                </Button>
-                <Button size="sm" onClick={() => navigate('/auth')}>
-                  Sign Up
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              {user ? (
+                <UserMenu />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                    Log In
+                  </Button>
+                  <Button size="sm" onClick={() => navigate('/auth')}>
+                    Sign Up
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="py-8 px-6">
+      <section className="py-20 px-6">
         <div className="container mx-auto max-w-4xl text-center">
-          <div className="inline-flex items-center px-3 py-1 mb-6 text-xs rounded-full bg-primary/10 text-primary border border-primary/20">
-            <Zap className="w-3 h-3 mr-1" />
-            Advanced Keyword Intelligence
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 bg-gradient-primary bg-clip-text text-transparent">
-            Unlock SEO Potential with
-            <br />Data-Driven Insights
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight mb-4">
+            Keyword Foundry Pro
           </h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-            Professional-grade keyword research tool built for technical SEO professionals. 
-            Get comprehensive search volume, difficulty metrics, and intent analysis.
+          <p className="text-xl md:text-2xl font-semibold text-muted-foreground mb-6">
+            Advanced Keyword Intelligence for Technical SEO
           </p>
-          
-          {/* Feature highlights */}
-          <div className="grid md:grid-cols-3 gap-4 mb-8 max-w-3xl mx-auto">
-            <div className="glass rounded-lg p-4 text-center hover-lift">
-              <Database className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium mb-1 text-sm">Real-time Data</h3>
-              <p className="text-xs text-muted-foreground">Live search volume metrics</p>
+          <p className="text-base md:text-lg text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+            Unlock SEO potential with real-time, data-driven insights. A professional-grade keyword research platform built for technical SEO experts who demand accuracy and speed.
+          </p>
+          <Button
+            size="lg"
+            onClick={() => navigate(user ? '/research' : '/auth')}
+            className="px-8 py-6 text-base font-medium hover-lift"
+          >
+            Get Started Now
+          </Button>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 px-6 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
+                <Database className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">Real-time Data</h3>
+              <p className="text-sm text-muted-foreground">
+                Access live search volume and competition metrics.
+              </p>
             </div>
-            <div className="glass rounded-lg p-4 text-center hover-lift">
-              <Target className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium mb-1 text-sm">Intent Analysis</h3>
-              <p className="text-xs text-muted-foreground">Automated search intent classification</p>
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
+                <TrendingUp className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">Difficulty Score</h3>
+              <p className="text-sm text-muted-foreground">
+                Leverage advanced algorithms to measure true ranking difficulty.
+              </p>
             </div>
-            <div className="glass rounded-lg p-4 text-center hover-lift">
-              <TrendingUp className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium mb-1 text-sm">Difficulty Score</h3>
-              <p className="text-xs text-muted-foreground">Ranking difficulty analysis</p>
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
+                <Target className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">Intent Analysis</h3>
+              <p className="text-sm text-muted-foreground">
+                Automatically classify search intent to align content strategies.
+              </p>
+            </div>
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
+                <Lock className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">Secure Export & Storage</h3>
+              <p className="text-sm text-muted-foreground">
+                Save, manage, and export keyword data with complete confidence.
+              </p>
             </div>
           </div>
-          
-          {/* CTA Button */}
-          <div className="mt-8">
-            <Button
-              size="lg"
-              onClick={() => navigate(user ? '/research' : '/auth')}
-              className="bg-gradient-primary hover:opacity-90 text-primary-foreground px-8 py-3 rounded-lg font-medium shadow-elegant hover-lift"
-            >
-              {user ? 'Start Keyword Research' : 'Login to start KW research'}
-            </Button>
-          </div>
+        </div>
+      </section>
+
+      {/* Professional Credibility Section */}
+      <section className="py-20 px-6">
+        <div className="container mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">
+            Built for Professionals
+          </h2>
+          <p className="text-base md:text-lg text-muted-foreground mb-10 leading-relaxed">
+            Join thousands of SEO experts already using Keyword Foundry Pro to dominate search rankings with actionable insights.
+          </p>
+          <Button
+            size="lg"
+            variant="secondary"
+            onClick={() => navigate(user ? '/research' : '/auth')}
+            className="px-8 py-6 text-base font-medium hover-lift"
+          >
+            Start Your Research Today
+          </Button>
         </div>
       </section>
 
