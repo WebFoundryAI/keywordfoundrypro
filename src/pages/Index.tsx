@@ -37,7 +37,18 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">Professional SEO Research</p>
               </div>
             </div>
-            {user && <UserMenu />}
+            {user ? (
+              <UserMenu />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                  Log In
+                </Button>
+                <Button size="sm" onClick={() => navigate('/auth')}>
+                  Sign Up
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </header>
