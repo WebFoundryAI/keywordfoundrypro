@@ -2,6 +2,7 @@ import { Search } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { UserMenu } from "@/components/UserMenu";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   user?: any;
@@ -32,7 +33,18 @@ export const Header = ({ user }: HeaderProps) => {
           </div>
           <div className="flex items-center gap-4">
             <Navigation />
-            {user && <UserMenu />}
+            {user ? (
+              <UserMenu />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                  Log In
+                </Button>
+                <Button size="sm" onClick={() => navigate('/auth')}>
+                  Sign Up
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

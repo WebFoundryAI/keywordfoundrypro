@@ -81,10 +81,10 @@ const Index = () => {
           <div className="mt-8">
             <Button
               size="lg"
-              onClick={() => navigate('/research')}
+              onClick={() => navigate(user ? '/research' : '/auth')}
               className="bg-gradient-primary hover:opacity-90 text-primary-foreground px-8 py-3 rounded-lg font-medium shadow-elegant hover-lift"
             >
-              Start Keyword Research
+              {user ? 'Start Keyword Research' : 'Login to start KW research'}
             </Button>
           </div>
         </div>
