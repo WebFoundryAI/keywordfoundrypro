@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
@@ -65,7 +66,7 @@ const SerpAnalysis = () => {
     return parseInt(searchParams.get('location') || '2840');
   });
   const [limit, setLimit] = useState(() => {
-    return parseInt(searchParams.get('limit') || '50');
+    return parseInt(searchParams.get('limit') || '10');
   });
   
   const [results, setResults] = useState<SerpResult[]>(() => {
@@ -76,6 +77,7 @@ const SerpAnalysis = () => {
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -125,6 +127,10 @@ const SerpAnalysis = () => {
           title: "Analysis Complete",
           description: `Found ${data.total_results} organic results for "${keyword}" (Cost: $${data.estimated_cost})`,
         });
+        // Auto-scroll to results
+        setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       } else {
         throw new Error(data.error || 'No results found');
       }
@@ -228,17 +234,18 @@ const SerpAnalysis = () => {
                 <div className="space-y-2">
                   <Label htmlFor="limit" className="text-sm font-medium flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
-                    Results Limit
+                    Number of SERPs to Return
                   </Label>
                   <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
                     <SelectTrigger className="bg-background/50 border-border/50">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="10">10 keywords</SelectItem>
-                      <SelectItem value="25">25 keywords</SelectItem>
-                      <SelectItem value="50">50 keywords</SelectItem>
-                      <SelectItem value="100">100 keywords</SelectItem>
+                      <SelectItem value="10">10 results</SelectItem>
+                      <SelectItem value="20">20 results</SelectItem>
+                      <SelectItem value="30">30 results</SelectItem>
+                      <SelectItem value="40">40 results</SelectItem>
+                      <SelectItem value="50">50 results</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -276,52 +283,56 @@ const SerpAnalysis = () => {
 
           {/* Results */}
           {results.length > 0 && (
-            <div className="space-y-4">
+            <div ref={resultsRef} className="space-y-4">
               <h2 className="text-2xl font-bold">
                 SERP Results for "{keyword}"
               </h2>
-              {results.map((result) => (
-                <Card key={result.position} className="bg-gradient-card shadow-card border-border/50">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">
-                          {result.position}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Globe className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            {result.domain}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(result.url, '_blank')}
-                            className="ml-auto p-1 h-auto"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2 text-primary hover:underline">
-                          <a href={result.url} target="_blank" rel="noopener noreferrer">
-                            {result.title}
-                          </a>
-                        </h3>
-                        <p className="text-muted-foreground text-sm mb-2">
-                          {result.description}
-                        </p>
-                        {result.breadcrumb && (
-                          <div className="text-xs text-muted-foreground">
-                            {result.breadcrumb}
+              <ScrollArea className="h-[600px] rounded-md border border-border/50 p-4">
+                <div className="space-y-4">
+                  {results.map((result) => (
+                    <Card key={result.position} className="bg-gradient-card shadow-card border-border/50">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
+                            <span className="text-sm font-bold text-primary">
+                              {result.position}
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Globe className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                {result.domain}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(result.url, '_blank')}
+                                className="ml-auto p-1 h-auto"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <h3 className="text-lg font-semibold mb-2 text-primary hover:underline">
+                              <a href={result.url} target="_blank" rel="noopener noreferrer">
+                                {result.title}
+                              </a>
+                            </h3>
+                            <p className="text-muted-foreground text-sm mb-2">
+                              {result.description}
+                            </p>
+                            {result.breadcrumb && (
+                              <div className="text-xs text-muted-foreground">
+                                {result.breadcrumb}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
             </div>
           )}
         </div>
