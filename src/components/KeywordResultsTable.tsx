@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search, TrendingUp, DollarSign, Target, Filter, ChevronUp, ChevronDown } from "lucide-react";
+import { Download, Search, TrendingUp, DollarSign, Target, Filter, ChevronUp, ChevronDown, Plus, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface KeywordResult {
   keyword: string;
@@ -53,14 +54,50 @@ const formatNumber = (num: number) => {
   return num.toString();
 };
 
+type FilterField = "searchVolume" | "cpc" | "difficulty";
+type FilterOperator = "<" | ">" | "<=" | ">=";
+
+interface NumericFilter {
+  id: string;
+  field: FilterField;
+  operator: FilterOperator;
+  value: number;
+}
+
+const applyNumericFilter = (result: KeywordResult, filter: NumericFilter): boolean => {
+  const fieldValue = result[filter.field];
+  switch (filter.operator) {
+    case "<":
+      return fieldValue < filter.value;
+    case ">":
+      return fieldValue > filter.value;
+    case "<=":
+      return fieldValue <= filter.value;
+    case ">=":
+      return fieldValue >= filter.value;
+    default:
+      return true;
+  }
+};
+
 export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword, keywordAnalyzed }: KeywordResultsTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<keyof KeywordResult>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [numericFilters, setNumericFilters] = useState<NumericFilter[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const filteredResults = results.filter(result =>
-    result.keyword.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredResults = results.filter(result => {
+    // Apply keyword search
+    const matchesSearch = result.keyword.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Apply all numeric filters (AND logic)
+    const matchesNumericFilters = numericFilters.every(filter => 
+      applyNumericFilter(result, filter)
+    );
+    
+    return matchesSearch && matchesNumericFilters;
+  });
 
   const sortedResults = [...filteredResults].sort((a, b) => {
     const aValue = a[sortBy];
@@ -95,6 +132,36 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
         <ChevronDown className="w-4 h-4 inline ml-1" />;
     }
     return <ChevronUp className="w-4 h-4 inline ml-1 opacity-30" />;
+  };
+
+  const addFilter = () => {
+    setNumericFilters([
+      ...numericFilters,
+      {
+        id: Math.random().toString(36).substr(2, 9),
+        field: "searchVolume",
+        operator: ">",
+        value: 0
+      }
+    ]);
+  };
+
+  const removeFilter = (id: string) => {
+    setNumericFilters(numericFilters.filter(f => f.id !== id));
+  };
+
+  const updateFilter = (id: string, updates: Partial<NumericFilter>) => {
+    setNumericFilters(numericFilters.map(f => 
+      f.id === id ? { ...f, ...updates } : f
+    ));
+  };
+
+  const getFieldLabel = (field: FilterField) => {
+    switch (field) {
+      case "searchVolume": return "Volume";
+      case "cpc": return "CPC";
+      case "difficulty": return "Difficulty";
+    }
   };
 
   const totalVolume = results.reduce((sum, result) => sum + result.searchVolume, 0);
@@ -202,20 +269,127 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Filter keywords..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background/50"
-              />
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search keywords..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-background/50"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="bg-background/50"
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
+                {numericFilters.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {numericFilters.length}
+                  </Badge>
+                )}
+              </Button>
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {filteredResults.length} of {results.length}
+              </Badge>
             </div>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Filter className="w-3 h-3" />
-              {filteredResults.length} of {results.length}
-            </Badge>
+
+            {showFilters && (
+              <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Numeric Filters</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addFilter}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Filter
+                  </Button>
+                </div>
+
+                {numericFilters.length === 0 && (
+                  <div className="text-sm text-muted-foreground text-center py-4">
+                    No filters applied. Click "Add Filter" to start.
+                  </div>
+                )}
+
+                {numericFilters.map((filter) => (
+                  <div key={filter.id} className="flex items-center gap-2 bg-background/50 p-3 rounded-md">
+                    <Select
+                      value={filter.field}
+                      onValueChange={(value) => updateFilter(filter.id, { field: value as FilterField })}
+                    >
+                      <SelectTrigger className="w-[130px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="searchVolume">Volume</SelectItem>
+                        <SelectItem value="cpc">CPC</SelectItem>
+                        <SelectItem value="difficulty">Difficulty</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={filter.operator}
+                      onValueChange={(value) => updateFilter(filter.id, { operator: value as FilterOperator })}
+                    >
+                      <SelectTrigger className="w-[80px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value=">">{">"}</SelectItem>
+                        <SelectItem value="<">{"<"}</SelectItem>
+                        <SelectItem value=">=">{">="}</SelectItem>
+                        <SelectItem value="<=">{"<="}</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Input
+                      type="number"
+                      value={filter.value}
+                      onChange={(e) => updateFilter(filter.id, { value: parseFloat(e.target.value) || 0 })}
+                      placeholder="Value"
+                      className="w-[120px]"
+                    />
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFilter(filter.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {getFieldLabel(filter.field)} {filter.operator} {filter.value}
+                    </span>
+                  </div>
+                ))}
+
+                {numericFilters.length > 0 && (
+                  <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                    <span className="text-xs text-muted-foreground">
+                      All filters use AND logic
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setNumericFilters([])}
+                      className="text-xs"
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="rounded-lg border border-border/50 overflow-hidden">
