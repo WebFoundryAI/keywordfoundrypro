@@ -103,9 +103,68 @@ serve(async (req) => {
 
     // DataForSEO Labs returns results nested in items array
     const rawResults = keywordIdeasData.tasks[0].result || [];
-    const keywordResults = rawResults[0]?.items || [];
+    let keywordResults = rawResults[0]?.items || [];
     
-    console.log(`Received ${keywordResults.length} keyword results`);
+    console.log(`Received ${keywordResults.length} keyword results from initial request`);
+    console.log('Initial endpoint used: /v3/dataforseo_labs/google/keyword_ideas/live');
+    
+    // Check if seed keyword is in the results
+    const seedKeywordInResults = keywordResults.some((item: any) => 
+      (item.keyword || '').toLowerCase() === keyword.toLowerCase()
+    );
+    
+    let fallbackAttempted = false;
+    let fallbackSuccessful = false;
+    
+    // If seed keyword not found, perform ONE fallback lookup
+    if (!seedKeywordInResults && keywordResults.length > 0) {
+      console.log(`Seed keyword "${keyword}" not found in initial results. Attempting fallback lookup...`);
+      fallbackAttempted = true;
+      
+      try {
+        const fallbackPayload = [{
+          "keyword": keyword,
+          "location_code": locationCode,
+          "language_code": languageCode
+        }];
+        
+        const fallbackResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keywords_for_keywords/live', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(`${apiLogin}:${apiPassword}`)}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(fallbackPayload)
+        });
+        
+        const fallbackData = await fallbackResponse.json();
+        console.log('Fallback lookup response status:', fallbackResponse.status);
+        console.log('Fallback endpoint used: /v3/dataforseo_labs/google/keywords_for_keywords/live');
+        
+        if (fallbackResponse.ok && fallbackData.tasks?.[0]?.status_code === 20000) {
+          const fallbackResults = fallbackData.tasks[0].result?.[0]?.items || [];
+          const exactMatch = fallbackResults.find((item: any) => 
+            (item.keyword || '').toLowerCase() === keyword.toLowerCase()
+          );
+          
+          if (exactMatch) {
+            console.log(`Fallback successful: Found seed keyword with metrics`);
+            fallbackSuccessful = true;
+            // Add the exact match to the beginning of results
+            keywordResults = [exactMatch, ...keywordResults];
+          } else {
+            console.log(`Fallback completed but no exact match found for "${keyword}"`);
+          }
+        } else {
+          console.log(`Fallback request failed or returned error status`);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback lookup error (non-critical):', fallbackError);
+      }
+    } else if (seedKeywordInResults) {
+      console.log(`Seed keyword "${keyword}" found in initial results`);
+    }
+    
     console.log('Sample result structure:', JSON.stringify(keywordResults[0], null, 2));
     
     // Process and categorize keywords
@@ -151,6 +210,25 @@ serve(async (req) => {
       if (b.keyword.toLowerCase() === keyword.toLowerCase()) return 1;
       return 0;
     });
+    
+    // If seed keyword still not in results after fallback, add with safe defaults
+    const seedKeywordExists = processedResults.some((r: any) => 
+      r.keyword.toLowerCase() === keyword.toLowerCase()
+    );
+    
+    if (!seedKeywordExists) {
+      console.log(`Adding seed keyword "${keyword}" with safe defaults (no metrics available)`);
+      processedResults.unshift({
+        research_id: research.id,
+        keyword: keyword,
+        search_volume: 0,
+        cpc: 0,
+        intent: 'informational',
+        difficulty: null, // null will display as "—" in UI
+        cluster_id: 'cluster_seed',
+        metrics_source: 'dataforseo_labs'
+      });
+    }
 
     // Store results in database
     if (processedResults.length > 0) {
@@ -179,14 +257,27 @@ serve(async (req) => {
     }
 
     console.log(`Completed keyword research: ${processedResults.length} keywords found`);
-
-    return new Response(JSON.stringify({
+    
+    // Prepare response metadata
+    const responseMetadata: any = {
       success: true,
       research_id: research.id,
       results: processedResults,
       total_results: processedResults.length,
-      estimated_cost: estimatedCost.toFixed(2)
-    }), {
+      estimated_cost: estimatedCost.toFixed(2),
+      fallback_attempted: fallbackAttempted,
+      fallback_successful: fallbackSuccessful
+    };
+    
+    // Add note if seed keyword has no metrics
+    const seedResult = processedResults.find((r: any) => 
+      r.keyword.toLowerCase() === keyword.toLowerCase()
+    );
+    if (seedResult && seedResult.search_volume === 0 && seedResult.difficulty === null) {
+      responseMetadata.seed_keyword_note = 'No metrics returned by DataForSEO for this term.';
+    }
+
+    return new Response(JSON.stringify(responseMetadata), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

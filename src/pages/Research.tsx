@@ -94,10 +94,10 @@ const Research = () => {
       // Convert snake_case API response to camelCase for frontend
       const convertedResults = data.results.map((result: any) => ({
         keyword: result.keyword,
-        searchVolume: result.search_volume || 0,
-        cpc: result.cpc || 0,
+        searchVolume: result.search_volume ?? 0,
+        cpc: result.cpc ?? 0,
         intent: result.intent || 'informational',
-        difficulty: result.difficulty || 0,
+        difficulty: result.difficulty ?? null,
         suggestions: result.suggestions || [],
         related: result.related_keywords || [],
         clusterId: result.cluster_id,
@@ -117,9 +117,17 @@ const Research = () => {
       localStorage.setItem('keywordAnalyzed', formData.keyword);
       localStorage.setItem('lastKeyword', formData.keyword);
       
+      // Build success message
+      let description = `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`;
+      
+      // Add discreet note if seed keyword has no metrics
+      if (data.seed_keyword_note) {
+        description += `. Note: ${data.seed_keyword_note}`;
+      }
+      
       toast({
         title: "Analysis Complete",
-        description: `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`,
+        description: description,
       });
       
       // Navigate to results page
