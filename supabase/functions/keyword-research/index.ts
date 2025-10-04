@@ -108,9 +108,13 @@ serve(async (req) => {
     console.log(`Received ${keywordResults.length} keyword results from initial request`);
     console.log('Initial endpoint used: /v3/dataforseo_labs/google/keyword_ideas/live');
     
+    // Normalize whitespace for comparison (handles multi-word phrases correctly)
+    const normalizeKeyword = (kw: string) => kw.toLowerCase().replace(/\s+/g, ' ').trim();
+    const normalizedSeed = normalizeKeyword(keyword);
+    
     // Check if seed keyword is in the results
     const seedKeywordInResults = keywordResults.some((item: any) => 
-      (item.keyword || '').toLowerCase() === keyword.toLowerCase()
+      normalizeKeyword(item.keyword || '') === normalizedSeed
     );
     
     let fallbackAttempted = false;
@@ -147,7 +151,7 @@ serve(async (req) => {
         if (fallbackResponse.ok && fallbackData.tasks?.[0]?.status_code === 20000) {
           const fallbackResults = fallbackData.tasks[0].result?.[0]?.items || [];
           const exactMatch = fallbackResults.find((item: any) => 
-            (item.keyword || '').toLowerCase() === keyword.toLowerCase()
+            normalizeKeyword(item.keyword || '') === normalizedSeed
           );
           
           if (exactMatch) {
@@ -215,14 +219,14 @@ serve(async (req) => {
 
     // Ensure seed keyword appears first by sorting
     processedResults.sort((a: any, b: any) => {
-      if (a.keyword.toLowerCase() === keyword.toLowerCase()) return -1;
-      if (b.keyword.toLowerCase() === keyword.toLowerCase()) return 1;
+      if (normalizeKeyword(a.keyword) === normalizedSeed) return -1;
+      if (normalizeKeyword(b.keyword) === normalizedSeed) return 1;
       return 0;
     });
     
     // If seed keyword still not in results after fallback, add with safe defaults
     const seedKeywordExists = processedResults.some((r: any) => 
-      r.keyword.toLowerCase() === keyword.toLowerCase()
+      normalizeKeyword(r.keyword) === normalizedSeed
     );
     
     if (!seedKeywordExists) {
@@ -280,7 +284,7 @@ serve(async (req) => {
     
     // Add note if seed keyword has no metrics (0 is valid data, null means truly missing)
     const seedResult = processedResults.find((r: any) => 
-      r.keyword.toLowerCase() === keyword.toLowerCase()
+      normalizeKeyword(r.keyword) === normalizedSeed
     );
     if (seedResult && seedResult.search_volume === 0 && seedResult.cpc === 0 && seedResult.difficulty === null) {
       responseMetadata.seed_keyword_note = 'No metrics returned by DataForSEO for this term.';

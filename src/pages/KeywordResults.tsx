@@ -58,12 +58,16 @@ const KeywordResults = () => {
             metricsSource: result.metrics_source || 'dataforseo_labs'
           }));
           
+          // Normalize whitespace for comparison (handles "survival bushcraft" vs "survival  bushcraft")
+          const normalizeKeyword = (kw: string) => kw.toLowerCase().replace(/\s+/g, ' ').trim();
+          const normalizedStored = normalizeKeyword(storedKeywordAnalyzed);
+          
           // Separate seed keyword from other results
           const seedKeywordResult = convertedResults.find(r => 
-            r.keyword.toLowerCase() === storedKeywordAnalyzed.toLowerCase()
+            normalizeKeyword(r.keyword) === normalizedStored
           );
           const otherResults = convertedResults.filter(r => 
-            r.keyword.toLowerCase() !== storedKeywordAnalyzed.toLowerCase()
+            normalizeKeyword(r.keyword) !== normalizedStored
           );
           
           // Always create a seed keyword, even if not found in results
