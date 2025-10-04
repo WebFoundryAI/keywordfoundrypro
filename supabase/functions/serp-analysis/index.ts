@@ -20,6 +20,7 @@ interface SerpRequest {
   keyword: string;
   languageCode: string;
   locationCode: number;
+  limit: number;
 }
 
 serve(async (req) => {
@@ -42,17 +43,21 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { keyword, languageCode, locationCode }: SerpRequest = await req.json();
+    const { keyword, languageCode, locationCode, limit }: SerpRequest = await req.json();
 
-    console.log(`Starting SERP analysis for user ${user.id}: ${keyword}`);
+    console.log(`Starting SERP analysis for user ${user.id}: ${keyword} (limit: ${limit})`);
 
+    // Calculate number of SERPs needed (1 SERP = 10 results)
+    const serpsNeeded = Math.ceil(limit / 10);
+    
     // Prepare API request for SERP data
     const apiPayload = [{
       "keyword": keyword,
       "location_code": locationCode,
       "language_code": languageCode,
       "device": "desktop",
-      "os": "windows"
+      "os": "windows",
+      "depth": serpsNeeded * 10  // Request enough depth to get all pages
     }];
 
     console.log('SERP API Payload:', JSON.stringify(apiPayload, null, 2));
@@ -87,7 +92,7 @@ serve(async (req) => {
     
     console.log(`Received ${serpResults.length} SERP results`);
     
-    // Filter and process top 10 organic results
+    // Filter and process organic results up to the requested limit
     const organicResults = serpResults
       .filter((item: any) => 
         item.type === 'organic' && 
@@ -95,7 +100,7 @@ serve(async (req) => {
         !item.is_featured_snippet &&
         !item.is_malicious
       )
-      .slice(0, 10)
+      .slice(0, limit)
       .map((item: any, index: number) => ({
         position: index + 1,
         title: item.title || '',
@@ -113,8 +118,13 @@ serve(async (req) => {
 
     console.log(`Processed ${organicResults.length} organic SERP results`);
 
-    // Calculate estimated cost (SERP requests are typically $0.002 each)
-    const estimatedCost = 0.002;
+    // Calculate estimated cost based on DataForSEO Live Mode pricing (as of Oct 2, 2025)
+    // Google Organic SERP API Live Mode: $0.002 for first SERP, $0.0015 for each additional SERP
+    // 1 SERP = 10 search results
+    const actualSerpsUsed = Math.ceil(organicResults.length / 10);
+    const estimatedCost = actualSerpsUsed === 0 ? 0 : 
+                         actualSerpsUsed === 1 ? 0.002 : 
+                         0.002 + ((actualSerpsUsed - 1) * 0.0015);
 
     // Store SERP results as a special research record (optional - you can modify this based on needs)
     const { data: research, error: researchError } = await supabase

@@ -253,10 +253,18 @@ const SerpAnalysis = () => {
                 <div className="bg-muted/30 rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Estimated Cost:</span>
-                    <span className="text-primary font-bold">${(Math.ceil(limit / 100) * 0.01).toFixed(2)}</span>
+                    <span className="text-primary font-bold">
+                      ${(() => {
+                        const serpsNeeded = Math.ceil(limit / 10);
+                        const cost = serpsNeeded === 0 ? 0 : 
+                                   serpsNeeded === 1 ? 0.002 : 
+                                   0.002 + ((serpsNeeded - 1) * 0.0015);
+                        return cost.toFixed(3);
+                      })()}
+                    </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Based on API usage pricing. Actual cost may vary.
+                    Based on DataForSEO Live Mode pricing: $0.002 for first SERP (10 results), $0.0015 for each additional SERP.
                   </div>
                 </div>
 
