@@ -116,19 +116,22 @@ serve(async (req) => {
     let fallbackAttempted = false;
     let fallbackSuccessful = false;
     
-    // If seed keyword not found, perform ONE fallback lookup
+    // If seed keyword not found, perform ONE fallback lookup using keyword_overview endpoint
     if (!seedKeywordInResults && keywordResults.length > 0) {
       console.log(`Seed keyword "${keyword}" not found in initial results. Attempting fallback lookup...`);
       fallbackAttempted = true;
       
       try {
+        // Use keyword_overview endpoint with SAME parameters as main request for consistency
         const fallbackPayload = [{
-          "keyword": keyword,
+          "keywords": [keyword],  // keyword_overview expects keywords array
           "location_code": locationCode,
-          "language_code": languageCode
+          "language_code": languageCode,
+          "include_serp_info": false,
+          "include_clickstream_data": false
         }];
         
-        const fallbackResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keywords_for_keywords/live', {
+        const fallbackResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_overview/live', {
           method: 'POST',
           headers: {
             'Authorization': `Basic ${btoa(`${apiLogin}:${apiPassword}`)}`,
@@ -139,7 +142,7 @@ serve(async (req) => {
         
         const fallbackData = await fallbackResponse.json();
         console.log('Fallback lookup response status:', fallbackResponse.status);
-        console.log('Fallback endpoint used: /v3/dataforseo_labs/google/keywords_for_keywords/live');
+        console.log('Fallback endpoint used: /v3/dataforseo_labs/google/keyword_overview/live');
         
         if (fallbackResponse.ok && fallbackData.tasks?.[0]?.status_code === 20000) {
           const fallbackResults = fallbackData.tasks[0].result?.[0]?.items || [];
