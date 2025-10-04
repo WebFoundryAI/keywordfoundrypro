@@ -75,10 +75,14 @@ const KeywordResults = () => {
             difficulty: null,
             suggestions: [],
             related: [],
-            metricsSource: 'dataforseo_labs'
+            metricsSource: 'dataforseo_labs',
+            isSeedKeyword: true
           };
           
-          setResults(otherResults);
+          // Include seed keyword as first row in results
+          const allResults = [{ ...finalSeedKeyword, isSeedKeyword: true }, ...otherResults];
+          
+          setResults(allResults);
           setSeedKeyword(finalSeedKeyword);
           setKeywordAnalyzed(storedKeywordAnalyzed);
           

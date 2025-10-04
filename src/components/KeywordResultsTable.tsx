@@ -17,6 +17,7 @@ export interface KeywordResult {
   related: string[];
   clusterId?: string;
   metricsSource: string;
+  isSeedKeyword?: boolean;
 }
 
 interface KeywordResultsTableProps {
@@ -221,57 +222,14 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
 
   return (
     <div className="w-full space-y-6">
-      {/* Seed Keyword Section - Always show if we have results */}
-      <Card className="bg-gradient-card shadow-card border-border/50 border-primary/20">
-        <CardHeader>
-          <CardTitle className="text-primary">
-            {seedKeyword ? `"${seedKeyword.keyword}"` : keywordAnalyzed ? `"${keywordAnalyzed}"` : 'Original Keyword'}
-            <Badge variant="outline" className="ml-2 text-xs">SEED KEYWORD</Badge>
-          </CardTitle>
-          <CardDescription>
-            Core metrics for your primary keyword
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
-              <div className="text-sm text-muted-foreground mb-1">Search Volume</div>
-              <div className="text-2xl font-bold text-success">
-                {seedKeyword ? seedKeyword.searchVolume.toLocaleString() : '0'}
-              </div>
-            </div>
-            <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
-              <div className="text-sm text-muted-foreground mb-1">Difficulty</div>
-              <div className={`text-2xl font-bold ${getDifficultyColor(seedKeyword?.difficulty ?? null)}`}>
-                {seedKeyword ? formatDifficulty(seedKeyword.difficulty) : '—'}
-              </div>
-            </div>
-            <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
-              <div className="text-sm text-muted-foreground mb-1">CPC</div>
-              <div className="text-2xl font-bold text-primary">
-                ${seedKeyword ? seedKeyword.cpc.toFixed(2) : '0.00'}
-              </div>
-            </div>
-            <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
-              <div className="text-sm text-muted-foreground mb-1">Intent</div>
-              <div className="text-lg font-medium">
-                <Badge variant="outline" className={`${getIntentColor(seedKeyword?.intent ?? 'informational')} text-xs`}>
-                  {seedKeyword?.intent ?? 'informational'}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Results Table */}
       <Card className="bg-gradient-card shadow-card border-border/50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl">Related Keywords</CardTitle>
+              <CardTitle className="text-xl">Keyword Results</CardTitle>
               <CardDescription>
-                {results.length} additional keywords found with comprehensive metrics
+                {results.length} keywords found with comprehensive metrics
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -509,8 +467,13 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                 {sortedResults.map((result, index) => (
                   <TableRow key={index} className="hover:bg-muted/20 transition-smooth">
                     <TableCell className="font-medium max-w-xs">
-                      <div className="truncate" title={result.keyword}>
-                        {result.keyword}
+                      <div className="flex items-center gap-2">
+                        <div className="truncate" title={result.keyword}>
+                          {result.keyword}
+                        </div>
+                        {result.isSeedKeyword && (
+                          <Badge variant="outline" className="text-xs shrink-0">SEED</Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-mono">
