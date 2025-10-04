@@ -48,10 +48,10 @@ const KeywordResults = () => {
           // Convert to frontend format
           const convertedResults = keywordResults.map(result => ({
             keyword: result.keyword,
-            searchVolume: result.search_volume || 0,
-            cpc: result.cpc || 0,
+            searchVolume: result.search_volume ?? 0,
+            cpc: result.cpc ?? 0,
             intent: result.intent || 'informational',
-            difficulty: result.difficulty || 0,
+            difficulty: result.difficulty ?? null,
             suggestions: result.suggestions || [],
             related: result.related_keywords || [],
             clusterId: result.cluster_id,
@@ -66,8 +66,20 @@ const KeywordResults = () => {
             r.keyword.toLowerCase() !== storedKeywordAnalyzed.toLowerCase()
           );
           
+          // Always create a seed keyword, even if not found in results
+          const finalSeedKeyword = seedKeywordResult || {
+            keyword: storedKeywordAnalyzed,
+            searchVolume: 0,
+            cpc: 0,
+            intent: 'informational',
+            difficulty: null,
+            suggestions: [],
+            related: [],
+            metricsSource: 'dataforseo_labs'
+          };
+          
           setResults(otherResults);
-          setSeedKeyword(seedKeywordResult || null);
+          setSeedKeyword(finalSeedKeyword);
           setKeywordAnalyzed(storedKeywordAnalyzed);
           
         } catch (error) {

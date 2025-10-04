@@ -12,7 +12,7 @@ export interface KeywordResult {
   searchVolume: number;
   cpc: number;
   intent: string;
-  difficulty: number;
+  difficulty: number | null;
   suggestions: string[];
   related: string[];
   clusterId?: string;
@@ -42,10 +42,15 @@ const getIntentColor = (intent: string) => {
   }
 };
 
-const getDifficultyColor = (difficulty: number) => {
+const getDifficultyColor = (difficulty: number | null) => {
+  if (difficulty === null) return 'text-muted-foreground';
   if (difficulty < 30) return 'text-success';
   if (difficulty < 40) return 'text-warning';
   return 'text-destructive';
+};
+
+const formatDifficulty = (difficulty: number | null) => {
+  return difficulty === null ? '—' : difficulty.toString();
 };
 
 const formatNumber = (num: number) => {
@@ -66,6 +71,10 @@ interface NumericFilter {
 
 const applyNumericFilter = (result: KeywordResult, filter: NumericFilter): boolean => {
   const fieldValue = result[filter.field];
+  
+  // Skip filtering if value is null (only applies to difficulty)
+  if (fieldValue === null) return false;
+  
   switch (filter.operator) {
     case "<":
       return fieldValue < filter.value;
@@ -166,7 +175,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
 
   const totalVolume = results.reduce((sum, result) => sum + result.searchVolume, 0);
   const avgDifficulty = results.length > 0 
-    ? Math.round(results.reduce((sum, result) => sum + result.difficulty, 0) / results.length)
+    ? Math.round(results.reduce((sum, result) => sum + (result.difficulty ?? 0), 0) / results.length)
     : 0;
   const avgCpc = results.length > 0
     ? results.reduce((sum, result) => sum + result.cpc, 0) / results.length
@@ -203,36 +212,34 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {seedKeyword ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
-                <div className="text-sm text-muted-foreground mb-1">Search Volume</div>
-                <div className="text-2xl font-bold text-success">{seedKeyword.searchVolume.toLocaleString()}</div>
-              </div>
-              <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
-                <div className="text-sm text-muted-foreground mb-1">Difficulty</div>
-                <div className={`text-2xl font-bold ${getDifficultyColor(seedKeyword.difficulty)}`}>{seedKeyword.difficulty}</div>
-              </div>
-              <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
-                <div className="text-sm text-muted-foreground mb-1">CPC</div>
-                <div className="text-2xl font-bold text-primary">${seedKeyword.cpc.toFixed(2)}</div>
-              </div>
-              <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
-                <div className="text-sm text-muted-foreground mb-1">Intent</div>
-                <div className="text-lg font-medium">
-                  <Badge variant="outline" className={`${getIntentColor(seedKeyword.intent)} text-xs`}>
-                    {seedKeyword.intent}
-                  </Badge>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
+              <div className="text-sm text-muted-foreground mb-1">Search Volume</div>
+              <div className="text-2xl font-bold text-success">
+                {seedKeyword ? seedKeyword.searchVolume.toLocaleString() : '0'}
               </div>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-muted-foreground">
-                {keywordAnalyzed ? `Metrics for "${keywordAnalyzed}" not available in results` : 'Seed keyword metrics not available'}
+            <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
+              <div className="text-sm text-muted-foreground mb-1">Difficulty</div>
+              <div className={`text-2xl font-bold ${getDifficultyColor(seedKeyword?.difficulty ?? null)}`}>
+                {seedKeyword ? formatDifficulty(seedKeyword.difficulty) : '—'}
               </div>
             </div>
-          )}
+            <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
+              <div className="text-sm text-muted-foreground mb-1">CPC</div>
+              <div className="text-2xl font-bold text-primary">
+                ${seedKeyword ? seedKeyword.cpc.toFixed(2) : '0.00'}
+              </div>
+            </div>
+            <div className="bg-background/50 rounded-lg p-4 text-center border border-border/30">
+              <div className="text-sm text-muted-foreground mb-1">Intent</div>
+              <div className="text-lg font-medium">
+                <Badge variant="outline" className={`${getIntentColor(seedKeyword?.intent ?? 'informational')} text-xs`}>
+                  {seedKeyword?.intent ?? 'informational'}
+                </Badge>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -456,7 +463,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                     </TableCell>
                     <TableCell className="text-right">
                       <span className={`font-bold ${getDifficultyColor(result.difficulty)}`}>
-                        {result.difficulty}
+                        {formatDifficulty(result.difficulty)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-mono">
