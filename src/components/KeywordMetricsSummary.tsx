@@ -1,12 +1,13 @@
 import { Search, TrendingUp, Target, DollarSign } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 
 interface KeywordMetricsSummaryProps {
   keyword: string;
   totalKeywords: number;
-  totalVolume: number;
-  avgDifficulty: number;
-  avgCpc: number;
+  totalVolume: number | null;
+  avgDifficulty: number | null;
+  avgCpc: number | null;
 }
 
 export const KeywordMetricsSummary = ({
@@ -16,12 +17,6 @@ export const KeywordMetricsSummary = ({
   avgDifficulty,
   avgCpc
 }: KeywordMetricsSummaryProps) => {
-  const formatVolume = (volume: number) => {
-    if (volume >= 1000000) return `${(volume / 1000000).toFixed(1)}M`;
-    if (volume >= 1000) return `${(volume / 1000).toFixed(1)}K`;
-    return volume.toString();
-  };
-
   const metrics = [
     {
       label: "Total Keywords",
@@ -32,21 +27,21 @@ export const KeywordMetricsSummary = ({
     },
     {
       label: "Total Volume",
-      value: formatVolume(totalVolume),
+      value: formatNumber(totalVolume),
       icon: TrendingUp,
       color: "text-success",
       bgColor: "bg-success/10"
     },
     {
       label: "Avg Difficulty",
-      value: Math.round(avgDifficulty).toString(),
+      value: avgDifficulty === null || avgDifficulty === undefined ? "—" : Math.round(avgDifficulty).toString(),
       icon: Target,
       color: "text-warning",
       bgColor: "bg-warning/10"
     },
     {
       label: "Avg CPC",
-      value: `$${avgCpc.toFixed(2)}`,
+      value: formatCurrency(avgCpc),
       icon: DollarSign,
       color: "text-accent",
       bgColor: "bg-accent/10"

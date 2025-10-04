@@ -122,10 +122,10 @@ const KeywordResults = () => {
         headers.join(','),
         ...results.map(r => [
           `"${r.keyword}"`,
-          r.searchVolume !== null ? r.searchVolume : '—',
-          r.cpc !== null ? r.cpc : '—',
+          r.searchVolume === null || r.searchVolume === undefined ? '—' : r.searchVolume,
+          r.cpc === null || r.cpc === undefined ? '—' : r.cpc,
           r.intent,
-          r.difficulty !== null ? r.difficulty : '—'
+          r.difficulty === null || r.difficulty === undefined ? '—' : r.difficulty
         ].join(','))
       ];
       content = csvRows.join('\n');

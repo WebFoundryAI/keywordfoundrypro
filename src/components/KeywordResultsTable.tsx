@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, Search, TrendingUp, DollarSign, Target, Filter, ChevronUp, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
 
 export interface KeywordResult {
   keyword: string;
@@ -41,24 +42,6 @@ const getIntentColor = (intent: string) => {
     default:
       return 'bg-muted/20 text-muted-foreground border-muted/30';
   }
-};
-
-const getDifficultyColor = (difficulty: number | null) => {
-  if (difficulty === null) return 'text-muted-foreground';
-  if (difficulty < 30) return 'text-success';
-  if (difficulty < 40) return 'text-warning';
-  return 'text-destructive';
-};
-
-const formatDifficulty = (difficulty: number | null) => {
-  return difficulty === null ? '—' : difficulty.toString();
-};
-
-const formatNumber = (num: number | null) => {
-  if (num === null) return '—';
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
 };
 
 type FilterField = "searchVolume" | "cpc" | "difficulty";
@@ -491,7 +474,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      {result.cpc !== null ? `$${result.cpc.toFixed(2)}` : '—'}
+                      {formatCurrency(result.cpc)}
                     </TableCell>
                     <TableCell>
                       <Badge 

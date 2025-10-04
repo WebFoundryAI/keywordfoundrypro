@@ -12,14 +12,15 @@ import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap } from "lucide-react";
+import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
 
 interface RelatedKeyword {
   keyword: string;
-  searchVolume: number;
-  cpc: number;
+  searchVolume: number | null;
+  cpc: number | null;
   intent: string;
-  difficulty: number;
-  relevance: number;
+  difficulty: number | null;
+  relevance: number | null;
 }
 
 const LANGUAGE_OPTIONS = [
@@ -157,21 +158,14 @@ const RelatedKeywords = () => {
     }
   };
 
-  const getDifficultyColor = (difficulty: number) => {
-    if (difficulty < 30) return 'text-success';
-    if (difficulty < 40) return 'text-warning';
-    return 'text-destructive';
-  };
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
-  };
-
   const sortedResults = [...results].sort((a, b) => {
     const aValue = a[sortBy];
     const bValue = b[sortBy];
+    
+    // Handle null values - push them to the end
+    if (aValue === null && bValue === null) return 0;
+    if (aValue === null) return 1;
+    if (bValue === null) return -1;
     
     if (typeof aValue === "string" && typeof bValue === "string") {
       return sortOrder === "asc" 
@@ -421,11 +415,11 @@ const RelatedKeywords = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <span className={`font-bold ${getDifficultyColor(result.difficulty)}`}>
-                              {result.difficulty || 0}
+                              {formatDifficulty(result.difficulty)}
                             </span>
                           </TableCell>
                           <TableCell className="text-right font-mono">
-                            ${result.cpc.toFixed(2)}
+                            {formatCurrency(result.cpc)}
                           </TableCell>
                           <TableCell>
                             <Badge 
