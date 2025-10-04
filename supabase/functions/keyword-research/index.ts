@@ -172,10 +172,12 @@ serve(async (req) => {
       // Extract data from the correct structure
       const keywordData = item.keyword_info || {};
       const keywordText = item.keyword || keyword;
-      const searchVolume = keywordData.search_volume || 0;
-      const cpc = keywordData.cpc || 0;
-      const competition = keywordData.competition || 0;
-      const keywordDifficulty = item.keyword_properties?.keyword_difficulty || 0;
+      
+      // Use ?? null to preserve 0 values from API, only default null/undefined
+      const searchVolume = keywordData.search_volume ?? null;
+      const cpc = keywordData.cpc ?? null;
+      const competition = keywordData.competition ?? 0;
+      const keywordDifficulty = item.keyword_properties?.keyword_difficulty ?? null;
       
       // Determine intent based on keyword patterns
       let intent = 'informational';
@@ -190,7 +192,11 @@ serve(async (req) => {
       }
 
       // Use DataForSEO's keyword difficulty if available, otherwise calculate from competition
-      const difficulty = keywordDifficulty || Math.min(100, Math.floor(competition * 100 + (searchVolume > 10000 ? 20 : 0)));
+      // Only calculate if we have valid search volume, otherwise keep null
+      let difficulty = keywordDifficulty;
+      if (difficulty === null && searchVolume !== null) {
+        difficulty = Math.min(100, Math.floor(competition * 100 + (searchVolume > 10000 ? 20 : 0)));
+      }
 
       return {
         research_id: research.id,
@@ -221,8 +227,8 @@ serve(async (req) => {
       processedResults.unshift({
         research_id: research.id,
         keyword: keyword,
-        search_volume: 0,
-        cpc: 0,
+        search_volume: null, // null means no data available
+        cpc: null, // null means no data available
         intent: 'informational',
         difficulty: null, // null will display as "—" in UI
         cluster_id: 'cluster_seed',
@@ -269,11 +275,11 @@ serve(async (req) => {
       fallback_successful: fallbackSuccessful
     };
     
-    // Add note if seed keyword has no metrics
+    // Add note if seed keyword has no metrics (null means no data, 0 is valid)
     const seedResult = processedResults.find((r: any) => 
       r.keyword.toLowerCase() === keyword.toLowerCase()
     );
-    if (seedResult && seedResult.search_volume === 0 && seedResult.difficulty === null) {
+    if (seedResult && seedResult.search_volume === null && seedResult.difficulty === null) {
       responseMetadata.seed_keyword_note = 'No metrics returned by DataForSEO for this term.';
     }
 

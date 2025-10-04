@@ -48,8 +48,8 @@ const KeywordResults = () => {
           // Convert to frontend format
           const convertedResults = keywordResults.map(result => ({
             keyword: result.keyword,
-            searchVolume: result.search_volume ?? 0,
-            cpc: result.cpc ?? 0,
+            searchVolume: result.search_volume ?? null,
+            cpc: result.cpc ?? null,
             intent: result.intent || 'informational',
             difficulty: result.difficulty ?? null,
             suggestions: result.suggestions || [],
@@ -69,8 +69,8 @@ const KeywordResults = () => {
           // Always create a seed keyword, even if not found in results
           const finalSeedKeyword = seedKeywordResult || {
             keyword: storedKeywordAnalyzed,
-            searchVolume: 0,
-            cpc: 0,
+            searchVolume: null,
+            cpc: null,
             intent: 'informational',
             difficulty: null,
             suggestions: [],
@@ -122,10 +122,10 @@ const KeywordResults = () => {
         headers.join(','),
         ...results.map(r => [
           `"${r.keyword}"`,
-          r.searchVolume,
-          r.cpc,
+          r.searchVolume !== null ? r.searchVolume : '—',
+          r.cpc !== null ? r.cpc : '—',
           r.intent,
-          r.difficulty
+          r.difficulty !== null ? r.difficulty : '—'
         ].join(','))
       ];
       content = csvRows.join('\n');

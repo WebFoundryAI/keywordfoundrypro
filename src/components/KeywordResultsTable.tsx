@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export interface KeywordResult {
   keyword: string;
-  searchVolume: number;
-  cpc: number;
+  searchVolume: number | null;
+  cpc: number | null;
   intent: string;
   difficulty: number | null;
   suggestions: string[];
@@ -54,7 +54,8 @@ const formatDifficulty = (difficulty: number | null) => {
   return difficulty === null ? '—' : difficulty.toString();
 };
 
-const formatNumber = (num: number) => {
+const formatNumber = (num: number | null) => {
+  if (num === null) return '—';
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
   if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
   return num.toString();
@@ -73,7 +74,7 @@ interface NumericFilter {
 const applyNumericFilter = (result: KeywordResult, filter: NumericFilter): boolean => {
   const fieldValue = result[filter.field];
   
-  // Skip filtering if value is null (only applies to difficulty)
+  // Skip filtering if value is null (no data available from API)
   if (fieldValue === null) return false;
   
   switch (filter.operator) {
@@ -140,6 +141,11 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
     const aValue = a[sortBy];
     const bValue = b[sortBy];
     
+    // Handle null values - push them to the end
+    if (aValue === null && bValue === null) return 0;
+    if (aValue === null) return 1;
+    if (bValue === null) return -1;
+    
     if (typeof aValue === "string" && typeof bValue === "string") {
       return sortOrder === "asc" 
         ? aValue.localeCompare(bValue)
@@ -195,12 +201,12 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
     return [volumeFilter, cpcFilter, difficultyFilter].filter(f => f.enabled).length;
   };
 
-  const totalVolume = results.reduce((sum, result) => sum + result.searchVolume, 0);
+  const totalVolume = results.reduce((sum, result) => sum + (result.searchVolume ?? 0), 0);
   const avgDifficulty = results.length > 0 
     ? Math.round(results.reduce((sum, result) => sum + (result.difficulty ?? 0), 0) / results.length)
     : 0;
   const avgCpc = results.length > 0
-    ? results.reduce((sum, result) => sum + result.cpc, 0) / results.length
+    ? results.reduce((sum, result) => sum + (result.cpc ?? 0), 0) / results.length
     : 0;
 
   if (isLoading) {
@@ -485,7 +491,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      ${result.cpc.toFixed(2)}
+                      {result.cpc !== null ? `$${result.cpc.toFixed(2)}` : '—'}
                     </TableCell>
                     <TableCell>
                       <Badge 

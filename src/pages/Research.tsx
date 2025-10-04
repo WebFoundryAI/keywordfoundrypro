@@ -94,8 +94,8 @@ const Research = () => {
       // Convert snake_case API response to camelCase for frontend
       const convertedResults = data.results.map((result: any) => ({
         keyword: result.keyword,
-        searchVolume: result.search_volume ?? 0,
-        cpc: result.cpc ?? 0,
+        searchVolume: result.search_volume ?? null,
+        cpc: result.cpc ?? null,
         intent: result.intent || 'informational',
         difficulty: result.difficulty ?? null,
         suggestions: result.suggestions || [],
