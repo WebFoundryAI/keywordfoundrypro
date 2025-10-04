@@ -54,26 +54,57 @@ interface NumericFilter {
   enabled: boolean;
 }
 
+// Pure function: apply a single numeric filter to a keyword result
 const applyNumericFilter = (result: KeywordResult, filter: NumericFilter): boolean => {
   const fieldValue = result[filter.field];
   
-  // Skip filtering if value is null (no data available from API)
-  if (fieldValue === null) return false;
+  // If field value is null/undefined (missing data), exclude this row when filter is active
+  if (fieldValue === null || fieldValue === undefined) return false;
   
+  // Coerce to number and validate
+  const numValue = typeof fieldValue === 'number' ? fieldValue : parseFloat(String(fieldValue));
+  if (isNaN(numValue)) return false;
+  
+  const targetValue = typeof filter.value === 'number' ? filter.value : parseFloat(String(filter.value));
+  if (isNaN(targetValue)) return true; // Ignore invalid filter values
+  
+  // Apply comparator (0 is a valid number)
   switch (filter.operator) {
     case "<":
-      return fieldValue < filter.value;
+      return numValue < targetValue;
     case ">":
-      return fieldValue > filter.value;
+      return numValue > targetValue;
     case "<=":
-      return fieldValue <= filter.value;
+      return numValue <= targetValue;
     case ">=":
-      return fieldValue >= filter.value;
+      return numValue >= targetValue;
     case "=":
-      return fieldValue === filter.value;
+      return numValue === targetValue;
     default:
       return true;
   }
+};
+
+// Pure function: filter results based on search term and numeric filters
+const filterResults = (
+  originalResults: KeywordResult[],
+  searchTerm: string,
+  volumeFilter: NumericFilter,
+  cpcFilter: NumericFilter,
+  difficultyFilter: NumericFilter
+): KeywordResult[] => {
+  return originalResults.filter(result => {
+    // Apply keyword search
+    const matchesSearch = searchTerm.trim() === '' || 
+      result.keyword.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Apply enabled numeric filters with AND logic
+    const activeFilters = [volumeFilter, cpcFilter, difficultyFilter].filter(f => f.enabled);
+    const matchesNumericFilters = activeFilters.length === 0 || 
+      activeFilters.every(filter => applyNumericFilter(result, filter));
+    
+    return matchesSearch && matchesNumericFilters;
+  });
 };
 
 export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword, keywordAnalyzed }: KeywordResultsTableProps) => {
@@ -102,47 +133,9 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
     enabled: false
   });
 
-  // Debug: Log filter state changes
-  console.log('🔍 Filter Pipeline Debug:', {
-    totalResults: results.length,
-    searchTerm,
-    volumeFilter,
-    cpcFilter,
-    difficultyFilter,
-    activeFilterCount: [volumeFilter, cpcFilter, difficultyFilter].filter(f => f.enabled).length
-  });
-
-  const filteredResults = results.filter(result => {
-    // Apply keyword search
-    const matchesSearch = result.keyword.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Apply all enabled numeric filters (AND logic)
-    const activeFilters = [volumeFilter, cpcFilter, difficultyFilter].filter(f => f.enabled);
-    
-    console.log(`📊 Evaluating: "${result.keyword}"`, {
-      searchVolume: result.searchVolume,
-      cpc: result.cpc,
-      difficulty: result.difficulty,
-      matchesSearch,
-      activeFilters: activeFilters.map(f => ({ field: f.field, operator: f.operator, value: f.value }))
-    });
-    
-    const matchesNumericFilters = activeFilters.every(filter => {
-      const filterResult = applyNumericFilter(result, filter);
-      console.log(`  ✓ Filter ${filter.field} ${filter.operator} ${filter.value}:`, filterResult);
-      return filterResult;
-    });
-    
-    const passed = matchesSearch && matchesNumericFilters;
-    console.log(`  → Result: ${passed ? '✅ PASS' : '❌ FAIL'}`);
-    
-    return passed;
-  });
-
-  console.log('📈 Filter Results:', {
-    filteredCount: filteredResults.length,
-    filteredKeywords: filteredResults.map(r => r.keyword)
-  });
+  // Single source of truth: results prop is the original unfiltered dataset
+  // Live filtering: computed on every render when any filter state changes
+  const filteredResults = filterResults(results, searchTerm, volumeFilter, cpcFilter, difficultyFilter);
 
   const sortedResults = [...filteredResults].sort((a, b) => {
     const aValue = a[sortBy];
