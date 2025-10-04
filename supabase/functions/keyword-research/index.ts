@@ -230,10 +230,10 @@ serve(async (req) => {
       processedResults.unshift({
         research_id: research.id,
         keyword: keyword,
-        search_volume: null, // null means no data available
-        cpc: null, // null means no data available
+        search_volume: 0, // Show 0 for volume when no data
+        cpc: 0, // Show 0 for cpc when no data
         intent: 'informational',
-        difficulty: null, // null will display as "—" in UI
+        difficulty: null, // null will display as "—" in UI (truly missing)
         cluster_id: 'cluster_seed',
         metrics_source: 'dataforseo_labs'
       });
@@ -278,11 +278,11 @@ serve(async (req) => {
       fallback_successful: fallbackSuccessful
     };
     
-    // Add note if seed keyword has no metrics (null means no data, 0 is valid)
+    // Add note if seed keyword has no metrics (0 is valid data, null means truly missing)
     const seedResult = processedResults.find((r: any) => 
       r.keyword.toLowerCase() === keyword.toLowerCase()
     );
-    if (seedResult && seedResult.search_volume === null && seedResult.difficulty === null) {
+    if (seedResult && seedResult.search_volume === 0 && seedResult.cpc === 0 && seedResult.difficulty === null) {
       responseMetadata.seed_keyword_note = 'No metrics returned by DataForSEO for this term.';
     }
 
