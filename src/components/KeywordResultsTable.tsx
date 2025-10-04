@@ -160,10 +160,11 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
     return <ChevronUp className="w-4 h-4 inline ml-1 opacity-30" />;
   };
 
-  const handleApplyFilters = () => {
-    setVolumeFilter(workingVolumeFilter);
-    setCpcFilter(workingCpcFilter);
-    setDifficultyFilter(workingDifficultyFilter);
+  const handleApplyFilters = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    setVolumeFilter({ ...workingVolumeFilter });
+    setCpcFilter({ ...workingCpcFilter });
+    setDifficultyFilter({ ...workingDifficultyFilter });
   };
 
   const handleResetFilters = () => {
