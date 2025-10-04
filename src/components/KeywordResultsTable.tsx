@@ -82,7 +82,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showFilters, setShowFilters] = useState(false);
   
-  // Define all three filters with their state
+  // Define all three filters with their state (live filtering)
   const [volumeFilter, setVolumeFilter] = useState<NumericFilter>({
     field: "searchVolume",
     operator: ">",
@@ -101,11 +101,6 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
     value: 100,
     enabled: false
   });
-  
-  // Working copies for editing (not applied until user clicks Apply)
-  const [workingVolumeFilter, setWorkingVolumeFilter] = useState(volumeFilter);
-  const [workingCpcFilter, setWorkingCpcFilter] = useState(cpcFilter);
-  const [workingDifficultyFilter, setWorkingDifficultyFilter] = useState(difficultyFilter);
 
   const filteredResults = results.filter(result => {
     // Apply keyword search
@@ -160,25 +155,10 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
     return <ChevronUp className="w-4 h-4 inline ml-1 opacity-30" />;
   };
 
-  const handleApplyFilters = (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    setVolumeFilter({ ...workingVolumeFilter });
-    setCpcFilter({ ...workingCpcFilter });
-    setDifficultyFilter({ ...workingDifficultyFilter });
-  };
-
   const handleResetFilters = () => {
-    const resetVolume = { field: "searchVolume" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false };
-    const resetCpc = { field: "cpc" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false };
-    const resetDifficulty = { field: "difficulty" as FilterField, operator: "<" as FilterOperator, value: 100, enabled: false };
-    
-    setWorkingVolumeFilter(resetVolume);
-    setWorkingCpcFilter(resetCpc);
-    setWorkingDifficultyFilter(resetDifficulty);
-    
-    setVolumeFilter(resetVolume);
-    setCpcFilter(resetCpc);
-    setDifficultyFilter(resetDifficulty);
+    setVolumeFilter({ field: "searchVolume" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false });
+    setCpcFilter({ field: "cpc" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false });
+    setDifficultyFilter({ field: "difficulty" as FilterField, operator: "<" as FilterOperator, value: 100, enabled: false });
   };
 
   const getActiveFilterCount = () => {
@@ -286,14 +266,14 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                 <div className="flex items-center gap-3 bg-background/80 p-3 rounded-md border border-border/30">
                   <input
                     type="checkbox"
-                    checked={workingVolumeFilter.enabled}
-                    onChange={(e) => setWorkingVolumeFilter({ ...workingVolumeFilter, enabled: e.target.checked })}
+                    checked={volumeFilter.enabled}
+                    onChange={(e) => setVolumeFilter({ ...volumeFilter, enabled: e.target.checked })}
                     className="w-4 h-4 rounded border-border"
                   />
                   <span className="text-sm font-medium min-w-[80px]">Volume</span>
                   <Select
-                    value={workingVolumeFilter.operator}
-                    onValueChange={(value) => setWorkingVolumeFilter({ ...workingVolumeFilter, operator: value as FilterOperator })}
+                    value={volumeFilter.operator}
+                    onValueChange={(value) => setVolumeFilter({ ...volumeFilter, operator: value as FilterOperator })}
                   >
                     <SelectTrigger className="w-[80px] bg-background">
                       <SelectValue />
@@ -308,8 +288,8 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                   </Select>
                   <Input
                     type="number"
-                    value={workingVolumeFilter.value}
-                    onChange={(e) => setWorkingVolumeFilter({ ...workingVolumeFilter, value: parseFloat(e.target.value) || 0 })}
+                    value={volumeFilter.value}
+                    onChange={(e) => setVolumeFilter({ ...volumeFilter, value: parseFloat(e.target.value) || 0 })}
                     placeholder="Value"
                     className="w-[120px] bg-background"
                   />
@@ -319,14 +299,14 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                 <div className="flex items-center gap-3 bg-background/80 p-3 rounded-md border border-border/30">
                   <input
                     type="checkbox"
-                    checked={workingCpcFilter.enabled}
-                    onChange={(e) => setWorkingCpcFilter({ ...workingCpcFilter, enabled: e.target.checked })}
+                    checked={cpcFilter.enabled}
+                    onChange={(e) => setCpcFilter({ ...cpcFilter, enabled: e.target.checked })}
                     className="w-4 h-4 rounded border-border"
                   />
                   <span className="text-sm font-medium min-w-[80px]">CPC</span>
                   <Select
-                    value={workingCpcFilter.operator}
-                    onValueChange={(value) => setWorkingCpcFilter({ ...workingCpcFilter, operator: value as FilterOperator })}
+                    value={cpcFilter.operator}
+                    onValueChange={(value) => setCpcFilter({ ...cpcFilter, operator: value as FilterOperator })}
                   >
                     <SelectTrigger className="w-[80px] bg-background">
                       <SelectValue />
@@ -342,8 +322,8 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                   <Input
                     type="number"
                     step="0.01"
-                    value={workingCpcFilter.value}
-                    onChange={(e) => setWorkingCpcFilter({ ...workingCpcFilter, value: parseFloat(e.target.value) || 0 })}
+                    value={cpcFilter.value}
+                    onChange={(e) => setCpcFilter({ ...cpcFilter, value: parseFloat(e.target.value) || 0 })}
                     placeholder="Value"
                     className="w-[120px] bg-background"
                   />
@@ -353,14 +333,14 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                 <div className="flex items-center gap-3 bg-background/80 p-3 rounded-md border border-border/30">
                   <input
                     type="checkbox"
-                    checked={workingDifficultyFilter.enabled}
-                    onChange={(e) => setWorkingDifficultyFilter({ ...workingDifficultyFilter, enabled: e.target.checked })}
+                    checked={difficultyFilter.enabled}
+                    onChange={(e) => setDifficultyFilter({ ...difficultyFilter, enabled: e.target.checked })}
                     className="w-4 h-4 rounded border-border"
                   />
                   <span className="text-sm font-medium min-w-[80px]">Difficulty</span>
                   <Select
-                    value={workingDifficultyFilter.operator}
-                    onValueChange={(value) => setWorkingDifficultyFilter({ ...workingDifficultyFilter, operator: value as FilterOperator })}
+                    value={difficultyFilter.operator}
+                    onValueChange={(value) => setDifficultyFilter({ ...difficultyFilter, operator: value as FilterOperator })}
                   >
                     <SelectTrigger className="w-[80px] bg-background">
                       <SelectValue />
@@ -375,8 +355,8 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                   </Select>
                   <Input
                     type="number"
-                    value={workingDifficultyFilter.value}
-                    onChange={(e) => setWorkingDifficultyFilter({ ...workingDifficultyFilter, value: parseFloat(e.target.value) || 0 })}
+                    value={difficultyFilter.value}
+                    onChange={(e) => setDifficultyFilter({ ...difficultyFilter, value: parseFloat(e.target.value) || 0 })}
                     placeholder="Value"
                     className="w-[120px] bg-background"
                   />
@@ -390,12 +370,6 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                     onClick={handleResetFilters}
                   >
                     Reset
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleApplyFilters}
-                  >
-                    Apply
                   </Button>
                 </div>
               </div>
