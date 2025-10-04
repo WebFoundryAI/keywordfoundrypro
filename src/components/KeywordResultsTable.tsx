@@ -54,19 +54,39 @@ interface NumericFilter {
   enabled: boolean;
 }
 
+// Pure function: parse metric value to number, handling formatted strings
+const getNumeric = (value: any): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return isFinite(value) ? value : null;
+  
+  // Handle strings (e.g., "12.1K", "$1.28", "1,234")
+  if (typeof value === 'string') {
+    // Remove currency symbols, commas, spaces
+    let cleaned = value.replace(/[$,\s]/g, '').trim();
+    
+    // Handle K (thousands) and M (millions)
+    const multiplier = cleaned.endsWith('K') ? 1000 : cleaned.endsWith('M') ? 1000000 : 1;
+    if (multiplier > 1) {
+      cleaned = cleaned.slice(0, -1);
+    }
+    
+    const parsed = parseFloat(cleaned) * multiplier;
+    return isFinite(parsed) ? parsed : null;
+  }
+  
+  return null;
+};
+
 // Pure function: apply a single numeric filter to a keyword result
 const applyNumericFilter = (result: KeywordResult, filter: NumericFilter): boolean => {
-  const fieldValue = result[filter.field];
+  const rawValue = result[filter.field];
+  const numValue = getNumeric(rawValue);
   
-  // If field value is null/undefined (missing data), exclude this row when filter is active
-  if (fieldValue === null || fieldValue === undefined) return false;
+  // If field value is missing, exclude this row when filter is active
+  if (numValue === null) return false;
   
-  // Coerce to number and validate
-  const numValue = typeof fieldValue === 'number' ? fieldValue : parseFloat(String(fieldValue));
-  if (isNaN(numValue)) return false;
-  
-  const targetValue = typeof filter.value === 'number' ? filter.value : parseFloat(String(filter.value));
-  if (isNaN(targetValue)) return true; // Ignore invalid filter values
+  const targetValue = getNumeric(filter.value);
+  if (targetValue === null) return true; // Ignore invalid filter values
   
   // Apply comparator (0 is a valid number)
   switch (filter.operator) {
