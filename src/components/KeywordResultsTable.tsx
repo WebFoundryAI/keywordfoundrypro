@@ -102,17 +102,46 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
     enabled: false
   });
 
+  // Debug: Log filter state changes
+  console.log('🔍 Filter Pipeline Debug:', {
+    totalResults: results.length,
+    searchTerm,
+    volumeFilter,
+    cpcFilter,
+    difficultyFilter,
+    activeFilterCount: [volumeFilter, cpcFilter, difficultyFilter].filter(f => f.enabled).length
+  });
+
   const filteredResults = results.filter(result => {
     // Apply keyword search
     const matchesSearch = result.keyword.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Apply all enabled numeric filters (AND logic)
     const activeFilters = [volumeFilter, cpcFilter, difficultyFilter].filter(f => f.enabled);
-    const matchesNumericFilters = activeFilters.every(filter => 
-      applyNumericFilter(result, filter)
-    );
     
-    return matchesSearch && matchesNumericFilters;
+    console.log(`📊 Evaluating: "${result.keyword}"`, {
+      searchVolume: result.searchVolume,
+      cpc: result.cpc,
+      difficulty: result.difficulty,
+      matchesSearch,
+      activeFilters: activeFilters.map(f => ({ field: f.field, operator: f.operator, value: f.value }))
+    });
+    
+    const matchesNumericFilters = activeFilters.every(filter => {
+      const filterResult = applyNumericFilter(result, filter);
+      console.log(`  ✓ Filter ${filter.field} ${filter.operator} ${filter.value}:`, filterResult);
+      return filterResult;
+    });
+    
+    const passed = matchesSearch && matchesNumericFilters;
+    console.log(`  → Result: ${passed ? '✅ PASS' : '❌ FAIL'}`);
+    
+    return passed;
+  });
+
+  console.log('📈 Filter Results:', {
+    filteredCount: filteredResults.length,
+    filteredKeywords: filteredResults.map(r => r.keyword)
   });
 
   const sortedResults = [...filteredResults].sort((a, b) => {
