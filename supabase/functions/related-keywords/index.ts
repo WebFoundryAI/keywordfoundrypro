@@ -15,6 +15,11 @@ interface KeywordRequest {
   keyword: string;
   languageCode?: string;
   locationCode?: number;
+  depth?: number;
+  limit?: number;
+  offset?: number;
+  filters?: any[];
+  order_by?: string[];
 }
 
 serve(async (req) => {
@@ -40,19 +45,47 @@ serve(async (req) => {
     }
 
     // Parse the request body
-    const { keyword, languageCode = 'en', locationCode = 2840 }: KeywordRequest = await req.json()
+    const { 
+      keyword, 
+      languageCode = 'en', 
+      locationCode = 2840,
+      depth = 1,
+      limit = 100,
+      offset = 0,
+      filters,
+      order_by
+    }: KeywordRequest = await req.json()
 
     if (!keyword) {
       throw new Error('Keyword is required')
     }
 
+    // Validate depth (0-4)
+    const validDepth = Math.min(Math.max(depth, 0), 4);
+    
+    // Validate limit (up to 1000)
+    const validLimit = Math.min(Math.max(limit, 1), 1000);
+
     // Prepare the DataForSEO API request - using Labs Related Keywords endpoint
-    const apiPayload = {
+    const apiPayload: any = {
       "keyword": keyword,
       "language_code": languageCode,
       "location_code": locationCode,
-      "depth": 1,
-      "limit": 100
+      "depth": validDepth,
+      "limit": validLimit
+    }
+
+    // Add offset if provided
+    if (offset > 0) {
+      apiPayload.offset = offset;
+    }
+
+    // Pass through filters and order_by if provided
+    if (filters && filters.length > 0) {
+      apiPayload.filters = filters;
+    }
+    if (order_by && order_by.length > 0) {
+      apiPayload.order_by = order_by;
     }
 
     console.log('Calling DataForSEO Labs API with payload:', JSON.stringify(apiPayload))
@@ -81,7 +114,22 @@ serve(async (req) => {
     const task = apiData.tasks[0]
     
     if (task.status_code !== 20000) {
-      throw new Error(`API error: ${task.status_code} - ${task.status_message}`)
+      console.error('API error:', task.status_code, task.status_message)
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `API Error (${task.status_code}): ${task.status_message}`,
+          status_code: task.status_code,
+          status_message: task.status_message
+        }),
+        { 
+          status: 400,
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
     }
 
     if (!task.result || !task.result[0] || !task.result[0].items) {
@@ -92,7 +140,9 @@ serve(async (req) => {
           results: [],
           total_results: 0,
           estimated_cost: 0,
-          message: 'No related keywords found. Try a broader seed keyword or change location/language.'
+          message: 'No related keywords found. Try a broader seed keyword or change location/language.',
+          status_code: task.status_code,
+          status_message: task.status_message
         }),
         { 
           headers: { 
@@ -130,7 +180,6 @@ serve(async (req) => {
         }
       })
       .sort((a: any, b: any) => b.searchVolume - a.searchVolume)
-      .slice(0, 100) // Limit to 100 results as per credit-efficiency guidelines
 
     console.log(`Processed ${relatedKeywords.length} related keywords`)
 
@@ -185,7 +234,10 @@ serve(async (req) => {
           research_id: research.id,
           results: relatedKeywords,
           total_results: totalResults,
-          estimated_cost: estimatedCost.toFixed(4)
+          estimated_cost: estimatedCost.toFixed(4),
+          offset: offset,
+          limit: validLimit,
+          has_more: relatedKeywords.length === validLimit
         }),
         { 
           headers: { 
@@ -201,7 +253,10 @@ serve(async (req) => {
         success: true, 
         results: relatedKeywords,
         total_results: totalResults,
-        estimated_cost: estimatedCost.toFixed(4)
+        estimated_cost: estimatedCost.toFixed(4),
+        offset: offset,
+        limit: validLimit,
+        has_more: relatedKeywords.length === validLimit
       }),
       { 
         headers: { 

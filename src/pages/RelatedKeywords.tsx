@@ -62,7 +62,10 @@ const RelatedKeywords = () => {
     return parseInt(searchParams.get('location') || '2840');
   });
   const [limit, setLimit] = useState(() => {
-    return parseInt(searchParams.get('limit') || '50');
+    return parseInt(searchParams.get('limit') || '100');
+  });
+  const [depth, setDepth] = useState(() => {
+    return parseInt(searchParams.get('depth') || '1');
   });
   
   const [results, setResults] = useState<RelatedKeyword[]>(() => {
@@ -70,6 +73,9 @@ const RelatedKeywords = () => {
     return stored ? JSON.parse(stored) : [];
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [currentOffset, setCurrentOffset] = useState(0);
   const [sortBy, setSortBy] = useState<keyof RelatedKeyword>("relevance");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { toast } = useToast();
@@ -98,9 +104,11 @@ const RelatedKeywords = () => {
       language: languageCode,
       location: locationCode.toString(),
       limit: limit.toString(),
+      depth: depth.toString(),
     });
 
     setIsLoading(true);
+    setCurrentOffset(0);
     
     try {
       const { data, error } = await supabase.functions.invoke('related-keywords', {
@@ -108,7 +116,9 @@ const RelatedKeywords = () => {
           keyword: keyword.trim(),
           languageCode,
           locationCode,
-          limit
+          limit,
+          depth,
+          offset: 0
         }
       });
 
@@ -118,19 +128,26 @@ const RelatedKeywords = () => {
 
       if (data.success && data.results) {
         setResults(data.results);
+        setHasMore(data.has_more || false);
+        setCurrentOffset(data.results.length);
         localStorage.setItem('relatedKeywordsResults', JSON.stringify(data.results));
-        // Store research ID for potential future database fetching
+        
         if (data.research_id) {
           localStorage.setItem('currentRelatedResearchId', data.research_id);
         }
         localStorage.setItem('lastKeyword', keyword.trim());
         
+        const message = data.message || `Found ${data.total_results} related keywords for "${keyword}" (Cost: $${data.estimated_cost})`;
+        
         toast({
           title: "Analysis Complete",
-          description: `Found ${data.total_results} related keywords for "${keyword}" (Cost: $${data.estimated_cost})`,
+          description: message,
         });
+      } else if (!data.success && data.status_code) {
+        // Show API error with status code
+        throw new Error(`${data.error} (Status: ${data.status_code})`);
       } else {
-        throw new Error(data.error || 'No results found');
+        throw new Error(data.error || data.message || 'No results found');
       }
     } catch (error) {
       console.error('Related keywords error:', error);
@@ -139,8 +156,61 @@ const RelatedKeywords = () => {
         description: error instanceof Error ? error.message : "Failed to find related keywords. Please try again.",
         variant: "destructive",
       });
+      setResults([]);
+      setHasMore(false);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (!keyword.trim() || isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('related-keywords', {
+        body: {
+          keyword: keyword.trim(),
+          languageCode,
+          locationCode,
+          limit,
+          depth,
+          offset: currentOffset
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to load more keywords');
+      }
+
+      if (data.success && data.results && data.results.length > 0) {
+        const newResults = [...results, ...data.results];
+        setResults(newResults);
+        setHasMore(data.has_more || false);
+        setCurrentOffset(currentOffset + data.results.length);
+        localStorage.setItem('relatedKeywordsResults', JSON.stringify(newResults));
+        
+        toast({
+          title: "Loaded More Results",
+          description: `Added ${data.results.length} more keywords`,
+        });
+      } else {
+        setHasMore(false);
+        toast({
+          title: "No More Results",
+          description: "All related keywords have been loaded.",
+        });
+      }
+    } catch (error) {
+      console.error('Load more error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load more keywords.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -284,22 +354,44 @@ const RelatedKeywords = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="limit" className="text-sm font-medium flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
-                    Results Limit
-                  </Label>
-                  <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
-                    <SelectTrigger className="bg-background/50 border-border/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10 keywords</SelectItem>
-                      <SelectItem value="25">25 keywords</SelectItem>
-                      <SelectItem value="50">50 keywords</SelectItem>
-                      <SelectItem value="100">100 keywords</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="depth" className="text-sm font-medium flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-primary" />
+                      Search Depth
+                    </Label>
+                    <Select value={depth.toString()} onValueChange={(value) => setDepth(parseInt(value))}>
+                      <SelectTrigger className="bg-background/50 border-border/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0 - Direct matches only</SelectItem>
+                        <SelectItem value="1">1 - Recommended</SelectItem>
+                        <SelectItem value="2">2 - Broader search</SelectItem>
+                        <SelectItem value="3">3 - Extended search</SelectItem>
+                        <SelectItem value="4">4 - Maximum depth</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="limit" className="text-sm font-medium flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-primary" />
+                      Results Per Request
+                    </Label>
+                    <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
+                      <SelectTrigger className="bg-background/50 border-border/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="50">50 keywords</SelectItem>
+                        <SelectItem value="100">100 keywords</SelectItem>
+                        <SelectItem value="250">250 keywords</SelectItem>
+                        <SelectItem value="500">500 keywords</SelectItem>
+                        <SelectItem value="1000">1000 keywords</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="bg-muted/30 rounded-lg p-4 space-y-3">
@@ -438,6 +530,26 @@ const RelatedKeywords = () => {
                     </TableBody>
                   </Table>
                 </div>
+
+                {hasMore && (
+                  <div className="mt-4 flex justify-center">
+                    <Button
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      variant="outline"
+                      className="w-full md:w-auto"
+                    >
+                      {isLoadingMore ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          Loading More...
+                        </div>
+                      ) : (
+                        `Load More Keywords (${currentOffset} loaded)`
+                      )}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
