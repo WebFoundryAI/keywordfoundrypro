@@ -72,6 +72,7 @@ const RelatedKeywords = () => {
     const stored = localStorage.getItem('relatedKeywordsResults');
     return stored ? JSON.parse(stored) : [];
   });
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -109,6 +110,7 @@ const RelatedKeywords = () => {
 
     setIsLoading(true);
     setCurrentOffset(0);
+    setTotalCount(0);
     
     try {
       const { data, error } = await supabase.functions.invoke('related-keywords', {
@@ -116,7 +118,7 @@ const RelatedKeywords = () => {
           keyword: keyword.trim(),
           languageCode,
           locationCode,
-          limit,
+          limit: 100, // Always use 100 for first request
           depth,
           offset: 0
         }
@@ -128,6 +130,7 @@ const RelatedKeywords = () => {
 
       if (data.success && data.results) {
         setResults(data.results);
+        setTotalCount(data.total_results || data.results.length);
         setHasMore(data.has_more || false);
         setCurrentOffset(data.results.length);
         localStorage.setItem('relatedKeywordsResults', JSON.stringify(data.results));
@@ -158,6 +161,7 @@ const RelatedKeywords = () => {
       });
       setResults([]);
       setHasMore(false);
+      setTotalCount(0);
     } finally {
       setIsLoading(false);
     }
@@ -174,7 +178,7 @@ const RelatedKeywords = () => {
           keyword: keyword.trim(),
           languageCode,
           locationCode,
-          limit,
+          limit: 100, // Always use 100 per request
           depth,
           offset: currentOffset
         }
@@ -185,15 +189,22 @@ const RelatedKeywords = () => {
       }
 
       if (data.success && data.results && data.results.length > 0) {
-        const newResults = [...results, ...data.results];
+        // Filter out duplicates based on keyword
+        const existingKeywords = new Set(results.map(r => r.keyword.toLowerCase()));
+        const newUniqueResults = data.results.filter(
+          (r: RelatedKeyword) => !existingKeywords.has(r.keyword.toLowerCase())
+        );
+        
+        const newResults = [...results, ...newUniqueResults];
         setResults(newResults);
         setHasMore(data.has_more || false);
         setCurrentOffset(currentOffset + data.results.length);
+        setTotalCount(data.total_results || newResults.length);
         localStorage.setItem('relatedKeywordsResults', JSON.stringify(newResults));
         
         toast({
           title: "Loaded More Results",
-          description: `Added ${data.results.length} more keywords`,
+          description: `Added ${newUniqueResults.length} more keywords${newUniqueResults.length !== data.results.length ? ` (${data.results.length - newUniqueResults.length} duplicates filtered)` : ''}`,
         });
       } else {
         setHasMore(false);
@@ -364,13 +375,15 @@ const RelatedKeywords = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="50">50 keywords</SelectItem>
-                      <SelectItem value="100">100 keywords</SelectItem>
+                      <SelectItem value="100">100 keywords (recommended)</SelectItem>
                       <SelectItem value="250">250 keywords</SelectItem>
                       <SelectItem value="500">500 keywords</SelectItem>
                       <SelectItem value="1000">1000 keywords</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Initial request uses 100 keywords. Use "Load more" for additional results.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -431,7 +444,7 @@ const RelatedKeywords = () => {
               <CardHeader>
                 <CardTitle>Related Keywords for "{keyword}"</CardTitle>
                 <CardDescription>
-                  {results.length} related keywords found sorted by relevance and search volume
+                  Showing {results.length} {totalCount > 0 && totalCount > results.length ? `of ${totalCount}` : ''} related keywords sorted by relevance and search volume
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -532,7 +545,10 @@ const RelatedKeywords = () => {
                 </div>
 
                 {hasMore && (
-                  <div className="mt-4 flex justify-center">
+                  <div className="mt-4 flex flex-col items-center gap-2">
+                    <div className="text-sm text-muted-foreground">
+                      Loaded {results.length} keywords{totalCount > 0 && totalCount > results.length ? ` of ${totalCount} total` : ''}
+                    </div>
                     <Button
                       onClick={handleLoadMore}
                       disabled={isLoadingMore}
@@ -545,7 +561,7 @@ const RelatedKeywords = () => {
                           Loading More...
                         </div>
                       ) : (
-                        `Load More Keywords (${currentOffset} loaded)`
+                        'Load More Keywords'
                       )}
                     </Button>
                   </div>
