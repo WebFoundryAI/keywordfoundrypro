@@ -46,23 +46,19 @@ serve(async (req) => {
       throw new Error('Keyword is required')
     }
 
-    // Prepare the DataForSEO API request - using keywords_for_keywords endpoint
+    // Prepare the DataForSEO API request - using Labs Related Keywords endpoint
     const apiPayload = {
-      "keywords": [keyword],
+      "keyword": keyword,
       "language_code": languageCode,
       "location_code": locationCode,
-      "limit": 100,
-      "offset": 0,
-      "filters": [
-        ["search_volume", ">", 0]
-      ],
-      "order_by": ["search_volume,desc"]
+      "depth": 1,
+      "limit": 100
     }
 
-    console.log('Calling DataForSEO API with payload:', apiPayload)
+    console.log('Calling DataForSEO Labs API with payload:', JSON.stringify(apiPayload))
 
-    // Call DataForSEO API for keyword ideas
-    const response = await fetch('https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live', {
+    // Call DataForSEO Labs API for related keywords
+    const response = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/related_keywords/live', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${btoa(`${Deno.env.get('DATAFORSEO_LOGIN')}:${Deno.env.get('DATAFORSEO_PASSWORD')}`)}`,
@@ -76,36 +72,65 @@ serve(async (req) => {
     }
 
     const apiData = await response.json()
-    console.log('DataForSEO API response:', apiData)
+    console.log('DataForSEO Labs API response (first 200 chars):', JSON.stringify(apiData).substring(0, 200))
 
-    if (!apiData.tasks || !apiData.tasks[0] || !apiData.tasks[0].result) {
+    if (!apiData.tasks || !apiData.tasks[0]) {
       throw new Error('Invalid API response structure')
     }
 
-    const results = apiData.tasks[0].result
+    const task = apiData.tasks[0]
+    
+    if (task.status_code !== 20000) {
+      throw new Error(`API error: ${task.status_code} - ${task.status_message}`)
+    }
 
-    // Process and filter the keywords
-    const relatedKeywords = results
+    if (!task.result || !task.result[0] || !task.result[0].items) {
+      console.log('No related keywords found')
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          results: [],
+          total_results: 0,
+          estimated_cost: 0,
+          message: 'No related keywords found. Try a broader seed keyword or change location/language.'
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    }
+
+    const items = task.result[0].items
+
+    // Process the keywords from Labs endpoint
+    const relatedKeywords = items
       .filter((item: any) => {
-        // Filter out the exact seed keyword and keywords that contain the seed keyword
-        const itemKeyword = item.keyword?.toLowerCase()
-        const seedKeyword = keyword.toLowerCase()
-        return itemKeyword && 
-               itemKeyword !== seedKeyword && 
-               !itemKeyword.includes(seedKeyword) &&
-               item.search_volume > 0
+        // Filter out items without keywords or search volume
+        return item.keyword_data && 
+               item.keyword_data.keyword && 
+               (item.keyword_data.keyword_info?.search_volume || 0) > 0
       })
-      .map((item: any) => ({
-        keyword: item.keyword,
-        searchVolume: item.search_volume || 0,
-        cpc: item.cpc || 0,
-        competition: item.competition || 0,
-        difficulty: convertCompetitionToDifficulty(item.competition_level, item.competition_index),
-        intent: determineIntent(item.keyword),
-        relevance: Math.round(Math.random() * 40 + 60) // Simple relevance score for now
-      }))
+      .map((item: any) => {
+        const keywordData = item.keyword_data
+        const keywordInfo = keywordData.keyword_info || {}
+        
+        return {
+          keyword: keywordData.keyword,
+          searchVolume: keywordInfo.search_volume || 0,
+          cpc: keywordInfo.cpc || 0,
+          competition: keywordInfo.competition || 0,
+          difficulty: convertCompetitionToDifficulty(keywordInfo.competition_level, keywordInfo.competition_index),
+          intent: determineIntent(keywordData.keyword),
+          relevance: Math.round((item.relevance || 0) * 100), // Use API relevance score
+          trend: keywordInfo.monthly_searches || null,
+          categories: keywordData.categories || []
+        }
+      })
       .sort((a: any, b: any) => b.searchVolume - a.searchVolume)
-      .slice(0, 20) // Limit to top 20 results
+      .slice(0, 100) // Limit to 100 results as per credit-efficiency guidelines
 
     console.log(`Processed ${relatedKeywords.length} related keywords`)
 
