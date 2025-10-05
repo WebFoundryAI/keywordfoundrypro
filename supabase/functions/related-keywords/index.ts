@@ -172,6 +172,7 @@ serve(async (req) => {
           searchVolume: keywordInfo.search_volume || 0,
           cpc: keywordInfo.cpc || 0,
           competition: keywordInfo.competition || 0,
+          competition_level: keywordInfo.competition_level || null,
           difficulty: convertCompetitionToDifficulty(keywordInfo.competition_level, keywordInfo.competition_index),
           intent: determineIntent(keywordData.keyword),
           relevance: Math.round((item.relevance || 0) * 100), // Use API relevance score

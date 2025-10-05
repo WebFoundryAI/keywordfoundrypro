@@ -18,9 +18,13 @@ interface RelatedKeyword {
   keyword: string;
   searchVolume: number | null;
   cpc: number | null;
+  competition: number | null;
+  competition_level?: string;
   intent: string;
   difficulty: number | null;
   relevance: number | null;
+  trend: any[] | null;
+  categories: number[];
 }
 
 const LANGUAGE_OPTIONS = [
@@ -223,6 +227,56 @@ const RelatedKeywords = () => {
     } finally {
       setIsLoadingMore(false);
     }
+  };
+
+  const exportToJSON = () => {
+    const dataStr = JSON.stringify(sortedResults, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `related-keywords-${keyword.trim().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Complete",
+      description: `Exported ${sortedResults.length} keywords to JSON`,
+    });
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Keyword', 'Search Volume', 'CPC', 'Competition', 'Competition Level', 'Difficulty', 'Intent', 'Relevance', 'Categories'];
+    const csvRows = [headers.join(',')];
+    
+    sortedResults.forEach(result => {
+      const row = [
+        `"${result.keyword.replace(/"/g, '""')}"`,
+        result.searchVolume ?? '',
+        result.cpc ?? '',
+        result.competition ?? '',
+        result.competition_level ? `"${result.competition_level}"` : '',
+        result.difficulty ?? '',
+        `"${result.intent}"`,
+        result.relevance ?? '',
+        result.categories?.length > 0 ? `"${result.categories.join(', ')}"` : ''
+      ];
+      csvRows.push(row.join(','));
+    });
+    
+    const csvStr = csvRows.join('\n');
+    const dataBlob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `related-keywords-${keyword.trim().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Complete",
+      description: `Exported ${sortedResults.length} keywords to CSV`,
+    });
   };
 
   const getIntentColor = (intent: string) => {
@@ -442,10 +496,22 @@ const RelatedKeywords = () => {
           {results.length > 0 && (
             <Card className="bg-gradient-card shadow-card border-border/50">
               <CardHeader>
-                <CardTitle>Related Keywords for "{keyword}"</CardTitle>
-                <CardDescription>
-                  Showing {results.length} {totalCount > 0 && totalCount > results.length ? `of ${totalCount}` : ''} related keywords sorted by relevance and search volume
-                </CardDescription>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <CardTitle>Related Keywords for "{keyword}"</CardTitle>
+                    <CardDescription>
+                      Showing {results.length} {totalCount > 0 && totalCount > results.length ? `of ${totalCount}` : ''} related keywords sorted by relevance and search volume
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={exportToJSON} variant="outline" size="sm">
+                      Export JSON
+                    </Button>
+                    <Button onClick={exportToCSV} variant="outline" size="sm">
+                      Export CSV
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border border-border/50 overflow-x-auto">
@@ -471,21 +537,30 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
-                          onClick={() => handleSort("difficulty")}
-                        >
-                          <div className="flex items-center justify-end">
-                            Difficulty
-                            {getSortIcon("difficulty")}
-                          </div>
-                        </TableHead>
-                        <TableHead 
                           className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[80px]"
                           onClick={() => handleSort("cpc")}
                         >
                           <div className="flex items-center justify-end">
                             CPC
                             {getSortIcon("cpc")}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
+                          onClick={() => handleSort("competition")}
+                        >
+                          <div className="flex items-center justify-end">
+                            Competition
+                            {getSortIcon("competition")}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
+                          onClick={() => handleSort("difficulty")}
+                        >
+                          <div className="flex items-center justify-end">
+                            Difficulty
+                            {getSortIcon("difficulty")}
                           </div>
                         </TableHead>
                         <TableHead 
@@ -497,14 +572,8 @@ const RelatedKeywords = () => {
                             {getSortIcon("intent")}
                           </div>
                         </TableHead>
-                        <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
-                          onClick={() => handleSort("relevance")}
-                        >
-                          <div className="flex items-center justify-end">
-                            Relevance
-                            {getSortIcon("relevance")}
-                          </div>
+                        <TableHead className="select-none min-w-[100px]">
+                          Categories
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -519,13 +588,23 @@ const RelatedKeywords = () => {
                           <TableCell className="text-right font-mono">
                             {formatNumber(result.searchVolume)}
                           </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {formatCurrency(result.cpc)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs">
+                            {result.competition !== null ? (
+                              <div>
+                                <div>{(result.competition * 100).toFixed(1)}%</div>
+                                {result.competition_level && (
+                                  <div className="text-muted-foreground">{result.competition_level}</div>
+                                )}
+                              </div>
+                            ) : '-'}
+                          </TableCell>
                           <TableCell className="text-right">
                             <span className={`font-bold ${getDifficultyColor(result.difficulty)}`}>
                               {formatDifficulty(result.difficulty)}
                             </span>
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            {formatCurrency(result.cpc)}
                           </TableCell>
                           <TableCell>
                             <Badge 
@@ -535,8 +614,21 @@ const RelatedKeywords = () => {
                               {result.intent}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right font-mono">
-                            {result.relevance || 0}
+                          <TableCell className="text-xs">
+                            {result.categories && result.categories.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {result.categories.slice(0, 3).map((cat, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs">
+                                    {cat}
+                                  </Badge>
+                                ))}
+                                {result.categories.length > 3 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{result.categories.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : '-'}
                           </TableCell>
                         </TableRow>
                       ))}
