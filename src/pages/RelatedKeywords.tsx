@@ -354,44 +354,44 @@ const RelatedKeywords = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="depth" className="text-sm font-medium flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-primary" />
-                      Search Depth
-                    </Label>
-                    <Select value={depth.toString()} onValueChange={(value) => setDepth(parseInt(value))}>
-                      <SelectTrigger className="bg-background/50 border-border/50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">0 - Direct matches only</SelectItem>
-                        <SelectItem value="1">1 - Recommended</SelectItem>
-                        <SelectItem value="2">2 - Broader search</SelectItem>
-                        <SelectItem value="3">3 - Extended search</SelectItem>
-                        <SelectItem value="4">4 - Maximum depth</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="limit" className="text-sm font-medium flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    Results Per Request
+                  </Label>
+                  <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
+                    <SelectTrigger className="bg-background/50 border-border/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="50">50 keywords</SelectItem>
+                      <SelectItem value="100">100 keywords</SelectItem>
+                      <SelectItem value="250">250 keywords</SelectItem>
+                      <SelectItem value="500">500 keywords</SelectItem>
+                      <SelectItem value="1000">1000 keywords</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="limit" className="text-sm font-medium flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-primary" />
-                      Results Per Request
-                    </Label>
-                    <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
-                      <SelectTrigger className="bg-background/50 border-border/50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="50">50 keywords</SelectItem>
-                        <SelectItem value="100">100 keywords</SelectItem>
-                        <SelectItem value="250">250 keywords</SelectItem>
-                        <SelectItem value="500">500 keywords</SelectItem>
-                        <SelectItem value="1000">1000 keywords</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="depth" className="text-sm font-medium">
+                    Depth
+                  </Label>
+                  <Select value={depth.toString()} onValueChange={(value) => setDepth(parseInt(value))}>
+                    <SelectTrigger className="bg-background/50 border-border/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0</SelectItem>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                      <SelectItem value="4">4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Higher depth explores 'searches related to' multiple hops: 0 = seed only, 1 ≈8 ideas, 2 ≈72, 3 ≈584, 4 ≈4,680. More depth = more ideas & more cost/time.
+                  </p>
                 </div>
 
                 <div className="bg-muted/30 rounded-lg p-4 space-y-3">
