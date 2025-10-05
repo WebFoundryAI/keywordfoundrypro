@@ -118,6 +118,7 @@ const RelatedKeywords = () => {
 
       if (data.success && data.results) {
         setResults(data.results);
+        localStorage.setItem('relatedKeywordsResults', JSON.stringify(data.results));
         // Store research ID for potential future database fetching
         if (data.research_id) {
           localStorage.setItem('currentRelatedResearchId', data.research_id);

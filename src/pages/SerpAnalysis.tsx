@@ -65,9 +65,7 @@ const SerpAnalysis = () => {
   const [locationCode, setLocationCode] = useState(() => {
     return parseInt(searchParams.get('location') || '2840');
   });
-  const [limit, setLimit] = useState(() => {
-    return parseInt(searchParams.get('limit') || '10');
-  });
+  const [limit] = useState(10);
   
   const [results, setResults] = useState<SerpResult[]>(() => {
     const stored = localStorage.getItem('serpAnalysisResults');
@@ -231,23 +229,12 @@ const SerpAnalysis = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="limit" className="text-sm font-medium flex items-center gap-2">
+                <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
-                    Number of SERPs to Return
-                  </Label>
-                  <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
-                    <SelectTrigger className="bg-background/50 border-border/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10 results</SelectItem>
-                      <SelectItem value="20">20 results</SelectItem>
-                      <SelectItem value="30">30 results</SelectItem>
-                      <SelectItem value="40">40 results</SelectItem>
-                      <SelectItem value="50">50 results</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <span className="text-sm font-medium">Results:</span>
+                    <span className="text-sm">10 top organic results</span>
+                  </div>
                 </div>
 
                 <div className="bg-muted/30 rounded-lg p-4 space-y-3">
