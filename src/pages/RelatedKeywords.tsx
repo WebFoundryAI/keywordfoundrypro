@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap } from "lucide-react";
+import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter, X } from "lucide-react";
 import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
 
 interface RelatedKeyword {
@@ -53,6 +54,29 @@ const LOCATION_OPTIONS = [
   { code: 2156, name: "China" },
 ];
 
+// Pure function: parse metric value to number, handling formatted strings
+const getNumeric = (value: any): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return isFinite(value) ? value : null;
+  
+  // Handle strings (e.g., "12.1K", "$1.28", "1,234")
+  if (typeof value === 'string') {
+    // Remove currency symbols, commas, spaces
+    let cleaned = value.replace(/[$,\s]/g, '').trim();
+    
+    // Handle K (thousands) and M (millions)
+    const multiplier = cleaned.endsWith('K') ? 1000 : cleaned.endsWith('M') ? 1000000 : 1;
+    if (multiplier > 1) {
+      cleaned = cleaned.slice(0, -1);
+    }
+    
+    const parsed = parseFloat(cleaned) * multiplier;
+    return isFinite(parsed) ? parsed : null;
+  }
+  
+  return null;
+};
+
 const RelatedKeywords = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -81,8 +105,20 @@ const RelatedKeywords = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [currentOffset, setCurrentOffset] = useState(0);
-  const [sortBy, setSortBy] = useState<keyof RelatedKeyword>("relevance");
+  const [sortBy, setSortBy] = useState<keyof RelatedKeyword>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterKeyword, setFilterKeyword] = useState("");
+  const [filterKeywordExclude, setFilterKeywordExclude] = useState("");
+  const [volumeFilterEnabled, setVolumeFilterEnabled] = useState(false);
+  const [volumeOperator, setVolumeOperator] = useState(">=");
+  const [volumeValue, setVolumeValue] = useState("");
+  const [cpcFilterEnabled, setCpcFilterEnabled] = useState(false);
+  const [cpcOperator, setCpcOperator] = useState(">=");
+  const [cpcValue, setCpcValue] = useState("");
+  
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -230,7 +266,7 @@ const RelatedKeywords = () => {
   };
 
   const exportToJSON = () => {
-    const dataStr = JSON.stringify(sortedResults, null, 2);
+    const dataStr = JSON.stringify(filteredResults, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -241,7 +277,7 @@ const RelatedKeywords = () => {
     
     toast({
       title: "Export Complete",
-      description: `Exported ${sortedResults.length} keywords to JSON`,
+      description: `Exported ${filteredResults.length} keywords to JSON`,
     });
   };
 
@@ -249,7 +285,7 @@ const RelatedKeywords = () => {
     const headers = ['Keyword', 'Search Volume', 'CPC', 'Competition', 'Competition Level', 'Difficulty', 'Intent', 'Relevance', 'Categories'];
     const csvRows = [headers.join(',')];
     
-    sortedResults.forEach(result => {
+    filteredResults.forEach(result => {
       const row = [
         `"${result.keyword.replace(/"/g, '""')}"`,
         result.searchVolume ?? '',
@@ -275,9 +311,23 @@ const RelatedKeywords = () => {
     
     toast({
       title: "Export Complete",
-      description: `Exported ${sortedResults.length} keywords to CSV`,
+      description: `Exported ${filteredResults.length} keywords to CSV`,
     });
   };
+
+  const resetFilters = () => {
+    setFilterKeyword("");
+    setFilterKeywordExclude("");
+    setVolumeFilterEnabled(false);
+    setVolumeValue("");
+    setCpcFilterEnabled(false);
+    setCpcValue("");
+  };
+
+  const hasActiveFilters = filterKeyword.trim() !== "" || 
+                          filterKeywordExclude.trim() !== "" || 
+                          volumeFilterEnabled || 
+                          cpcFilterEnabled;
 
   const getIntentColor = (intent: string) => {
     switch (intent.toLowerCase()) {
@@ -290,11 +340,52 @@ const RelatedKeywords = () => {
       case 'transactional':
         return 'bg-success/20 text-success-foreground border-success/30';
       default:
-        return 'bg-muted/20 text-muted-foreground border-muted/30';
+      return 'bg-muted/20 text-muted-foreground border-muted/30';
     }
   };
 
-  const sortedResults = [...results].sort((a, b) => {
+  // Client-side filtering logic
+  const applyFilters = (data: RelatedKeyword[]): RelatedKeyword[] => {
+    return data.filter(result => {
+      // Text contains filter
+      if (filterKeyword.trim() && !result.keyword.toLowerCase().includes(filterKeyword.toLowerCase())) {
+        return false;
+      }
+      
+      // Text excludes filter
+      if (filterKeywordExclude.trim() && result.keyword.toLowerCase().includes(filterKeywordExclude.toLowerCase())) {
+        return false;
+      }
+      
+      // Volume filter
+      if (volumeFilterEnabled && volumeValue.trim()) {
+        const targetValue = getNumeric(volumeValue);
+        const resultValue = getNumeric(result.searchVolume);
+        
+        if (targetValue === null || resultValue === null) return false;
+        
+        if (volumeOperator === ">=" && resultValue < targetValue) return false;
+        if (volumeOperator === "<=" && resultValue > targetValue) return false;
+      }
+      
+      // CPC filter
+      if (cpcFilterEnabled && cpcValue.trim()) {
+        const targetValue = getNumeric(cpcValue);
+        const resultValue = getNumeric(result.cpc);
+        
+        if (targetValue === null || resultValue === null) return false;
+        
+        if (cpcOperator === ">=" && resultValue < targetValue) return false;
+        if (cpcOperator === "<=" && resultValue > targetValue) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  const filteredResults = applyFilters(results);
+
+  const sortedResults = [...filteredResults].sort((a, b) => {
     const aValue = a[sortBy];
     const bValue = b[sortBy];
     
@@ -500,10 +591,18 @@ const RelatedKeywords = () => {
                   <div>
                     <CardTitle>Related Keywords for "{keyword}"</CardTitle>
                     <CardDescription>
-                      Showing {results.length} {totalCount > 0 && totalCount > results.length ? `of ${totalCount}` : ''} related keywords sorted by relevance and search volume
+                      Showing {sortedResults.length} of {results.length} keywords {hasActiveFilters && '(filtered)'} 
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
+                    <Button 
+                      onClick={() => setShowFilters(!showFilters)} 
+                      variant={hasActiveFilters ? "default" : "outline"} 
+                      size="sm"
+                    >
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filters {hasActiveFilters && `(${[filterKeyword.trim(), filterKeywordExclude.trim(), volumeFilterEnabled, cpcFilterEnabled].filter(Boolean).length})`}
+                    </Button>
                     <Button onClick={exportToJSON} variant="outline" size="sm">
                       Export JSON
                     </Button>
@@ -514,6 +613,125 @@ const RelatedKeywords = () => {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Filter Panel */}
+                {showFilters && (
+                  <Card className="mb-6 border-primary/20">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">Filter Results</CardTitle>
+                        <div className="flex gap-2">
+                          <Button onClick={resetFilters} variant="ghost" size="sm">
+                            <X className="w-4 h-4 mr-1" />
+                            Reset
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Text Filters */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="filter-contains">Keyword Contains</Label>
+                          <Input
+                            id="filter-contains"
+                            placeholder="e.g., best"
+                            value={filterKeyword}
+                            onChange={(e) => setFilterKeyword(e.target.value)}
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="filter-excludes">Keyword Excludes</Label>
+                          <Input
+                            id="filter-excludes"
+                            placeholder="e.g., cheap"
+                            value={filterKeywordExclude}
+                            onChange={(e) => setFilterKeywordExclude(e.target.value)}
+                            className="bg-background/50"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Numeric Filters */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Volume Filter */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="volume-filter"
+                              checked={volumeFilterEnabled}
+                              onCheckedChange={(checked) => setVolumeFilterEnabled(checked as boolean)}
+                            />
+                            <Label htmlFor="volume-filter" className="cursor-pointer">
+                              Search Volume
+                            </Label>
+                          </div>
+                          <div className="flex gap-2">
+                            <Select 
+                              value={volumeOperator} 
+                              onValueChange={(val) => setVolumeOperator(val)}
+                              disabled={!volumeFilterEnabled}
+                            >
+                              <SelectTrigger className="w-24 bg-background/50">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value=">=">≥</SelectItem>
+                                <SelectItem value="<=">≤</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              placeholder="1000"
+                              value={volumeValue}
+                              onChange={(e) => setVolumeValue(e.target.value)}
+                              disabled={!volumeFilterEnabled}
+                              className="bg-background/50"
+                            />
+                          </div>
+                        </div>
+
+                        {/* CPC Filter */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="cpc-filter"
+                              checked={cpcFilterEnabled}
+                              onCheckedChange={(checked) => setCpcFilterEnabled(checked as boolean)}
+                            />
+                            <Label htmlFor="cpc-filter" className="cursor-pointer">
+                              CPC ($)
+                            </Label>
+                          </div>
+                          <div className="flex gap-2">
+                            <Select 
+                              value={cpcOperator} 
+                              onValueChange={(val) => setCpcOperator(val)}
+                              disabled={!cpcFilterEnabled}
+                            >
+                              <SelectTrigger className="w-24 bg-background/50">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value=">=">≥</SelectItem>
+                                <SelectItem value="<=">≤</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="1.00"
+                              value={cpcValue}
+                              onChange={(e) => setCpcValue(e.target.value)}
+                              disabled={!cpcFilterEnabled}
+                              className="bg-background/50"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
                 <div className="rounded-lg border border-border/50 overflow-x-auto">
                   <Table>
                     <TableHeader>
