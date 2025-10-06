@@ -21,18 +21,18 @@
 | `/related-keywords` | `RelatedKeywords` | `import RelatedKeywords from "./pages/RelatedKeywords";` | `src/pages/RelatedKeywords.tsx` |
 | `*` (catch-all) | `NotFound` | `import NotFound from "./pages/NotFound";` | `src/pages/NotFound.tsx` |
 
-## Sign-Up Route Details
+## Sign-In Route Details
 
-**Route:** `/auth/sign-up`  
-**Component:** `SignUp`  
-**Import Line (App.tsx:14):**
+**Route:** `/auth/sign-in`  
+**Component:** `SignIn`  
+**Import Line (App.tsx:13):**
 ```tsx
-import SignUp from "./pages/SignUp";
+import SignIn from "./pages/SignIn";
 ```
 
-**Route Definition (App.tsx:34):**
+**Route Definition (App.tsx:33):**
 ```tsx
-<Route path="/auth/sign-up" element={<SignUp />} />
+<Route path="/auth/sign-in" element={<SignIn />} />
 ```
 
-**Active File:** `src/pages/SignUp.tsx`
+**Active File:** `src/pages/SignIn.tsx`
