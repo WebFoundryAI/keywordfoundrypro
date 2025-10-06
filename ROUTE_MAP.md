@@ -1,6 +1,6 @@
 # Route → Component Mapping
 
-**Generated:** 2025-10-06  
+**Generated:** 2025-10-06 15:03  
 **Source:** `src/App.tsx`
 
 ## Authentication Routes
@@ -21,8 +21,9 @@
 | `/related-keywords` | `RelatedKeywords` | `import RelatedKeywords from "./pages/RelatedKeywords";` | `src/pages/RelatedKeywords.tsx` |
 | `*` (catch-all) | `NotFound` | `import NotFound from "./pages/NotFound";` | `src/pages/NotFound.tsx` |
 
-## Sign-In Route Details
+## Auth Route Details (Updated: 2025-10-06)
 
+### Sign-In Route
 **Route:** `/auth/sign-in`  
 **Component:** `SignIn`  
 **Import Line (App.tsx:13):**
@@ -36,3 +37,18 @@ import SignIn from "./pages/SignIn";
 ```
 
 **Active File:** `src/pages/SignIn.tsx`
+
+### Sign-Up Route
+**Route:** `/auth/sign-up`  
+**Component:** `SignUp`  
+**Import Line (App.tsx:14):**
+```tsx
+import SignUp from "./pages/SignUp";
+```
+
+**Route Definition (App.tsx:34):**
+```tsx
+<Route path="/auth/sign-up" element={<SignUp />} />
+```
+
+**Active File:** `src/pages/SignUp.tsx`

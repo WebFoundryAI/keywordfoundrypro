@@ -37,10 +37,10 @@ export const Header = ({ user }: HeaderProps) => {
               <UserMenu />
             ) : (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/auth/sign-in')}>
                   Log In
                 </Button>
-                <Button size="sm" onClick={() => navigate('/auth')}>
+                <Button size="sm" onClick={() => navigate('/auth/sign-up')}>
                   Sign Up
                 </Button>
               </div>

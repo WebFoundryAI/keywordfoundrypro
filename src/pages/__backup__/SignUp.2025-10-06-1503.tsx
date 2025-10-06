@@ -1,12 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, ArrowRight } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
-import { AuthLayout } from '@/components/auth/AuthLayout'
-import { OAuthButtons } from '@/components/auth/OAuthButtons'
-import { OrDivider } from '@/components/auth/OrDivider'
 
 export default function SignUp() {
   const navigate = useNavigate()
@@ -46,7 +43,7 @@ export default function SignUp() {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/research`,
+          emailRedirectTo: `${window.location.origin}/auth/update-password`, // future reset completion
         },
       })
       if (error) throw error
@@ -61,30 +58,30 @@ export default function SignUp() {
   }
 
   return (
-    <AuthLayout>
-      <div className="rounded-2xl bg-white border border-gray-200 p-8 shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your account</h1>
-        <p className="text-sm text-gray-600 mb-6">Join and get access to your research tools</p>
-
-        {/* OAuth Section */}
-        <div className="space-y-4 mb-6">
-          <OAuthButtons />
-          <OrDivider />
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md rounded-2xl border border-gray-200 p-6 shadow-sm"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <Link to="/auth/sign-in" className="text-gray-600 hover:text-gray-800">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <h1 className="text-2xl font-semibold">Create your account</h1>
         </div>
+        <p className="text-sm text-gray-500 mb-6">Join and get access to your research tools</p>
 
-        {/* Email/Password Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5" htmlFor="email">
-              Email <span className="text-red-500">*</span>
-            </label>
+            <label className="block text-sm font-medium mb-1" htmlFor="email">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 id="email"
                 type="email"
                 autoComplete="email"
-                className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -94,16 +91,14 @@ export default function SignUp() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5" htmlFor="password">
-              Password <span className="text-red-500">*</span>
-            </label>
+            <label className="block text-sm font-medium mb-1" htmlFor="password">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
-                className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Create a strong password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -113,7 +108,7 @@ export default function SignUp() {
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -122,16 +117,14 @@ export default function SignUp() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5" htmlFor="confirm">
-              Confirm password <span className="text-red-500">*</span>
-            </label>
+            <label className="block text-sm font-medium mb-1" htmlFor="confirm">Confirm password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 id="confirm"
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
-                className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Re-enter password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
@@ -145,7 +138,7 @@ export default function SignUp() {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
-                  className="mt-1.5 text-xs text-red-600"
+                  className="mt-1 text-xs text-red-600"
                 >
                   Passwords do not match.
                 </motion.p>
@@ -153,60 +146,50 @@ export default function SignUp() {
             </AnimatePresence>
           </div>
 
-          {/* Terms Checkbox */}
-          <label className="flex items-start gap-3 text-sm cursor-pointer">
+          <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="h-4 w-4 rounded border-gray-300"
               checked={agree}
               onChange={(e) => setAgree(e.target.checked)}
             />
-            <span className="text-gray-600 leading-relaxed">
+            <span>
               I agree to the{' '}
-              <Link to="/terms" className="text-blue-600 hover:text-blue-700 hover:underline font-medium">
-                Terms
-              </Link>{' '}
-              and{' '}
-              <Link to="/privacy" className="text-blue-600 hover:text-blue-700 hover:underline font-medium">
-                Privacy Policy
-              </Link>
-              .
+              <Link to="/terms" className="text-blue-600 hover:underline">Terms</Link> and{' '}
+              <Link to="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
             </span>
           </label>
 
-          {/* Submit Button with Gradient */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2.5 font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 text-white py-2.5 font-medium hover:bg-blue-700 disabled:opacity-60"
           >
-            <span>{loading ? 'Creating account...' : 'Sign Up'}</span>
+            <span>Create Account</span>
             <ArrowRight className="h-4 w-4" />
           </button>
         </form>
 
-        {/* Error Messages */}
         <AnimatePresence>
           {error && (
-            <motion.div
+            <motion.p
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200"
+              className="mt-4 text-sm text-red-600"
             >
-              <p className="text-sm text-red-700">{error}</p>
-            </motion.div>
+              {error}
+            </motion.p>
           )}
         </AnimatePresence>
 
-        {/* Sign In Link */}
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-sm text-gray-600">
           Already have an account?{' '}
-          <Link to="/auth/sign-in" className="text-blue-600 hover:text-blue-700 hover:underline font-medium">
+          <Link to="/auth/sign-in" className="text-blue-600 hover:underline">
             Sign in
           </Link>
         </p>
-      </div>
-    </AuthLayout>
+      </motion.div>
+    </div>
   )
 }
