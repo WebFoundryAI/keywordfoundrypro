@@ -11,7 +11,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const UserMenu = () => {
   const { user, signOut } = useAuth();
@@ -72,13 +71,6 @@ export const UserMenu = () => {
         <DropdownMenuItem className="cursor-pointer">
           <Database className="mr-2 h-4 w-4" />
           <span>My Research</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <div className="flex items-center justify-between w-full px-2 py-1.5">
-            <span className="text-sm">Theme</span>
-            <ThemeToggle />
-          </div>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>

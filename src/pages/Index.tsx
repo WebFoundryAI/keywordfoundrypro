@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { UserMenu } from "@/components/UserMenu";
 import { useAuth } from "@/components/AuthProvider";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Search, Database, Target, TrendingUp, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -36,7 +35,6 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <ThemeToggle />
               {user ? (
                 <UserMenu />
               ) : (
