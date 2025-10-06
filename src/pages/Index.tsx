@@ -133,7 +133,7 @@ const Index = () => {
             onClick={() => navigate(user ? '/research' : '/auth/sign-in')}
             className="px-8 py-6 text-base font-medium hover-lift"
           >
-            Start Your Research Today
+            Start Your Research
           </Button>
         </div>
       </section>
