@@ -2,7 +2,7 @@
 
 **Last Updated:** 2025-10-06  
 **Project Type:** Vite + React + TypeScript + Supabase  
-**Status:** Production-ready authentication refactor
+**Status:** Production-ready with light mode theme
 
 ---
 
@@ -24,7 +24,7 @@
 - **shadcn/ui** - Component library (Radix UI primitives)
 - **Framer Motion** `^12.23.22` - Animation library
 - **Lucide React** `^0.462.0` - Icon library
-- **next-themes** `^0.3.0` - Dark/light mode
+- **next-themes** `^0.3.0` - Theme management (configured for light mode only)
 
 ### Data & Forms
 - **React Hook Form** `^7.61.1` - Form management
@@ -63,8 +63,8 @@ keyword-foundry-pro/
 │   │   ├── KeywordResearchForm.tsx
 │   │   ├── KeywordResultsTable.tsx
 │   │   ├── Navigation.tsx
-│   │   ├── ThemeProvider.tsx        # Dark/light mode
-│   │   ├── ThemeToggle.tsx
+│   │   ├── ThemeProvider.tsx        # Theme management (light mode only)
+│   │   ├── ThemeToggle.tsx          # Exists but not used in UI
 │   │   └── UserMenu.tsx             # User dropdown
 │   ├── hooks/
 │   │   ├── use-mobile.tsx
@@ -199,7 +199,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 | `class-variance-authority` | 0.7.1 | Component variant styling | Small |
 | `clsx` | 2.1.1 | Conditional classnames | Tiny |
 | `tailwind-merge` | 2.6.0 | Merge Tailwind classes | Small |
-| `next-themes` | 0.3.0 | Theme management | Small |
+| `next-themes` | 0.3.0 | Theme management (light mode only) | Small |
 | `sonner` | 1.7.4 | Toast notifications | Small |
 | `recharts` | 2.15.4 | Data visualization | High |
 | `date-fns` | 3.6.0 | Date utilities | Medium |
