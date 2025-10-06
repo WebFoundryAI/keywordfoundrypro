@@ -1,10 +1,8 @@
-import { Search, LogOut } from "lucide-react";
+import { Search } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { UserMenu } from "@/components/UserMenu";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/components/AuthProvider";
-import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
   user?: any;
@@ -12,24 +10,9 @@ interface HeaderProps {
 
 export const Header = ({ user }: HeaderProps) => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const { toast } = useToast();
 
   const handleLogoClick = () => {
     navigate('/');
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/auth/sign-in');
-    } catch (error) {
-      toast({
-        title: "Error signing out",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    }
   };
 
   return (
@@ -51,18 +34,7 @@ export const Header = ({ user }: HeaderProps) => {
           <div className="flex items-center gap-4">
             <Navigation />
             {user ? (
-              <div className="flex items-center gap-2">
-                <UserMenu />
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={handleSignOut}
-                  className="gap-1.5"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </Button>
-              </div>
+              <UserMenu />
             ) : (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => navigate('/auth/sign-in')}>
