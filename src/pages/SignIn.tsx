@@ -1,71 +1,63 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 export default function SignIn() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const navigate = useNavigate()
+  const { toast } = useToast()
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setNotice(null);
-    setLoading(true);
-    
+    e.preventDefault()
+    setError(null)
+    setNotice(null)
+    setLoading(true)
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
-      });
+      })
+      if (error) throw error
 
-      if (error) throw error;
-
-      toast({
-        title: "Signed in successfully",
-        description: "Welcome back!",
-      });
-      navigate('/research');
+      toast({ title: 'Signed in', description: 'Welcome back!' })
+      navigate('/research')
     } catch (err: any) {
-      setError(err?.message || 'Unable to sign in. Please try again.');
+      setError(err?.message || 'Unable to sign in. Please try again.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleForgot = async () => {
-    setError(null);
-    setNotice(null);
-    
+    setError(null)
+    setNotice(null)
     if (!email) {
-      setError('Enter your email above first.');
-      return;
+      setError('Enter your email above first.')
+      return
     }
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth/sign-in`,
-      });
+        redirectTo: `${window.location.origin}/auth/update-password`,
+      })
+      if (error) throw error
 
-      if (error) throw error;
-
-      setNotice('Password reset email sent (check your inbox).');
-      toast({
-        title: "Reset email sent",
-        description: "Check your inbox for the password reset link.",
-      });
+      setNotice('Password reset email sent (check your inbox).')
+      toast({ title: 'Reset email sent', description: 'Check your inbox for the link.' })
     } catch (err: any) {
-      setError(err?.message || 'Could not start password reset.');
+      setError(err?.message || 'Could not start password reset.')
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -75,7 +67,7 @@ export default function SignIn() {
         className="w-full max-w-md rounded-2xl border border-gray-200 p-6 shadow-sm"
       >
         <h1 className="text-2xl font-semibold mb-1">Welcome back</h1>
-        <p className="text-sm text-gray-500 mb-6">Sign in to access your dashboard</p>
+        <p className="text-sm text-gray-500 mb-6">Sign in to access your research tools</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -168,5 +160,5 @@ export default function SignIn() {
         </AnimatePresence>
       </motion.div>
     </div>
-  );
+  )
 }
