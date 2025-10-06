@@ -1,61 +1,61 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, ArrowRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, ArrowRight } from 'lucide-react'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 export default function SignUp() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [agree, setAgree] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate()
+  const { toast } = useToast()
 
-  const passwordsMatch = password === confirm;
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [agree, setAgree] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const passwordsMatch = password === confirm
+  const passwordMin = 6
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    
+    e.preventDefault()
+    setError(null)
+
     if (!agree) {
-      setError('Please agree to the Terms to continue.');
-      return;
+      setError('Please agree to the Terms to continue.')
+      return
     }
-    
     if (!passwordsMatch) {
-      setError('Passwords do not match.');
-      return;
+      setError('Passwords do not match.')
+      return
     }
-    
-    setLoading(true);
-    
+    if (password.length < passwordMin) {
+      setError(`Password must be at least ${passwordMin} characters.`)
+      return
+    }
+
+    setLoading(true)
     try {
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/research`,
+          emailRedirectTo: `${window.location.origin}/auth/update-password`, // future reset completion
         },
-      });
+      })
+      if (error) throw error
 
-      if (error) throw error;
-
-      toast({
-        title: "Account created successfully",
-        description: "Welcome! Check your email to confirm your account.",
-      });
-      navigate('/research');
+      toast({ title: 'Account created', description: 'Welcome! Redirecting…' })
+      navigate('/research')
     } catch (err: any) {
-      setError(err?.message || 'Unable to create account.');
+      setError(err?.message || 'Unable to create account.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -70,7 +70,7 @@ export default function SignUp() {
           </Link>
           <h1 className="text-2xl font-semibold">Create your account</h1>
         </div>
-        <p className="text-sm text-gray-500 mb-6">Join and get access to your dashboard</p>
+        <p className="text-sm text-gray-500 mb-6">Join and get access to your research tools</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -103,7 +103,7 @@ export default function SignUp() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={passwordMin}
               />
               <button
                 type="button"
@@ -129,7 +129,7 @@ export default function SignUp() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
-                minLength={6}
+                minLength={passwordMin}
               />
             </div>
             <AnimatePresence>
@@ -191,5 +191,5 @@ export default function SignUp() {
         </p>
       </motion.div>
     </div>
-  );
+  )
 }
