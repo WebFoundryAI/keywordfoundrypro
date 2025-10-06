@@ -41,10 +41,10 @@ const Index = () => {
                 <UserMenu />
               ) : (
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/auth/sign-in')}>
                     Log In
                   </Button>
-                  <Button size="sm" onClick={() => navigate('/auth')}>
+                  <Button size="sm" onClick={() => navigate('/auth/sign-up')}>
                     Sign Up
                   </Button>
                 </div>
@@ -68,7 +68,7 @@ const Index = () => {
           </p>
           <Button
             size="lg"
-            onClick={() => navigate(user ? '/research' : '/auth')}
+            onClick={() => navigate(user ? '/research' : '/auth/sign-in')}
             className="px-8 py-6 text-base font-medium hover-lift"
           >
             Get Started Now
@@ -132,7 +132,7 @@ const Index = () => {
           <Button
             size="lg"
             variant="secondary"
-            onClick={() => navigate(user ? '/research' : '/auth')}
+            onClick={() => navigate(user ? '/research' : '/auth/sign-in')}
             className="px-8 py-6 text-base font-medium hover-lift"
           >
             Start Your Research Today

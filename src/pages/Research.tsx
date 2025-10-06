@@ -15,7 +15,7 @@ const Research = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth');
+      navigate('/auth/sign-in');
     }
   }, [user, loading, navigate]);
 
@@ -26,7 +26,7 @@ const Research = () => {
         description: "Please sign in to perform keyword research.",
         variant: "destructive",
       });
-      navigate('/auth');
+      navigate('/auth/sign-in');
       return;
     }
 
@@ -64,7 +64,7 @@ const Research = () => {
           errorMessage = 'Network error. Please check your connection and try again.';
         } else if (error.message.includes('Unauthorized')) {
           errorMessage = 'Session expired. Please sign in again.';
-          setTimeout(() => navigate('/auth'), 2000);
+          setTimeout(() => navigate('/auth/sign-in'), 2000);
         } else if (error.message) {
           errorMessage = error.message;
         }

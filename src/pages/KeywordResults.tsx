@@ -19,7 +19,7 @@ const KeywordResults = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth');
+      navigate('/auth/sign-in');
       return;
     }
 
