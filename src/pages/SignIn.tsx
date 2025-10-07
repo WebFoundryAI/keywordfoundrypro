@@ -92,6 +92,9 @@ export default function SignIn() {
                 id="email"
                 type="email"
                 autoComplete="off"
+                name="email-new"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute('readonly')}
                 className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="you@example.com"
                 value={email}
@@ -110,7 +113,10 @@ export default function SignIn() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="off"
+                autoComplete="new-password"
+                name="password-new"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute('readonly')}
                 className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="••••••••"
                 value={password}
