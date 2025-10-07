@@ -91,7 +91,7 @@ export default function SignIn() {
               <input
                 id="email"
                 type="email"
-                autoComplete="email"
+                autoComplete="off"
                 className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="you@example.com"
                 value={email}
@@ -110,7 +110,7 @@ export default function SignIn() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
+                autoComplete="off"
                 className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="••••••••"
                 value={password}
