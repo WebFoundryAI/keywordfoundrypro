@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { KeywordResultsTable, KeywordResult } from "@/components/KeywordResultsTable";
 import { KeywordMetricsSummary } from "@/components/KeywordMetricsSummary";
 import { Header } from "@/components/Header";
-import { useCurrentUser } from "@/lib/auth-helpers";
+import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,7 @@ const KeywordResults = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
   const [seedKeyword, setSeedKeyword] = useState<KeywordResult | null>(null);
   const [keywordAnalyzed, setKeywordAnalyzed] = useState<string>("");
-  const { user, loading } = useCurrentUser();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -170,7 +170,7 @@ const KeywordResults = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header user={user} />
+      <Header />
 
       <section className="px-6 py-8">
         <div className="container mx-auto max-w-4xl space-y-6">

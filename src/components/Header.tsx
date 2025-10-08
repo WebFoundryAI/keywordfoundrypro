@@ -3,16 +3,12 @@ import { Navigation } from "@/components/Navigation";
 import { UserMenu } from "@/components/UserMenu";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { SignedIn, SignedOut, useClerk } from "@clerk/react-router";
+import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 
-interface HeaderProps {
-  user?: any;
-}
-
-export const Header = ({ user }: HeaderProps) => {
+export const Header = () => {
   const navigate = useNavigate();
-  const { signOut } = useClerk();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
 
   const handleLogoClick = () => {
@@ -50,7 +46,7 @@ export const Header = ({ user }: HeaderProps) => {
           </div>
           <div className="flex items-center gap-4">
             <Navigation />
-            <SignedIn>
+            {user ? (
               <div className="flex items-center gap-2">
                 <UserMenu />
                 <Button 
@@ -63,8 +59,7 @@ export const Header = ({ user }: HeaderProps) => {
                   Sign Out
                 </Button>
               </div>
-            </SignedIn>
-            <SignedOut>
+            ) : (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => navigate('/auth/sign-in')}>
                   Log In
@@ -73,7 +68,7 @@ export const Header = ({ user }: HeaderProps) => {
                   Sign Up
                 </Button>
               </div>
-            </SignedOut>
+            )}
           </div>
         </div>
       </div>

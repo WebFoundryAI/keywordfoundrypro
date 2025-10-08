@@ -1,74 +1,72 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
-import { useSignIn, useSignUp } from '@clerk/react-router';
-import { AuthLayout } from '@/components/auth/AuthLayout';
-import { OAuthButtons } from '@/components/auth/OAuthButtons';
-import { OrDivider } from '@/components/auth/OrDivider';
+import React, { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
+import { AuthLayout } from '@/components/auth/AuthLayout'
+import { OAuthButtons } from '@/components/auth/OAuthButtons'
+import { OrDivider } from '@/components/auth/OrDivider'
 
 export default function SignIn() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { signIn, isLoaded: signInLoaded } = useSignIn();
-  const { signUp } = useSignUp();
+  const navigate = useNavigate()
+  const { toast } = useToast()
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
-  const redirectTo = (location.state as any)?.from || '/research';
+  // Clear fields on mount
+  useEffect(() => {
+    setEmail('')
+    setPassword('')
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setNotice(null);
-
-    if (!signInLoaded) return;
-
-    setLoading(true);
+    e.preventDefault()
+    setError(null)
+    setNotice(null)
+    setLoading(true)
 
     try {
-      const result = await signIn.create({
-        identifier: email.trim(),
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password,
-      });
+      })
+      if (error) throw error
 
-      if (result.status === 'complete') {
-        navigate(redirectTo);
-      }
+      toast({ title: 'Signed in', description: 'Welcome back!' })
+      navigate('/research')
     } catch (err: any) {
-      setError(err?.errors?.[0]?.message || 'Unable to sign in. Please try again.');
+      setError(err?.message || 'Unable to sign in. Please try again.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleForgot = async () => {
-    setError(null);
-    setNotice(null);
-    
+    setError(null)
+    setNotice(null)
     if (!email) {
-      setError('Enter your email above first.');
-      return;
+      setError('Enter your email above first.')
+      return
     }
-
-    if (!signInLoaded) return;
 
     try {
-      await signIn.create({
-        strategy: 'reset_password_email_code',
-        identifier: email.trim(),
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/update-password`,
+      })
+      if (error) throw error
 
-      setNotice('Password reset email sent (check your inbox).');
+      setNotice('Password reset email sent (check your inbox).')
+      toast({ title: 'Reset email sent', description: 'Check your inbox for the link.' })
     } catch (err: any) {
-      setError(err?.errors?.[0]?.message || 'Could not start password reset.');
+      setError(err?.message || 'Could not start password reset.')
     }
-  };
+  }
 
   return (
     <AuthLayout>
@@ -78,12 +76,12 @@ export default function SignIn() {
 
         {/* OAuth Section */}
         <div className="space-y-4 mb-6">
-          <OAuthButtons redirectTo={redirectTo} />
+          <OAuthButtons />
           <OrDivider />
         </div>
 
         {/* Email/Password Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5" htmlFor="email">
               Email <span className="text-red-500">*</span>
@@ -93,7 +91,10 @@ export default function SignIn() {
               <input
                 id="email"
                 type="email"
-                autoComplete="email"
+                autoComplete="off"
+                name="email-new"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute('readonly')}
                 className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="you@example.com"
                 value={email}
@@ -112,13 +113,16 @@ export default function SignIn() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
+                autoComplete="new-password"
+                name="password-new"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute('readonly')}
                 className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={8}
+                minLength={6}
               />
               <button
                 type="button"
@@ -140,9 +144,9 @@ export default function SignIn() {
             >
               Forgot password?
             </button>
-            <a href="/auth/sign-up" className="text-gray-600 hover:text-gray-900 hover:underline font-medium">
+            <Link to="/auth/sign-up" className="text-gray-600 hover:text-gray-900 hover:underline font-medium">
               Create account
-            </a>
+            </Link>
           </div>
 
           {/* Submit Button with Gradient */}
@@ -181,5 +185,5 @@ export default function SignIn() {
         </AnimatePresence>
       </div>
     </AuthLayout>
-  );
+  )
 }

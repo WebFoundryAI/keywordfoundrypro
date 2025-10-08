@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { UserMenu } from "@/components/UserMenu";
-import { useCurrentUser } from "@/lib/auth-helpers";
+import { useAuth } from "@/components/AuthProvider";
 import { Search, Database, Target, TrendingUp, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const { user, loading } = useCurrentUser();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   if (loading) {

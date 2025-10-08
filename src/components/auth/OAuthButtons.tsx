@@ -1,30 +1,30 @@
-import React from 'react';
-import { useSignIn } from '@clerk/react-router';
+import React, { useState } from 'react'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
-interface OAuthButtonsProps {
-  isSignUp?: boolean;
-  redirectTo?: string;
-}
-
-export function OAuthButtons({ isSignUp = false, redirectTo = '/research' }: OAuthButtonsProps) {
-  const { signIn } = useSignIn();
-  const [loading, setLoading] = React.useState(false);
+export function OAuthButtons() {
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
 
   const handleGoogleSignIn = async () => {
-    if (!signIn) return;
-
-    setLoading(true);
+    setLoading(true)
     try {
-      await signIn.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: redirectTo,
-      });
-    } catch (err) {
-      console.error('OAuth error:', err);
-      setLoading(false);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/research`,
+        },
+      })
+      if (error) throw error
+    } catch (err: any) {
+      toast({
+        title: 'OAuth Error',
+        description: err?.message || 'Failed to sign in with Google',
+        variant: 'destructive',
+      })
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <button
@@ -53,5 +53,5 @@ export function OAuthButtons({ isSignUp = false, redirectTo = '/research' }: OAu
       </svg>
       <span>{loading ? 'Connecting...' : 'Continue with Google'}</span>
     </button>
-  );
+  )
 }

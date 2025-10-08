@@ -4,13 +4,13 @@ import { KeywordResearchForm, KeywordFormData } from "@/components/KeywordResear
 import { KeywordResult } from "@/components/KeywordResultsTable";
 import { Header } from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
-import { useCurrentUser } from "@/lib/auth-helpers";
+import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 
 const Research = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { user, loading } = useCurrentUser();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -159,7 +159,7 @@ const Research = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header user={user} />
+      <Header />
 
       <section className="px-6 py-8">
         <div className="container mx-auto max-w-4xl space-y-6">
