@@ -4,13 +4,13 @@ import { KeywordResearchForm, KeywordFormData } from "@/components/KeywordResear
 import { KeywordResult } from "@/components/KeywordResultsTable";
 import { Header } from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/AuthProvider";
+import { useCurrentUser } from "@/lib/auth-helpers";
 import { supabase } from "@/integrations/supabase/client";
 
 const Research = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading } = useCurrentUser();
   const navigate = useNavigate();
 
   useEffect(() => {

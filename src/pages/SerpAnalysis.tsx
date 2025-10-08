@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/AuthProvider";
+import { useCurrentUser } from "@/lib/auth-helpers";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ExternalLink, Globe, MapPin, Zap } from "lucide-react";
@@ -73,7 +73,7 @@ const SerpAnalysis = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading } = useCurrentUser();
   const navigate = useNavigate();
   const resultsRef = useRef<HTMLDivElement>(null);
 

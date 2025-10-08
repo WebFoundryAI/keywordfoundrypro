@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { KeywordResultsTable, KeywordResult } from "@/components/KeywordResultsTable";
 import { KeywordMetricsSummary } from "@/components/KeywordMetricsSummary";
 import { Header } from "@/components/Header";
-import { useAuth } from "@/components/AuthProvider";
+import { useCurrentUser } from "@/lib/auth-helpers";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,7 @@ const KeywordResults = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
   const [seedKeyword, setSeedKeyword] = useState<KeywordResult | null>(null);
   const [keywordAnalyzed, setKeywordAnalyzed] = useState<string>("");
-  const { user, loading } = useAuth();
+  const { user, loading } = useCurrentUser();
   const navigate = useNavigate();
   const { toast } = useToast();
 

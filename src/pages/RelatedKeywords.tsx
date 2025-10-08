@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/AuthProvider";
+import { useCurrentUser } from "@/lib/auth-helpers";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter, X } from "lucide-react";
@@ -120,7 +120,7 @@ const RelatedKeywords = () => {
   const [cpcValue, setCpcValue] = useState("");
   
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading } = useCurrentUser();
   const navigate = useNavigate();
 
   useEffect(() => {

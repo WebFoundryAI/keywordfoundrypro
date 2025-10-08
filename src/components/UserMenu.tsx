@@ -9,11 +9,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth } from '@/components/AuthProvider';
+import { useCurrentUser } from '@/lib/auth-helpers';
+import { useClerk } from '@clerk/react-router';
 import { useToast } from '@/hooks/use-toast';
 
 export const UserMenu = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useCurrentUser();
+  const { signOut } = useClerk();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
