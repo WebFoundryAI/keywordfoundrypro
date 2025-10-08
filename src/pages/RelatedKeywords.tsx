@@ -438,7 +438,7 @@ const RelatedKeywords = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header user={user} />
 
       {/* Search Form */}
       <section className="px-6 py-8">

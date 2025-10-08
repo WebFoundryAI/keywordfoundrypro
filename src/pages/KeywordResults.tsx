@@ -170,7 +170,7 @@ const KeywordResults = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header user={user} />
 
       <section className="px-6 py-8">
         <div className="container mx-auto max-w-4xl space-y-6">

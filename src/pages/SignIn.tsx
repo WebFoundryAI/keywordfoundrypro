@@ -81,7 +81,7 @@ export default function SignIn() {
         </div>
 
         {/* Email/Password Form */}
-        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5" htmlFor="email">
               Email <span className="text-red-500">*</span>

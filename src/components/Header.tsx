@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 
-export const Header = () => {
+interface HeaderProps {
+  user?: any;
+}
+
+export const Header = ({ user }: HeaderProps) => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const { toast } = useToast();
 
   const handleLogoClick = () => {
