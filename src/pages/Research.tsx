@@ -116,6 +116,8 @@ const Research = () => {
       localStorage.setItem('currentResearchId', data.research_id);
       localStorage.setItem('keywordAnalyzed', formData.keyword);
       localStorage.setItem('lastKeyword', formData.keyword);
+      localStorage.setItem('lastLanguageCode', formData.languageCode);
+      localStorage.setItem('lastLocationCode', formData.locationCode.toString());
       
       // Build success message
       let description = `Found ${data.total_results} keywords for "${formData.keyword}" (Cost: $${data.estimated_cost})`;

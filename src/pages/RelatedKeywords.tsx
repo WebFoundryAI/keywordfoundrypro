@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
+import { Separator } from "@/components/ui/separator";
 import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter, X } from "lucide-react";
 import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
 
@@ -54,6 +55,17 @@ const LOCATION_OPTIONS = [
   { code: 2156, name: "China" },
 ];
 
+// Filter types
+type FilterField = "searchVolume" | "cpc" | "difficulty";
+type FilterOperator = "<" | ">" | "<=" | ">=" | "=";
+
+interface NumericFilter {
+  field: FilterField;
+  operator: FilterOperator;
+  value: number;
+  enabled: boolean;
+}
+
 // Pure function: parse metric value to number, handling formatted strings
 const getNumeric = (value: any): number | null => {
   if (value === null || value === undefined) return null;
@@ -77,6 +89,40 @@ const getNumeric = (value: any): number | null => {
   return null;
 };
 
+// Apply a single numeric filter to a result
+const applyNumericFilter = (result: RelatedKeyword, filter: NumericFilter): boolean => {
+  if (!filter.enabled) return true;
+  
+  const value = getNumeric(result[filter.field]);
+  if (value === null) return false;
+  
+  switch (filter.operator) {
+    case '<': return value < filter.value;
+    case '<=': return value <= filter.value;
+    case '=': return value === filter.value;
+    case '>=': return value >= filter.value;
+    case '>': return value > filter.value;
+    default: return true;
+  }
+};
+
+// Filter results based on search term and numeric filters
+const filterResults = (
+  results: RelatedKeyword[],
+  searchTerm: string,
+  filters: NumericFilter[]
+): RelatedKeyword[] => {
+  return results.filter(result => {
+    // Search term filter
+    if (searchTerm && !result.keyword.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+    
+    // Apply all numeric filters
+    return filters.every(filter => applyNumericFilter(result, filter));
+  });
+};
+
 const RelatedKeywords = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -84,10 +130,10 @@ const RelatedKeywords = () => {
     return searchParams.get('keyword') || localStorage.getItem('lastKeyword') || '';
   });
   const [languageCode, setLanguageCode] = useState(() => {
-    return searchParams.get('language') || 'en';
+    return searchParams.get('language') || localStorage.getItem('lastLanguageCode') || 'en';
   });
   const [locationCode, setLocationCode] = useState(() => {
-    return parseInt(searchParams.get('location') || '2840');
+    return parseInt(searchParams.get('location') || localStorage.getItem('lastLocationCode') || '2840');
   });
   const [limit, setLimit] = useState(() => {
     return parseInt(searchParams.get('limit') || '100');
@@ -108,16 +154,27 @@ const RelatedKeywords = () => {
   const [sortBy, setSortBy] = useState<keyof RelatedKeyword>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   
-  // Filter state
+  // Filters
   const [showFilters, setShowFilters] = useState(false);
-  const [filterKeyword, setFilterKeyword] = useState("");
-  const [filterKeywordExclude, setFilterKeywordExclude] = useState("");
-  const [volumeFilterEnabled, setVolumeFilterEnabled] = useState(false);
-  const [volumeOperator, setVolumeOperator] = useState(">=");
-  const [volumeValue, setVolumeValue] = useState("");
-  const [cpcFilterEnabled, setCpcFilterEnabled] = useState(false);
-  const [cpcOperator, setCpcOperator] = useState(">=");
-  const [cpcValue, setCpcValue] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [volumeFilter, setVolumeFilter] = useState<NumericFilter>({
+    field: "searchVolume",
+    operator: ">=",
+    value: 0,
+    enabled: false
+  });
+  const [cpcFilter, setCpcFilter] = useState<NumericFilter>({
+    field: "cpc",
+    operator: ">=",
+    value: 0,
+    enabled: false
+  });
+  const [difficultyFilter, setDifficultyFilter] = useState<NumericFilter>({
+    field: "difficulty",
+    operator: "<=",
+    value: 100,
+    enabled: false
+  });
   
   const { toast } = useToast();
   const { user, loading } = useAuth();
@@ -316,18 +373,22 @@ const RelatedKeywords = () => {
   };
 
   const resetFilters = () => {
-    setFilterKeyword("");
-    setFilterKeywordExclude("");
-    setVolumeFilterEnabled(false);
-    setVolumeValue("");
-    setCpcFilterEnabled(false);
-    setCpcValue("");
+    setSearchTerm('');
+    setVolumeFilter({ ...volumeFilter, enabled: false, value: 0 });
+    setCpcFilter({ ...cpcFilter, enabled: false, value: 0 });
+    setDifficultyFilter({ ...difficultyFilter, enabled: false, value: 100 });
   };
 
-  const hasActiveFilters = filterKeyword.trim() !== "" || 
-                          filterKeywordExclude.trim() !== "" || 
-                          volumeFilterEnabled || 
-                          cpcFilterEnabled;
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (volumeFilter.enabled) count++;
+    if (cpcFilter.enabled) count++;
+    if (difficultyFilter.enabled) count++;
+    return count;
+  };
+
+  const hasActiveFilters = getActiveFilterCount() > 0;
 
   const getIntentColor = (intent: string) => {
     switch (intent.toLowerCase()) {
@@ -344,46 +405,8 @@ const RelatedKeywords = () => {
     }
   };
 
-  // Client-side filtering logic
-  const applyFilters = (data: RelatedKeyword[]): RelatedKeyword[] => {
-    return data.filter(result => {
-      // Text contains filter
-      if (filterKeyword.trim() && !result.keyword.toLowerCase().includes(filterKeyword.toLowerCase())) {
-        return false;
-      }
-      
-      // Text excludes filter
-      if (filterKeywordExclude.trim() && result.keyword.toLowerCase().includes(filterKeywordExclude.toLowerCase())) {
-        return false;
-      }
-      
-      // Volume filter
-      if (volumeFilterEnabled && volumeValue.trim()) {
-        const targetValue = getNumeric(volumeValue);
-        const resultValue = getNumeric(result.searchVolume);
-        
-        if (targetValue === null || resultValue === null) return false;
-        
-        if (volumeOperator === ">=" && resultValue < targetValue) return false;
-        if (volumeOperator === "<=" && resultValue > targetValue) return false;
-      }
-      
-      // CPC filter
-      if (cpcFilterEnabled && cpcValue.trim()) {
-        const targetValue = getNumeric(cpcValue);
-        const resultValue = getNumeric(result.cpc);
-        
-        if (targetValue === null || resultValue === null) return false;
-        
-        if (cpcOperator === ">=" && resultValue < targetValue) return false;
-        if (cpcOperator === "<=" && resultValue > targetValue) return false;
-      }
-      
-      return true;
-    });
-  };
-
-  const filteredResults = applyFilters(results);
+  // Apply filtering
+  const filteredResults = filterResults(results, searchTerm, [volumeFilter, cpcFilter, difficultyFilter]);
 
   const sortedResults = [...filteredResults].sort((a, b) => {
     const aValue = a[sortBy];
@@ -601,7 +624,7 @@ const RelatedKeywords = () => {
                       size="sm"
                     >
                       <Filter className="w-4 h-4 mr-2" />
-                      Filters {hasActiveFilters && `(${[filterKeyword.trim(), filterKeywordExclude.trim(), volumeFilterEnabled, cpcFilterEnabled].filter(Boolean).length})`}
+                      Filters {hasActiveFilters && `(${getActiveFilterCount()})`}
                     </Button>
                     <Button onClick={exportToJSON} variant="outline" size="sm">
                       Export JSON
@@ -614,124 +637,185 @@ const RelatedKeywords = () => {
               </CardHeader>
               <CardContent>
                 {/* Filter Panel */}
-                {showFilters && (
-                  <Card className="mb-6 border-primary/20">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Filter Results</CardTitle>
-                        <div className="flex gap-2">
-                          <Button onClick={resetFilters} variant="ghost" size="sm">
-                            <X className="w-4 h-4 mr-1" />
-                            Reset
-                          </Button>
-                        </div>
+            {showFilters && (
+              <Card className="p-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Filters</h3>
+                    {hasActiveFilters && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetFilters}
+                        className="h-8"
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="search">Search Keywords</Label>
+                      <Input
+                        id="search"
+                        placeholder="Filter by keyword..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="volume-filter"
+                          checked={volumeFilter.enabled}
+                          onCheckedChange={(checked) =>
+                            setVolumeFilter({ ...volumeFilter, enabled: !!checked })
+                          }
+                        />
+                        <Label htmlFor="volume-filter" className="font-medium">
+                          Search Volume
+                        </Label>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Text Filters */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="filter-contains">Keyword Contains</Label>
+                      {volumeFilter.enabled && (
+                        <div className="flex gap-2 ml-6">
+                          <Select
+                            value={volumeFilter.operator}
+                            onValueChange={(value: FilterOperator) =>
+                              setVolumeFilter({ ...volumeFilter, operator: value })
+                            }
+                          >
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="<">Less than</SelectItem>
+                              <SelectItem value="<=">Less or equal</SelectItem>
+                              <SelectItem value="=">Equal to</SelectItem>
+                              <SelectItem value=">=">Greater or equal</SelectItem>
+                              <SelectItem value=">">Greater than</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <Input
-                            id="filter-contains"
-                            placeholder="e.g., best"
-                            value={filterKeyword}
-                            onChange={(e) => setFilterKeyword(e.target.value)}
-                            className="bg-background/50"
+                            type="number"
+                            placeholder="Value"
+                            value={volumeFilter.value}
+                            onChange={(e) =>
+                              setVolumeFilter({
+                                ...volumeFilter,
+                                value: parseFloat(e.target.value) || 0
+                              })
+                            }
+                            className="flex-1"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="filter-excludes">Keyword Excludes</Label>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="cpc-filter"
+                          checked={cpcFilter.enabled}
+                          onCheckedChange={(checked) =>
+                            setCpcFilter({ ...cpcFilter, enabled: !!checked })
+                          }
+                        />
+                        <Label htmlFor="cpc-filter" className="font-medium">
+                          CPC
+                        </Label>
+                      </div>
+                      {cpcFilter.enabled && (
+                        <div className="flex gap-2 ml-6">
+                          <Select
+                            value={cpcFilter.operator}
+                            onValueChange={(value: FilterOperator) =>
+                              setCpcFilter({ ...cpcFilter, operator: value })
+                            }
+                          >
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="<">Less than</SelectItem>
+                              <SelectItem value="<=">Less or equal</SelectItem>
+                              <SelectItem value="=">Equal to</SelectItem>
+                              <SelectItem value=">=">Greater or equal</SelectItem>
+                              <SelectItem value=">">Greater than</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <Input
-                            id="filter-excludes"
-                            placeholder="e.g., cheap"
-                            value={filterKeywordExclude}
-                            onChange={(e) => setFilterKeywordExclude(e.target.value)}
-                            className="bg-background/50"
+                            type="number"
+                            step="0.01"
+                            placeholder="Value"
+                            value={cpcFilter.value}
+                            onChange={(e) =>
+                              setCpcFilter({
+                                ...cpcFilter,
+                                value: parseFloat(e.target.value) || 0
+                              })
+                            }
+                            className="flex-1"
                           />
                         </div>
-                      </div>
+                      )}
+                    </div>
 
-                      {/* Numeric Filters */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Volume Filter */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="volume-filter"
-                              checked={volumeFilterEnabled}
-                              onCheckedChange={(checked) => setVolumeFilterEnabled(checked as boolean)}
-                            />
-                            <Label htmlFor="volume-filter" className="cursor-pointer">
-                              Search Volume
-                            </Label>
-                          </div>
-                          <div className="flex gap-2">
-                            <Select 
-                              value={volumeOperator} 
-                              onValueChange={(val) => setVolumeOperator(val)}
-                              disabled={!volumeFilterEnabled}
-                            >
-                              <SelectTrigger className="w-24 bg-background/50">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value=">=">≥</SelectItem>
-                                <SelectItem value="<=">≤</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              type="number"
-                              placeholder="1000"
-                              value={volumeValue}
-                              onChange={(e) => setVolumeValue(e.target.value)}
-                              disabled={!volumeFilterEnabled}
-                              className="bg-background/50"
-                            />
-                          </div>
-                        </div>
-
-                        {/* CPC Filter */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="cpc-filter"
-                              checked={cpcFilterEnabled}
-                              onCheckedChange={(checked) => setCpcFilterEnabled(checked as boolean)}
-                            />
-                            <Label htmlFor="cpc-filter" className="cursor-pointer">
-                              CPC ($)
-                            </Label>
-                          </div>
-                          <div className="flex gap-2">
-                            <Select 
-                              value={cpcOperator} 
-                              onValueChange={(val) => setCpcOperator(val)}
-                              disabled={!cpcFilterEnabled}
-                            >
-                              <SelectTrigger className="w-24 bg-background/50">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value=">=">≥</SelectItem>
-                                <SelectItem value="<=">≤</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="1.00"
-                              value={cpcValue}
-                              onChange={(e) => setCpcValue(e.target.value)}
-                              disabled={!cpcFilterEnabled}
-                              className="bg-background/50"
-                            />
-                          </div>
-                        </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="difficulty-filter"
+                          checked={difficultyFilter.enabled}
+                          onCheckedChange={(checked) =>
+                            setDifficultyFilter({ ...difficultyFilter, enabled: !!checked })
+                          }
+                        />
+                        <Label htmlFor="difficulty-filter" className="font-medium">
+                          Difficulty
+                        </Label>
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
+                      {difficultyFilter.enabled && (
+                        <div className="flex gap-2 ml-6">
+                          <Select
+                            value={difficultyFilter.operator}
+                            onValueChange={(value: FilterOperator) =>
+                              setDifficultyFilter({ ...difficultyFilter, operator: value })
+                            }
+                          >
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="<">Less than</SelectItem>
+                              <SelectItem value="<=">Less or equal</SelectItem>
+                              <SelectItem value="=">Equal to</SelectItem>
+                              <SelectItem value=">=">Greater or equal</SelectItem>
+                              <SelectItem value=">">Greater than</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            placeholder="Value"
+                            value={difficultyFilter.value}
+                            onChange={(e) =>
+                              setDifficultyFilter({
+                                ...difficultyFilter,
+                                value: parseFloat(e.target.value) || 0
+                              })
+                            }
+                            className="flex-1"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
                 <div className="rounded-lg border border-border/50 overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -755,30 +839,21 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[80px]"
-                          onClick={() => handleSort("cpc")}
-                        >
-                          <div className="flex items-center justify-end">
-                            CPC
-                            {getSortIcon("cpc")}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
-                          onClick={() => handleSort("competition")}
-                        >
-                          <div className="flex items-center justify-end">
-                            Competition
-                            {getSortIcon("competition")}
-                          </div>
-                        </TableHead>
-                        <TableHead 
                           className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
                           onClick={() => handleSort("difficulty")}
                         >
                           <div className="flex items-center justify-end">
                             Difficulty
                             {getSortIcon("difficulty")}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[80px]"
+                          onClick={() => handleSort("cpc")}
+                        >
+                          <div className="flex items-center justify-end">
+                            CPC
+                            {getSortIcon("cpc")}
                           </div>
                         </TableHead>
                         <TableHead 
@@ -789,9 +864,6 @@ const RelatedKeywords = () => {
                             Intent
                             {getSortIcon("intent")}
                           </div>
-                        </TableHead>
-                        <TableHead className="select-none min-w-[100px]">
-                          Categories
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -806,23 +878,21 @@ const RelatedKeywords = () => {
                           <TableCell className="text-right font-mono">
                             {formatNumber(result.searchVolume)}
                           </TableCell>
+                          <TableCell className="text-right">
+                            <Badge
+                              variant={
+                                result.difficulty && result.difficulty > 70
+                                  ? 'destructive'
+                                  : result.difficulty && result.difficulty > 40
+                                  ? 'default'
+                                  : 'secondary'
+                              }
+                            >
+                              {formatDifficulty(result.difficulty)}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatCurrency(result.cpc)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-xs">
-                            {result.competition !== null ? (
-                              <div>
-                                <div>{(result.competition * 100).toFixed(1)}%</div>
-                                {result.competition_level && (
-                                  <div className="text-muted-foreground">{result.competition_level}</div>
-                                )}
-                              </div>
-                            ) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className={`font-bold ${getDifficultyColor(result.difficulty)}`}>
-                              {formatDifficulty(result.difficulty)}
-                            </span>
                           </TableCell>
                           <TableCell>
                             <Badge 
@@ -831,22 +901,6 @@ const RelatedKeywords = () => {
                             >
                               {result.intent}
                             </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {result.categories && result.categories.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {result.categories.slice(0, 3).map((cat, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                    {cat}
-                                  </Badge>
-                                ))}
-                                {result.categories.length > 3 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{result.categories.length - 3}
-                                  </Badge>
-                                )}
-                              </div>
-                            ) : '-'}
                           </TableCell>
                         </TableRow>
                       ))}
