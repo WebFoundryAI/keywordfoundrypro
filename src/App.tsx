@@ -13,6 +13,7 @@ import SerpAnalysis from "./pages/SerpAnalysis";
 import RelatedKeywords from "./pages/RelatedKeywords";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import UpdatePassword from "./pages/UpdatePassword";
 import Profile from "./pages/Profile";
 import Pricing from "./pages/Pricing";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -51,6 +52,7 @@ const App = () => (
               </Route>
               <Route path="/auth/sign-in" element={<SignIn />} />
               <Route path="/auth/sign-up" element={<SignUp />} />
+              <Route path="/auth/update-password" element={<UpdatePassword />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/terms" element={<Terms />} />

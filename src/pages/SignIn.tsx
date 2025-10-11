@@ -66,7 +66,7 @@ export default function SignIn() {
       })
       if (error) throw error
 
-      setNotice('Password reset email sent (check your inbox).')
+      setNotice('Password reset link sent! Check your email and click the link to set a new password.')
       toast({ title: 'Reset email sent', description: 'Check your inbox for the link.' })
     } catch (err: any) {
       setError(err?.message || 'Could not start password reset.')
