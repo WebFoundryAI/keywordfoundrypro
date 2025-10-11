@@ -7,14 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
-import { Separator } from "@/components/ui/separator";
-import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter, X } from "lucide-react";
-import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
+import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter } from "lucide-react";
+import { formatNumber, formatDifficulty, formatCurrency } from "@/lib/utils";
 
 interface RelatedKeyword {
   keyword: string;
@@ -373,22 +371,14 @@ const RelatedKeywords = () => {
   };
 
   const resetFilters = () => {
-    setSearchTerm('');
-    setVolumeFilter({ ...volumeFilter, enabled: false, value: 0 });
-    setCpcFilter({ ...cpcFilter, enabled: false, value: 0 });
-    setDifficultyFilter({ ...difficultyFilter, enabled: false, value: 100 });
+    setVolumeFilter({ field: "searchVolume" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false });
+    setCpcFilter({ field: "cpc" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false });
+    setDifficultyFilter({ field: "difficulty" as FilterField, operator: "<" as FilterOperator, value: 100, enabled: false });
   };
 
   const getActiveFilterCount = () => {
-    let count = 0;
-    if (searchTerm) count++;
-    if (volumeFilter.enabled) count++;
-    if (cpcFilter.enabled) count++;
-    if (difficultyFilter.enabled) count++;
-    return count;
+    return [volumeFilter, cpcFilter, difficultyFilter].filter(f => f.enabled).length;
   };
-
-  const hasActiveFilters = getActiveFilterCount() > 0;
 
 
   // Apply filtering
@@ -596,212 +586,174 @@ const RelatedKeywords = () => {
           {results.length > 0 && (
             <Card className="bg-gradient-card shadow-card border-border/50">
               <CardHeader>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Related Keywords for "{keyword}"</CardTitle>
+                    <CardTitle className="text-xl">Related Keywords for "{keyword}"</CardTitle>
                     <CardDescription>
-                      Showing {sortedResults.length} of {results.length} keywords {hasActiveFilters && '(filtered)'} 
+                      Showing {sortedResults.length} of {results.length} keywords
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      onClick={() => setShowFilters(!showFilters)} 
-                      variant={hasActiveFilters ? "default" : "outline"} 
-                      size="sm"
-                    >
-                      <Filter className="w-4 h-4 mr-2" />
-                      Filters {hasActiveFilters && `(${getActiveFilterCount()})`}
-                    </Button>
-                    <Button onClick={exportToJSON} variant="outline" size="sm">
+                    <Button onClick={exportToJSON} variant="outline" size="sm" className="bg-background/50">
                       Export JSON
                     </Button>
-                    <Button onClick={exportToCSV} variant="outline" size="sm">
+                    <Button onClick={exportToCSV} variant="outline" size="sm" className="bg-background/50">
                       Export CSV
                     </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Filter Panel */}
-            {showFilters && (
-              <Card className="p-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Filters</h3>
-                    {hasActiveFilters && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={resetFilters}
-                        className="h-8"
-                      >
-                        Clear All
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="search">Search Keywords</Label>
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                       <Input
-                        id="search"
-                        placeholder="Filter by keyword..."
+                        placeholder="Search keywords..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="mt-1.5"
+                        className="pl-10 bg-background/50"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="bg-background/50"
+                    >
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filters
+                      {getActiveFilterCount() > 0 && (
+                        <Badge variant="secondary" className="ml-2">
+                          {getActiveFilterCount()}
+                        </Badge>
+                      )}
+                    </Button>
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      {sortedResults.length} of {results.length}
+                    </Badge>
+                  </div>
+                </div>
+                {/* Filter Panel */}
+                {showFilters && (
+                  <div className="bg-muted/30 rounded-lg p-4 space-y-4 mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Numeric Filters</span>
+                      <span className="text-xs text-muted-foreground">All filters use AND logic</span>
+                    </div>
+
+                    {/* Volume Filter */}
+                    <div className="flex items-center gap-3 bg-background/80 p-3 rounded-md border border-border/30">
+                      <input
+                        type="checkbox"
+                        checked={volumeFilter.enabled}
+                        onChange={(e) => setVolumeFilter({ ...volumeFilter, enabled: e.target.checked })}
+                        className="w-4 h-4 rounded border-border"
+                      />
+                      <span className="text-sm font-medium min-w-[80px]">Volume</span>
+                      <Select
+                        value={volumeFilter.operator}
+                        onValueChange={(value) => setVolumeFilter({ ...volumeFilter, operator: value as FilterOperator })}
+                      >
+                        <SelectTrigger className="w-[80px] bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="<">{"<"}</SelectItem>
+                          <SelectItem value="<=">{"≤"}</SelectItem>
+                          <SelectItem value="=">{"="}</SelectItem>
+                          <SelectItem value=">=">{">="}</SelectItem>
+                          <SelectItem value=">">{">"}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        value={volumeFilter.value}
+                        onChange={(e) => setVolumeFilter({ ...volumeFilter, value: parseFloat(e.target.value) || 0 })}
+                        placeholder="Value"
+                        className="w-[120px] bg-background"
                       />
                     </div>
 
-                    <Separator />
-
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="volume-filter"
-                          checked={volumeFilter.enabled}
-                          onCheckedChange={(checked) =>
-                            setVolumeFilter({ ...volumeFilter, enabled: !!checked })
-                          }
-                        />
-                        <Label htmlFor="volume-filter" className="font-medium">
-                          Search Volume
-                        </Label>
-                      </div>
-                      {volumeFilter.enabled && (
-                        <div className="flex gap-2 ml-6">
-                          <Select
-                            value={volumeFilter.operator}
-                            onValueChange={(value: FilterOperator) =>
-                              setVolumeFilter({ ...volumeFilter, operator: value })
-                            }
-                          >
-                            <SelectTrigger className="w-[100px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="<">Less than</SelectItem>
-                              <SelectItem value="<=">Less or equal</SelectItem>
-                              <SelectItem value="=">Equal to</SelectItem>
-                              <SelectItem value=">=">Greater or equal</SelectItem>
-                              <SelectItem value=">">Greater than</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            type="number"
-                            placeholder="Value"
-                            value={volumeFilter.value}
-                            onChange={(e) =>
-                              setVolumeFilter({
-                                ...volumeFilter,
-                                value: parseFloat(e.target.value) || 0
-                              })
-                            }
-                            className="flex-1"
-                          />
-                        </div>
-                      )}
+                    {/* CPC Filter */}
+                    <div className="flex items-center gap-3 bg-background/80 p-3 rounded-md border border-border/30">
+                      <input
+                        type="checkbox"
+                        checked={cpcFilter.enabled}
+                        onChange={(e) => setCpcFilter({ ...cpcFilter, enabled: e.target.checked })}
+                        className="w-4 h-4 rounded border-border"
+                      />
+                      <span className="text-sm font-medium min-w-[80px]">CPC</span>
+                      <Select
+                        value={cpcFilter.operator}
+                        onValueChange={(value) => setCpcFilter({ ...cpcFilter, operator: value as FilterOperator })}
+                      >
+                        <SelectTrigger className="w-[80px] bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="<">{"<"}</SelectItem>
+                          <SelectItem value="<=">{"≤"}</SelectItem>
+                          <SelectItem value="=">{"="}</SelectItem>
+                          <SelectItem value=">=">{">="}</SelectItem>
+                          <SelectItem value=">">{">"}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={cpcFilter.value}
+                        onChange={(e) => setCpcFilter({ ...cpcFilter, value: parseFloat(e.target.value) || 0 })}
+                        placeholder="Value"
+                        className="w-[120px] bg-background"
+                      />
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="cpc-filter"
-                          checked={cpcFilter.enabled}
-                          onCheckedChange={(checked) =>
-                            setCpcFilter({ ...cpcFilter, enabled: !!checked })
-                          }
-                        />
-                        <Label htmlFor="cpc-filter" className="font-medium">
-                          CPC
-                        </Label>
-                      </div>
-                      {cpcFilter.enabled && (
-                        <div className="flex gap-2 ml-6">
-                          <Select
-                            value={cpcFilter.operator}
-                            onValueChange={(value: FilterOperator) =>
-                              setCpcFilter({ ...cpcFilter, operator: value })
-                            }
-                          >
-                            <SelectTrigger className="w-[100px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="<">Less than</SelectItem>
-                              <SelectItem value="<=">Less or equal</SelectItem>
-                              <SelectItem value="=">Equal to</SelectItem>
-                              <SelectItem value=">=">Greater or equal</SelectItem>
-                              <SelectItem value=">">Greater than</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="Value"
-                            value={cpcFilter.value}
-                            onChange={(e) =>
-                              setCpcFilter({
-                                ...cpcFilter,
-                                value: parseFloat(e.target.value) || 0
-                              })
-                            }
-                            className="flex-1"
-                          />
-                        </div>
-                      )}
+                    {/* Difficulty Filter */}
+                    <div className="flex items-center gap-3 bg-background/80 p-3 rounded-md border border-border/30">
+                      <input
+                        type="checkbox"
+                        checked={difficultyFilter.enabled}
+                        onChange={(e) => setDifficultyFilter({ ...difficultyFilter, enabled: e.target.checked })}
+                        className="w-4 h-4 rounded border-border"
+                      />
+                      <span className="text-sm font-medium min-w-[80px]">Difficulty</span>
+                      <Select
+                        value={difficultyFilter.operator}
+                        onValueChange={(value) => setDifficultyFilter({ ...difficultyFilter, operator: value as FilterOperator })}
+                      >
+                        <SelectTrigger className="w-[80px] bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="<">{"<"}</SelectItem>
+                          <SelectItem value="<=">{"≤"}</SelectItem>
+                          <SelectItem value="=">{"="}</SelectItem>
+                          <SelectItem value=">=">{">="}</SelectItem>
+                          <SelectItem value=">">{">"}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        value={difficultyFilter.value}
+                        onChange={(e) => setDifficultyFilter({ ...difficultyFilter, value: parseFloat(e.target.value) || 0 })}
+                        placeholder="Value"
+                        className="w-[120px] bg-background"
+                      />
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="difficulty-filter"
-                          checked={difficultyFilter.enabled}
-                          onCheckedChange={(checked) =>
-                            setDifficultyFilter({ ...difficultyFilter, enabled: !!checked })
-                          }
-                        />
-                        <Label htmlFor="difficulty-filter" className="font-medium">
-                          Difficulty
-                        </Label>
-                      </div>
-                      {difficultyFilter.enabled && (
-                        <div className="flex gap-2 ml-6">
-                          <Select
-                            value={difficultyFilter.operator}
-                            onValueChange={(value: FilterOperator) =>
-                              setDifficultyFilter({ ...difficultyFilter, operator: value })
-                            }
-                          >
-                            <SelectTrigger className="w-[100px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="<">Less than</SelectItem>
-                              <SelectItem value="<=">Less or equal</SelectItem>
-                              <SelectItem value="=">Equal to</SelectItem>
-                              <SelectItem value=">=">Greater or equal</SelectItem>
-                              <SelectItem value=">">Greater than</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            type="number"
-                            placeholder="Value"
-                            value={difficultyFilter.value}
-                            onChange={(e) =>
-                              setDifficultyFilter({
-                                ...difficultyFilter,
-                                value: parseFloat(e.target.value) || 0
-                              })
-                            }
-                            className="flex-1"
-                          />
-                        </div>
-                      )}
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={resetFilters}
+                      >
+                        Reset
+                      </Button>
                     </div>
                   </div>
-                </div>
-              </Card>
-            )}
+                )}
                 <div className="rounded-lg border border-border/50 overflow-x-auto">
                   <Table>
                     <TableHeader>
