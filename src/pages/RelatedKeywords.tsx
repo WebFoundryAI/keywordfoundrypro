@@ -390,20 +390,6 @@ const RelatedKeywords = () => {
 
   const hasActiveFilters = getActiveFilterCount() > 0;
 
-  const getIntentColor = (intent: string) => {
-    switch (intent.toLowerCase()) {
-      case 'commercial':
-        return 'bg-warning/20 text-warning-foreground border-warning/30';
-      case 'informational':
-        return 'bg-primary/20 text-primary-foreground border-primary/30';
-      case 'navigational':
-        return 'bg-accent/20 text-accent-foreground border-accent/30';
-      case 'transactional':
-        return 'bg-success/20 text-success-foreground border-success/30';
-      default:
-      return 'bg-muted/20 text-muted-foreground border-muted/30';
-    }
-  };
 
   // Apply filtering
   const filteredResults = filterResults(results, searchTerm, [volumeFilter, cpcFilter, difficultyFilter]);
@@ -879,28 +865,17 @@ const RelatedKeywords = () => {
                             {formatNumber(result.searchVolume)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Badge
-                              variant={
-                                result.difficulty && result.difficulty > 70
-                                  ? 'destructive'
-                                  : result.difficulty && result.difficulty > 40
-                                  ? 'default'
-                                  : 'secondary'
-                              }
-                            >
+                            <span className="text-foreground">
                               {formatDifficulty(result.difficulty)}
-                            </Badge>
+                            </span>
                           </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatCurrency(result.cpc)}
                           </TableCell>
                           <TableCell>
-                            <Badge 
-                              variant="outline" 
-                              className={`${getIntentColor(result.intent)} text-xs`}
-                            >
+                            <span className="text-foreground capitalize">
                               {result.intent}
-                            </Badge>
+                            </span>
                           </TableCell>
                         </TableRow>
                       ))}
