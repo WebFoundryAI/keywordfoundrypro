@@ -13,6 +13,7 @@ const KeywordResults = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
   const [seedKeyword, setSeedKeyword] = useState<KeywordResult | null>(null);
   const [keywordAnalyzed, setKeywordAnalyzed] = useState<string>("");
+  const [locationCode, setLocationCode] = useState<number>(2840); // Default to USA
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -29,6 +30,19 @@ const KeywordResults = () => {
       
       if (researchId && storedKeywordAnalyzed) {
         try {
+          // Fetch location code from keyword_research table
+          const { data: researchData, error: researchError } = await supabase
+            .from('keyword_research')
+            .select('location_code')
+            .eq('id', researchId)
+            .single();
+            
+          if (researchError) {
+            console.error('Error fetching research data:', researchError);
+          } else if (researchData) {
+            setLocationCode(researchData.location_code);
+          }
+          
           // Fetch results from database
           const { data: keywordResults, error } = await supabase
             .from('keyword_results')
@@ -202,6 +216,7 @@ const KeywordResults = () => {
                 avgCpc={results.length > 0
                   ? results.reduce((sum, r) => sum + (r.cpc ?? 0), 0) / results.length
                   : null}
+                locationCode={locationCode}
               />
               
               {/* Seed Keyword Metrics Card */}
@@ -251,7 +266,7 @@ const KeywordResults = () => {
                         <span className="text-xs text-muted-foreground font-medium">CPC</span>
                       </div>
                       <p className="text-2xl font-bold text-foreground">
-                        {formatCurrency(seedKeyword.cpc)}
+                        {formatCurrency(seedKeyword.cpc, locationCode)}
                       </p>
                     </div>
                     
@@ -277,6 +292,7 @@ const KeywordResults = () => {
                 onExport={handleExport}
                 seedKeyword={seedKeyword}
                 keywordAnalyzed={keywordAnalyzed}
+                locationCode={locationCode}
               />
             </>
           )}

@@ -73,15 +73,61 @@ export function formatDifficulty(difficulty: number | null | undefined): string 
 }
 
 /**
- * Format currency value (CPC)
- * @param value - The currency value
- * @returns Formatted string with $ prefix or "—" for missing data
+ * Get currency symbol and format based on location code
+ * @param locationCode - DataForSEO location code
+ * @returns Currency configuration { symbol, code }
  */
-export function formatCurrency(value: number | null | undefined): string {
+export function getCurrencyByLocation(locationCode: number): { symbol: string; code: string } {
+  // DataForSEO location codes mapped to currencies
+  const currencyMap: Record<number, { symbol: string; code: string }> = {
+    2826: { symbol: '£', code: 'GBP' }, // United Kingdom
+    2840: { symbol: '$', code: 'USD' }, // United States
+    2036: { symbol: 'A$', code: 'AUD' }, // Australia
+    2124: { symbol: 'C$', code: 'CAD' }, // Canada
+    2276: { symbol: '€', code: 'EUR' }, // Germany
+    2250: { symbol: '€', code: 'EUR' }, // France
+    2380: { symbol: '€', code: 'EUR' }, // Italy
+    2724: { symbol: '€', code: 'EUR' }, // Spain
+    2528: { symbol: '€', code: 'EUR' }, // Netherlands
+    2056: { symbol: '€', code: 'EUR' }, // Belgium
+    2040: { symbol: '€', code: 'EUR' }, // Austria
+    2372: { symbol: '€', code: 'EUR' }, // Ireland
+    2620: { symbol: '€', code: 'EUR' }, // Portugal
+    2246: { symbol: '€', code: 'EUR' }, // Finland
+    2356: { symbol: '₹', code: 'INR' }, // India
+    2392: { symbol: '¥', code: 'JPY' }, // Japan
+    2410: { symbol: '₩', code: 'KRW' }, // South Korea
+    2156: { symbol: '¥', code: 'CNY' }, // China
+    2076: { symbol: 'R$', code: 'BRL' }, // Brazil
+    2484: { symbol: 'MX$', code: 'MXN' }, // Mexico
+    2710: { symbol: 'R', code: 'ZAR' }, // South Africa
+    2554: { symbol: 'NZ$', code: 'NZD' }, // New Zealand
+    2702: { symbol: 'S$', code: 'SGD' }, // Singapore
+    2764: { symbol: '฿', code: 'THB' }, // Thailand
+    2752: { symbol: 'kr', code: 'SEK' }, // Sweden
+    2578: { symbol: 'kr', code: 'NOK' }, // Norway
+    2208: { symbol: 'kr', code: 'DKK' }, // Denmark
+    2616: { symbol: 'zł', code: 'PLN' }, // Poland
+    2203: { symbol: 'Kč', code: 'CZK' }, // Czech Republic
+    2348: { symbol: 'Ft', code: 'HUF' }, // Hungary
+    2642: { symbol: 'lei', code: 'RON' }, // Romania
+  };
+
+  return currencyMap[locationCode] || { symbol: '$', code: 'USD' }; // Default to USD
+}
+
+/**
+ * Format currency value (CPC) with location-based currency
+ * @param value - The currency value
+ * @param locationCode - DataForSEO location code (optional, defaults to USD)
+ * @returns Formatted string with appropriate currency symbol or "—" for missing data
+ */
+export function formatCurrency(value: number | null | undefined, locationCode: number = 2840): string {
   if (value === null || value === undefined || isNaN(value)) {
     return "—";
   }
-  return `$${value.toFixed(2)}`;
+  const { symbol } = getCurrencyByLocation(locationCode);
+  return `${symbol}${value.toFixed(2)}`;
 }
 
 /**

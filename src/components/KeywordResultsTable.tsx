@@ -27,6 +27,7 @@ interface KeywordResultsTableProps {
   onExport?: (format: 'csv' | 'json' | 'txt') => void;
   seedKeyword?: KeywordResult | null;
   keywordAnalyzed?: string;
+  locationCode?: number;
 }
 
 const getIntentColor = (intent: string) => {
@@ -127,7 +128,7 @@ const filterResults = (
   });
 };
 
-export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword, keywordAnalyzed }: KeywordResultsTableProps) => {
+export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword, keywordAnalyzed, locationCode = 2840 }: KeywordResultsTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<keyof KeywordResult>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -500,7 +501,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      {formatCurrency(result.cpc)}
+                      {formatCurrency(result.cpc, locationCode)}
                     </TableCell>
                     <TableCell>
                       <Badge 

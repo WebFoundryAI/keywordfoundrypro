@@ -8,6 +8,7 @@ interface KeywordMetricsSummaryProps {
   totalVolume: number | null;
   avgDifficulty: number | null;
   avgCpc: number | null;
+  locationCode?: number;
 }
 
 export const KeywordMetricsSummary = ({
@@ -15,7 +16,8 @@ export const KeywordMetricsSummary = ({
   totalKeywords,
   totalVolume,
   avgDifficulty,
-  avgCpc
+  avgCpc,
+  locationCode = 2840
 }: KeywordMetricsSummaryProps) => {
   const metrics = [
     {
@@ -41,7 +43,7 @@ export const KeywordMetricsSummary = ({
     },
     {
       label: "Avg CPC",
-      value: formatCurrency(avgCpc),
+      value: formatCurrency(avgCpc, locationCode),
       icon: DollarSign,
       color: "text-accent",
       bgColor: "bg-accent/10"
