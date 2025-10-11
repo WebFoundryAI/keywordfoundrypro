@@ -419,7 +419,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
               <TableHeader>
                 <TableRow className="bg-muted/30">
                   <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none min-w-[300px]"
                     onClick={() => handleSort("keyword")}
                   >
                     <div className="flex items-center">
@@ -428,7 +428,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[90px]"
                     onClick={() => handleSort("searchVolume")}
                   >
                     <div className="flex items-center justify-end">
@@ -437,7 +437,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[90px]"
                     onClick={() => handleSort("difficulty")}
                   >
                     <div className="flex items-center justify-end">
@@ -446,7 +446,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[80px]"
                     onClick={() => handleSort("cpc")}
                   >
                     <div className="flex items-center justify-end">
@@ -455,7 +455,7 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none min-w-[100px]"
                     onClick={() => handleSort("intent")}
                   >
                     <div className="flex items-center">
@@ -468,8 +468,8 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
               <TableBody>
                 {sortedResults.map((result, index) => (
                   <TableRow key={index} className="hover:bg-muted/20 transition-smooth">
-                    <TableCell className="font-medium max-w-xs">
-                      <div className="flex items-center gap-2">
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2 max-w-[280px]">
                         <div className="truncate" title={result.keyword}>
                           {result.keyword}
                         </div>

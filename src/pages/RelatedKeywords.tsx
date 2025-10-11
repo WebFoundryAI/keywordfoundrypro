@@ -807,7 +807,7 @@ const RelatedKeywords = () => {
                     <TableHeader>
                       <TableRow className="bg-muted/30">
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none min-w-[200px]"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none min-w-[300px]"
                           onClick={() => handleSort("keyword")}
                         >
                           <div className="flex items-center">
@@ -816,7 +816,7 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[90px]"
                           onClick={() => handleSort("searchVolume")}
                         >
                           <div className="flex items-center justify-end">
@@ -825,7 +825,7 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[100px]"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[90px]"
                           onClick={() => handleSort("difficulty")}
                         >
                           <div className="flex items-center justify-end">
@@ -843,7 +843,7 @@ const RelatedKeywords = () => {
                           </div>
                         </TableHead>
                         <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none min-w-[120px]"
+                          className="cursor-pointer hover:bg-muted/50 transition-smooth select-none min-w-[100px]"
                           onClick={() => handleSort("intent")}
                         >
                           <div className="flex items-center">
@@ -857,7 +857,7 @@ const RelatedKeywords = () => {
                       {sortedResults.map((result, index) => (
                         <TableRow key={index} className="hover:bg-muted/20 transition-smooth">
                           <TableCell className="font-medium">
-                            <div className="truncate max-w-[180px]" title={result.keyword}>
+                            <div className="truncate max-w-[280px]" title={result.keyword}>
                               {result.keyword}
                             </div>
                           </TableCell>
