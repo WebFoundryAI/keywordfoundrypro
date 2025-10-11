@@ -12,6 +12,7 @@ import SerpAnalysis from "./pages/SerpAnalysis";
 import RelatedKeywords from "./pages/RelatedKeywords";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/keyword-results" element={<KeywordResults />} />
               <Route path="/serp-analysis" element={<SerpAnalysis />} />
               <Route path="/related-keywords" element={<RelatedKeywords />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/auth/sign-in" element={<SignIn />} />
               <Route path="/auth/sign-up" element={<SignUp />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
