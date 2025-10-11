@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function AdminResearch() {
+  const navigate = useNavigate();
+  
   const { data: research, isLoading } = useQuery({
     queryKey: ['admin-research'],
     queryFn: async () => {
@@ -22,6 +25,12 @@ export default function AdminResearch() {
       return data;
     },
   });
+
+  const handleRowClick = (researchId: string, seedKeyword: string) => {
+    localStorage.setItem('currentResearchId', researchId);
+    localStorage.setItem('keywordAnalyzed', seedKeyword);
+    navigate('/keyword-results');
+  };
 
   if (isLoading) {
     return (
@@ -75,7 +84,11 @@ export default function AdminResearch() {
             </TableHeader>
             <TableBody>
               {research?.map((item) => (
-                <TableRow key={item.id}>
+                <TableRow 
+                  key={item.id}
+                  onClick={() => handleRowClick(item.id, item.seed_keyword)}
+                  className="cursor-pointer hover:bg-accent/50 transition-colors"
+                >
                   <TableCell className="font-medium">{item.seed_keyword}</TableCell>
                   <TableCell>
                     {(item.profiles as any)?.display_name || (item.profiles as any)?.email || 'Unknown'}
