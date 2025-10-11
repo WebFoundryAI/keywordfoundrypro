@@ -61,26 +61,6 @@ export default function SignUp() {
       })
       if (error) throw error
 
-      // If we have a user ID and selected plan, create subscription immediately
-      if (data.user && selectedPlan) {
-        const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        
-        const { error: subError } = await supabase
-          .from('user_subscriptions')
-          .insert({
-            user_id: data.user.id,
-            tier: selectedPlan as any,
-            status: 'active',
-            trial_ends_at: trialEnd.toISOString(),
-            current_period_end: periodEnd.toISOString(),
-          })
-        
-        if (subError) {
-          console.error('Subscription creation error:', subError)
-        }
-      }
-
       toast({
         title: 'Account created!',
         description: selectedPlan 
