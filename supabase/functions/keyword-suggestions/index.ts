@@ -1,14 +1,48 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Allowed origins for CORS
+const allowedOrigins = [
+  'https://vhjffdzroebdkbmvcpgv.supabase.co',
+  'http://localhost:5173',
+  'http://localhost:8080'
+];
+
+// Dynamic CORS headers based on request origin
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const isAllowedOrigin = allowedOrigins.some(allowed => 
+    origin === allowed || origin.startsWith(allowed)
+  );
+  
+  return {
+    'Access-Control-Allow-Origin': isAllowedOrigin ? origin : allowedOrigins[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 // Keyword research API credentials
 const apiLogin = Deno.env.get('DATAFORSEO_LOGIN');
 const apiPassword = Deno.env.get('DATAFORSEO_PASSWORD');
+
+// Input validation schema
+const SuggestionsRequestSchema = z.object({
+  keyword: z.string()
+    .trim()
+    .min(1, "Keyword must be at least 1 character")
+    .max(200, "Keyword must be less than 200 characters"),
+  languageCode: z.string()
+    .regex(/^[a-z]{2}$/, "Invalid language code format")
+    .optional()
+    .default('en'),
+  locationCode: z.number()
+    .int("Location code must be an integer")
+    .min(1, "Invalid location code")
+    .max(9999999, "Invalid location code")
+    .optional()
+    .default(2840)
+});
 
 interface SuggestionsRequest {
   keyword: string;
@@ -17,22 +51,17 @@ interface SuggestionsRequest {
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { keyword, languageCode = 'en', locationCode = 2840 }: SuggestionsRequest = await req.json();
-
-    if (!keyword || keyword.trim().length < 2) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Keyword must be at least 2 characters long'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Parse and validate input
+    const rawBody = await req.json();
+    const validatedData = SuggestionsRequestSchema.parse(rawBody);
+    const { keyword, languageCode, locationCode } = validatedData;
 
     console.log(`Getting keyword suggestions for: ${keyword}`);
 
@@ -85,6 +114,20 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in keyword-suggestions function:', error);
+    const corsHeaders = getCorsHeaders(req);
+    
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return new Response(JSON.stringify({ 
+        error: 'Invalid input parameters',
+        details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
+        success: false 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Internal server error',
       success: false 

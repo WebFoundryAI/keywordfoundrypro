@@ -1,11 +1,27 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Allowed origins for CORS
+const allowedOrigins = [
+  'https://vhjffdzroebdkbmvcpgv.supabase.co',
+  'http://localhost:5173',
+  'http://localhost:8080'
+];
+
+// Dynamic CORS headers based on request origin
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const isAllowedOrigin = allowedOrigins.some(allowed => 
+    origin === allowed || origin.startsWith(allowed)
+  );
+  
+  return {
+    'Access-Control-Allow-Origin': isAllowedOrigin ? origin : allowedOrigins[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 // Initialize Supabase client
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -16,6 +32,30 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const apiLogin = Deno.env.get('DATAFORSEO_LOGIN');
 const apiPassword = Deno.env.get('DATAFORSEO_PASSWORD');
 
+// Input validation schema
+const KeywordRequestSchema = z.object({
+  keyword: z.string()
+    .trim()
+    .min(1, "Keyword must be at least 1 character")
+    .max(200, "Keyword must be less than 200 characters"),
+  languageCode: z.string()
+    .regex(/^[a-z]{2}$/, "Invalid language code format")
+    .optional()
+    .default('en'),
+  locationCode: z.number()
+    .int("Location code must be an integer")
+    .min(1, "Invalid location code")
+    .max(9999999, "Invalid location code")
+    .optional()
+    .default(2840),
+  limit: z.number()
+    .int("Limit must be an integer")
+    .min(1, "Limit must be at least 1")
+    .max(1000, "Limit cannot exceed 1000")
+    .optional()
+    .default(100)
+});
+
 interface KeywordRequest {
   keyword: string;
   languageCode: string;
@@ -24,6 +64,8 @@ interface KeywordRequest {
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -43,7 +85,10 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { keyword, languageCode, locationCode, limit }: KeywordRequest = await req.json();
+    // Parse and validate input
+    const rawBody = await req.json();
+    const validatedData = KeywordRequestSchema.parse(rawBody);
+    const { keyword, languageCode, locationCode, limit } = validatedData;
 
     console.log(`Starting keyword research for user ${user.id}: ${keyword}`);
 
@@ -296,6 +341,20 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in keyword-research function:', error);
+    const corsHeaders = getCorsHeaders(req);
+    
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return new Response(JSON.stringify({ 
+        error: 'Invalid input parameters',
+        details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
+        success: false 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Internal server error',
       success: false 
