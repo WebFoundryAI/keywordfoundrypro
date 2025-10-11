@@ -1,4 +1,5 @@
 import { Search, LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { UserMenu } from "@/components/UserMenu";
 import { useNavigate } from "react-router-dom";
@@ -49,7 +50,12 @@ export const Header = ({ user }: HeaderProps) => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Navigation />
+            {user && <Navigation />}
+            {!user && (
+              <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
+                Pricing
+              </Link>
+            )}
             {user ? (
               <div className="flex items-center gap-2">
                 <UserMenu />

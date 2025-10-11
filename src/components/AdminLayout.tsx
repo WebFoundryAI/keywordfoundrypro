@@ -18,8 +18,8 @@ export const AdminLayout = () => {
       icon: Users,
     },
     {
-      path: "/admin/research",
-      label: "Research",
+      path: "/admin/subscriptions",
+      label: "Subscriptions",
       icon: Search,
     },
   ];

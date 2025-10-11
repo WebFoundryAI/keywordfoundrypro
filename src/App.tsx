@@ -14,9 +14,11 @@ import RelatedKeywords from "./pages/RelatedKeywords";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Profile from "./pages/Profile";
+import Pricing from "./pages/Pricing";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminResearch from "./pages/admin/Research";
+import AdminSubscriptions from "./pages/admin/Subscriptions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,10 +38,12 @@ const App = () => (
               <Route path="/serp-analysis" element={<SerpAnalysis />} />
               <Route path="/related-keywords" element={<RelatedKeywords />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/pricing" element={<Pricing />} />
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="research" element={<AdminResearch />} />
+                <Route path="subscriptions" element={<AdminSubscriptions />} />
               </Route>
               <Route path="/auth/sign-in" element={<SignIn />} />
               <Route path="/auth/sign-up" element={<SignUp />} />
