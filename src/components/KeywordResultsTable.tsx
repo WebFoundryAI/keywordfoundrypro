@@ -24,7 +24,7 @@ export interface KeywordResult {
 interface KeywordResultsTableProps {
   results: KeywordResult[];
   isLoading?: boolean;
-  onExport?: (format: 'csv' | 'json') => void;
+  onExport?: (format: 'csv' | 'json' | 'txt') => void;
   seedKeyword?: KeywordResult | null;
   keywordAnalyzed?: string;
 }
@@ -262,6 +262,15 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
               >
                 <Download className="w-4 h-4 mr-2" />
                 JSON
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onExport?.('txt')}
+                className="bg-background/50"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                TXT
               </Button>
             </div>
           </div>

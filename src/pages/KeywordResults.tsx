@@ -113,7 +113,7 @@ const KeywordResults = () => {
     }, 100);
   }, [user, loading, navigate]);
 
-  const handleExport = (format: 'csv' | 'json') => {
+  const handleExport = (format: 'csv' | 'json' | 'txt') => {
     if (results.length === 0) return;
     
     let content: string;
@@ -135,6 +135,21 @@ const KeywordResults = () => {
       content = csvRows.join('\n');
       filename = 'keyword-research.csv';
       mimeType = 'text/csv';
+    } else if (format === 'txt') {
+      const headers = ['Keyword', 'Search Volume', 'CPC', 'Intent', 'Difficulty'];
+      const txtRows = [
+        headers.join('\t'),
+        ...results.map(r => [
+          r.keyword,
+          r.searchVolume === null || r.searchVolume === undefined ? '—' : r.searchVolume,
+          r.cpc === null || r.cpc === undefined ? '—' : r.cpc,
+          r.intent,
+          r.difficulty === null || r.difficulty === undefined ? '—' : r.difficulty
+        ].join('\t'))
+      ];
+      content = txtRows.join('\n');
+      filename = 'keyword-research.txt';
+      mimeType = 'text/plain';
     } else {
       content = JSON.stringify(results, null, 2);
       filename = 'keyword-research.json';
