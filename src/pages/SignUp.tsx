@@ -11,6 +11,12 @@ import { OrDivider } from '@/components/auth/OrDivider'
 export default function SignUp() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  
+  // Get plan info from URL params
+  const searchParams = new URLSearchParams(window.location.search)
+  const selectedPlan = searchParams.get('plan')
+  const selectedPlanId = searchParams.get('planId')
+  const billingPeriod = searchParams.get('billing') || 'monthly'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -42,21 +48,47 @@ export default function SignUp() {
 
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/pricing`,
+          emailRedirectTo: `${window.location.origin}/research`,
+          data: {
+            selected_plan: selectedPlan,
+            billing_period: billingPeriod,
+          }
         },
       })
       if (error) throw error
 
+      // If we have a user ID and selected plan, create subscription immediately
+      if (data.user && selectedPlan) {
+        const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        
+        const { error: subError } = await supabase
+          .from('user_subscriptions')
+          .insert({
+            user_id: data.user.id,
+            tier: selectedPlan as any,
+            status: 'active',
+            trial_ends_at: trialEnd.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+          })
+        
+        if (subError) {
+          console.error('Subscription creation error:', subError)
+        }
+      }
+
       toast({
         title: 'Account created!',
-        description: 'Check your email to verify your account, then choose your subscription plan.',
+        description: selectedPlan 
+          ? `You're signed up for the ${selectedPlan.replace('_', ' ')} plan. Check your email to verify your account.`
+          : 'Check your email to verify your account, then choose your subscription plan.',
         duration: 8000,
       })
-      navigate('/pricing')
+      navigate('/research')
     } catch (err: any) {
       setError(err?.message || 'Unable to create account.')
     } finally {
@@ -68,7 +100,11 @@ export default function SignUp() {
     <AuthLayout>
       <div className="rounded-2xl bg-white border border-gray-200 p-8 shadow-sm">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your account</h1>
-        <p className="text-sm text-gray-600 mb-6">Join and get access to your research tools</p>
+        <p className="text-sm text-gray-600 mb-6">
+          {selectedPlan 
+            ? `Sign up for the ${selectedPlan.replace('_', ' ')} plan with 7-day free trial`
+            : 'Join and get access to your research tools'}
+        </p>
 
         {/* OAuth Section */}
         <div className="space-y-4 mb-6">

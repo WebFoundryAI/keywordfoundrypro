@@ -23,11 +23,13 @@ const Pricing = () => {
     return num.toLocaleString();
   };
 
-  const handleGetStarted = () => {
+  const handleGetStarted = (planTier: string, planId: string) => {
     if (user) {
+      // TODO: Handle subscription upgrade for existing users
       navigate('/research');
     } else {
-      navigate('/auth/sign-up');
+      // Pass plan info to signup page via URL params
+      navigate(`/auth/sign-up?plan=${planTier}&planId=${planId}&billing=${isYearly ? 'yearly' : 'monthly'}`);
     }
   };
 
@@ -157,11 +159,11 @@ const Pricing = () => {
                   {isCurrentPlan ? (
                     <Button disabled className="w-full">Current Plan</Button>
                   ) : plan.tier === 'free_trial' ? (
-                    <Button onClick={handleGetStarted} className="w-full">
+                    <Button onClick={() => handleGetStarted(plan.tier, plan.id)} className="w-full">
                       Start Free Trial
                     </Button>
                   ) : (
-                    <Button onClick={handleGetStarted} variant="outline" className="w-full">
+                    <Button onClick={() => handleGetStarted(plan.tier, plan.id)} variant="outline" className="w-full">
                       Get Started
                     </Button>
                   )}
