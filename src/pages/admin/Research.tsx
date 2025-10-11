@@ -68,6 +68,7 @@ export default function AdminResearch() {
                 <TableHead>User</TableHead>
                 <TableHead>Results</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Language</TableHead>
                 <TableHead>API Cost</TableHead>
                 <TableHead>Created</TableHead>
               </TableRow>
@@ -85,6 +86,9 @@ export default function AdminResearch() {
                     </Badge>
                   </TableCell>
                   <TableCell>{item.location_code}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{item.language_code}</Badge>
+                  </TableCell>
                   <TableCell>
                     {item.api_cost ? `$${Number(item.api_cost).toFixed(2)}` : '-'}
                   </TableCell>

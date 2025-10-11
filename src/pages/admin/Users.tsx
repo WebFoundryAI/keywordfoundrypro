@@ -25,10 +25,18 @@ export default function AdminUsers() {
 
       if (rolesError) throw rolesError;
 
+      // Get all subscriptions
+      const { data: subscriptions, error: subsError } = await supabase
+        .from('user_subscriptions')
+        .select('user_id, tier, status');
+
+      if (subsError) throw subsError;
+
       // Combine the data
       return profiles?.map(profile => ({
         ...profile,
-        user_roles: roles?.filter(r => r.user_id === profile.user_id) || []
+        user_roles: roles?.filter(r => r.user_id === profile.user_id) || [],
+        subscription: subscriptions?.find(s => s.user_id === profile.user_id)
       })) || [];
     },
   });
@@ -76,6 +84,8 @@ export default function AdminUsers() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Subscription</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Roles</TableHead>
                 <TableHead>Created</TableHead>
               </TableRow>
@@ -97,6 +107,16 @@ export default function AdminUsers() {
                     </div>
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {(user as any).subscription?.tier || 'none'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={(user as any).subscription?.status === 'active' ? 'default' : 'outline'}>
+                      {(user as any).subscription?.status || 'inactive'}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       {user.user_roles && user.user_roles.length > 0 ? (
