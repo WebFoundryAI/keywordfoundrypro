@@ -29,6 +29,12 @@ export const Navigation = () => {
       label: "Related Keywords", 
       icon: Target,
       description: "Find content pillars and opportunities"
+    },
+    {
+      path: "/pricing",
+      label: "Pricing",
+      icon: Target,
+      description: "View pricing plans"
     }
   ];
 

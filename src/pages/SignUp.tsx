@@ -46,17 +46,17 @@ export default function SignUp() {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/research`,
+          emailRedirectTo: `${window.location.origin}/pricing`,
         },
       })
       if (error) throw error
 
       toast({
-        title: 'Check your email',
-        description: 'We sent you a confirmation link. Please verify your email to continue.',
+        title: 'Account created!',
+        description: 'Check your email to verify your account, then choose your subscription plan.',
         duration: 8000,
       })
-      // Don't navigate - user will be redirected after email verification
+      navigate('/pricing')
     } catch (err: any) {
       setError(err?.message || 'Unable to create account.')
     } finally {

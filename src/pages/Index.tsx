@@ -34,7 +34,12 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">Professional SEO Research</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
+              <nav className="hidden md:flex items-center gap-6">
+                <Button variant="link" size="sm" onClick={() => navigate('/pricing')} className="text-foreground hover:text-primary">
+                  Pricing
+                </Button>
+              </nav>
               {user ? (
                 <UserMenu />
               ) : (
@@ -139,11 +144,48 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/30 backdrop-blur-sm py-8">
-        <div className="container mx-auto px-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            Built for SEO professionals • Powered by real-time data
-          </p>
+      <footer className="border-t border-border bg-card/30 backdrop-blur-sm py-12">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <div className="space-y-2">
+                <button onClick={() => navigate('/research')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Research
+                </button>
+                <button onClick={() => navigate('/pricing')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Pricing
+                </button>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Company</h3>
+              <div className="space-y-2">
+                <button onClick={() => navigate('/about')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  About
+                </button>
+                <button onClick={() => navigate('/contact')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Contact
+                </button>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Legal</h3>
+              <div className="space-y-2">
+                <button onClick={() => navigate('/terms')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Terms
+                </button>
+                <button onClick={() => navigate('/privacy')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Privacy
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-border pt-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              Built for SEO professionals • Powered by real-time data
+            </p>
+          </div>
         </div>
       </footer>
     </div>
