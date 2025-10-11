@@ -41,7 +41,12 @@ export default function SignIn() {
       toast({ title: 'Signed in', description: 'Welcome back!' })
       navigate('/research')
     } catch (err: any) {
-      setError(err?.message || 'Unable to sign in. Please try again.')
+      const errorMessage = err?.message || 'Unable to sign in. Please try again.'
+      if (errorMessage.includes('Email not confirmed') || errorMessage.includes('email_not_confirmed')) {
+        setError('Please verify your email before signing in. Check your inbox for the confirmation link.')
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setLoading(false)
     }

@@ -51,8 +51,12 @@ export default function SignUp() {
       })
       if (error) throw error
 
-      toast({ title: 'Account created', description: 'Welcome! Redirecting…' })
-      navigate('/research')
+      toast({
+        title: 'Check your email',
+        description: 'We sent you a confirmation link. Please verify your email to continue.',
+        duration: 8000,
+      })
+      // Don't navigate - user will be redirected after email verification
     } catch (err: any) {
       setError(err?.message || 'Unable to create account.')
     } finally {
