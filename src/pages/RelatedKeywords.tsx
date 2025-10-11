@@ -465,6 +465,9 @@ const RelatedKeywords = () => {
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    spellCheck={true}
+                    autoCorrect="on"
+                    autoComplete="off"
                     className="bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-smooth"
                   />
                 </div>
