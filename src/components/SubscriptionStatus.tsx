@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpRight, AlertCircle } from 'lucide-react';
+import { ArrowUpRight, AlertCircle, Settings } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const SubscriptionStatus = () => {
   const { subscription, plan, usage, isLoading, keywordsPercentage, serpPercentage, relatedPercentage } = useSubscription();
@@ -55,6 +57,24 @@ export const SubscriptionStatus = () => {
     ? Math.ceil((new Date(subscription.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
+  const handleManageSubscription = async () => {
+    try {
+      toast.info('Opening billing portal...');
+      const { data, error } = await supabase.functions.invoke('create-portal-session');
+
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No portal URL returned');
+      }
+    } catch (error: any) {
+      console.error('Error creating portal session:', error);
+      toast.error(error.message || 'Failed to open billing portal. Please try again.');
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -72,13 +92,21 @@ export const SubscriptionStatus = () => {
               )}
             </CardDescription>
           </div>
-          {subscription.tier !== 'enterprise' && subscription.tier !== 'admin' && (
-            <Link to="/pricing">
-              <Button size="sm" variant="outline">
-                Upgrade <ArrowUpRight className="w-4 h-4 ml-1" />
+          <div className="flex gap-2">
+            {subscription.stripe_customer_id && (
+              <Button size="sm" variant="ghost" onClick={handleManageSubscription}>
+                <Settings className="w-4 h-4 mr-1" />
+                Manage
               </Button>
-            </Link>
-          )}
+            )}
+            {subscription.tier !== 'enterprise' && subscription.tier !== 'admin' && (
+              <Link to="/pricing">
+                <Button size="sm" variant="outline">
+                  Upgrade <ArrowUpRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </CardHeader>
 

@@ -10,6 +10,8 @@ import { usePricing } from '@/hooks/usePricing';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/components/AuthProvider';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
@@ -27,14 +29,39 @@ const Pricing = () => {
     return num.toLocaleString();
   };
 
-  const handleGetStarted = (planTier: string, planId: string) => {
+  const handleGetStarted = async (planTier: string, planId: string) => {
     if (isNewUser && user) {
       // New user selecting initial plan - go to research
       // Subscription already created by trigger with default free_trial
       navigate('/research');
     } else if (user) {
-      // Existing user wants to upgrade (TODO: implement upgrade flow)
-      navigate('/research');
+      // Existing user wants to upgrade
+      if (planTier === 'free_trial') {
+        // Downgrade to free trial (shouldn't happen but handle it)
+        navigate('/research');
+      } else {
+        // Paid plan - create Stripe checkout session
+        try {
+          toast.info('Redirecting to checkout...');
+          const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+            body: { 
+              planTier, 
+              billingPeriod: isYearly ? 'yearly' : 'monthly' 
+            }
+          });
+
+          if (error) throw error;
+          
+          if (data?.url) {
+            window.location.href = data.url;
+          } else {
+            throw new Error('No checkout URL returned');
+          }
+        } catch (error: any) {
+          console.error('Error creating checkout session:', error);
+          toast.error(error.message || 'Failed to start checkout. Please try again.');
+        }
+      }
     } else {
       // Not logged in - go to signup with plan params
       navigate(`/auth/sign-up?plan=${planTier}&planId=${planId}&billing=${isYearly ? 'yearly' : 'monthly'}`);

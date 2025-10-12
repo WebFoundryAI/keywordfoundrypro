@@ -8,6 +8,8 @@ interface Subscription {
   is_trial: boolean;
   trial_ends_at: string | null;
   period_end: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
 }
 
 interface SubscriptionPlan {
