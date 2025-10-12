@@ -157,6 +157,8 @@ export type Database = {
           price_yearly: number | null
           related_keywords_per_month: number
           serp_analyses_per_month: number
+          stripe_price_id_monthly: string | null
+          stripe_price_id_yearly: string | null
           tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string | null
         }
@@ -172,6 +174,8 @@ export type Database = {
           price_yearly?: number | null
           related_keywords_per_month: number
           serp_analyses_per_month: number
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
           tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string | null
         }
@@ -187,6 +191,8 @@ export type Database = {
           price_yearly?: number | null
           related_keywords_per_month?: number
           serp_analyses_per_month?: number
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string | null
         }
@@ -318,6 +324,8 @@ export type Database = {
           is_trial: boolean
           period_end: string
           status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
           tier: Database["public"]["Enums"]["subscription_tier"]
           trial_ends_at: string
         }[]
