@@ -23,10 +23,13 @@ function getCorsHeaders(req: Request) {
   };
 }
 
-// Initialize Supabase client
+// Initialize Supabase clients
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+// Admin client for JWT verification only
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // API credentials
 const apiLogin = Deno.env.get('DATAFORSEO_LOGIN');
@@ -77,13 +80,23 @@ serve(async (req) => {
       throw new Error('No authorization header');
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
+    // Verify JWT with admin client
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
 
     if (authError || !user) {
       throw new Error('Unauthorized');
     }
+
+    // Create user-context Supabase client for database operations
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
+    });
 
     // Parse and validate input
     const rawBody = await req.json();

@@ -22,10 +22,13 @@ function getCorsHeaders(req: Request) {
   };
 }
 
-const supabaseClient = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-)
+// Initialize Supabase clients
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+
+// Admin client for JWT verification only
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // Input validation schema
 const KeywordRequestSchema = z.object({
@@ -90,14 +93,23 @@ serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    // Verify the user is authenticated
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+    // Verify JWT with admin client
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(
       authHeader.replace('Bearer ', '')
     )
 
     if (authError || !user) {
       throw new Error('Unauthorized')
     }
+
+    // Create user-context Supabase client for database operations
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
+    });
 
     // Parse and validate input
     const rawBody = await req.json();
@@ -241,7 +253,7 @@ serve(async (req) => {
     // Store results in database if any exist
     if (relatedKeywords.length > 0) {
       // First create a research record
-      const { data: research, error: researchError } = await supabaseClient
+      const { data: research, error: researchError } = await supabase
         .from('keyword_research')
         .insert({
           user_id: user.id,
@@ -271,7 +283,7 @@ serve(async (req) => {
         metrics_source: 'dataforseo_related'
       }));
 
-      const { error: resultsError } = await supabaseClient
+      const { error: resultsError } = await supabase
         .from('keyword_results')
         .insert(resultsWithResearchId);
 
