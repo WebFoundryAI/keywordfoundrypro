@@ -52,7 +52,7 @@ export default function SignUp() {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/research`,
+          emailRedirectTo: `${window.location.origin}/pricing?new=true`,
           data: {
             selected_plan: selectedPlan,
             billing_period: billingPeriod,
@@ -68,7 +68,7 @@ export default function SignUp() {
           : 'Check your email to verify your account, then choose your subscription plan.',
         duration: 8000,
       })
-      navigate('/research')
+      navigate('/pricing?new=true')
     } catch (err: any) {
       setError(err?.message || 'Unable to create account.')
     } finally {

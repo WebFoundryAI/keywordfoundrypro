@@ -17,6 +17,10 @@ const Pricing = () => {
   const { subscription } = useSubscription();
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Detect if this is a new user signup flow
+  const searchParams = new URLSearchParams(window.location.search);
+  const isNewUser = searchParams.get('new') === 'true';
 
   const formatNumber = (num: number) => {
     if (num === -1) return 'Unlimited';
@@ -24,11 +28,15 @@ const Pricing = () => {
   };
 
   const handleGetStarted = (planTier: string, planId: string) => {
-    if (user) {
-      // TODO: Handle subscription upgrade for existing users
+    if (isNewUser && user) {
+      // New user selecting initial plan - go to research
+      // Subscription already created by trigger with default free_trial
+      navigate('/research');
+    } else if (user) {
+      // Existing user wants to upgrade (TODO: implement upgrade flow)
       navigate('/research');
     } else {
-      // Pass plan info to signup page via URL params
+      // Not logged in - go to signup with plan params
       navigate(`/auth/sign-up?plan=${planTier}&planId=${planId}&billing=${isYearly ? 'yearly' : 'monthly'}`);
     }
   };
@@ -64,6 +72,14 @@ const Pricing = () => {
           <p className="text-xl text-muted-foreground mb-8">
             Start with a 7-day free trial. No credit card required.
           </p>
+          
+          {isNewUser && (
+            <div className="mx-auto max-w-2xl mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-primary font-medium">
+                🎉 Welcome! Choose your plan to get started (you can change it anytime)
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center justify-center gap-4 mb-8">
             <Label htmlFor="billing-toggle" className={!isYearly ? 'font-semibold' : ''}>

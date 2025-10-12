@@ -12,7 +12,7 @@ export function OAuthButtons() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/research`,
+          redirectTo: `${window.location.origin}/pricing?new=true`,
         },
       })
       if (error) throw error

@@ -98,6 +98,24 @@ serve(async (req) => {
       }
     });
 
+    // Check if user can perform keyword research (quota check)
+    const { data: canPerform, error: quotaError } = await supabase
+      .rpc('can_user_perform_action', {
+        user_id_param: user.id,
+        action_type: 'keyword'
+      });
+
+    if (quotaError) {
+      console.error('Error checking usage quota:', quotaError);
+      throw new Error('Unable to verify usage quota. Please try again.');
+    }
+
+    if (!canPerform) {
+      throw new Error('You have reached your keyword research quota for this billing period. Please upgrade your plan to continue.');
+    }
+
+    console.log(`User ${user.id} has available quota for keyword research`);
+
     // Parse and validate input
     const rawBody = await req.json();
     const validatedData = KeywordRequestSchema.parse(rawBody);
@@ -327,6 +345,20 @@ serve(async (req) => {
       console.error('Error updating research record:', updateError);
     }
 
+    // Increment usage counter after successful research
+    const { error: usageError } = await supabase
+      .rpc('increment_usage', {
+        user_id_param: user.id,
+        action_type: 'keyword',
+        amount: 1
+      });
+
+    if (usageError) {
+      console.error('Error incrementing usage (non-critical):', usageError);
+      // Don't fail the request, just log the error
+    }
+
+    console.log(`Successfully incremented keyword usage for user ${user.id}`);
     console.log(`Completed keyword research: ${processedResults.length} keywords found`);
     
     // Prepare response metadata
