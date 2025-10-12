@@ -21,12 +21,12 @@ export function UserDangerZoneTab({ user, onClose, onUserDeleted }: UserDangerZo
 
   const deleteUser = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', user.user_id);
+      const { data, error } = await supabase.rpc('delete_user_completely', {
+        target_user_id: user.user_id
+      });
 
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });

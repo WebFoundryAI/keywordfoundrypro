@@ -308,6 +308,10 @@ export type Database = {
         Args: { action_type: string; user_id_param: string }
         Returns: boolean
       }
+      delete_user_completely: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       get_user_subscription: {
         Args: { user_id_param: string }
         Returns: {

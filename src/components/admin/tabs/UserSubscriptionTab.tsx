@@ -42,6 +42,8 @@ export function UserSubscriptionTab({ user, onClose }: UserSubscriptionTabProps)
           current_period_end: data.current_period_end?.toISOString(),
           trial_ends_at: data.trial_ends_at?.toISOString() || null,
           updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
