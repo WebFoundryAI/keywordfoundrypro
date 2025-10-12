@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,9 +6,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
+import { UserManagementDialog } from "@/components/admin/UserManagementDialog";
 
 export default function AdminUsers() {
-  const { data: users, isLoading } = useQuery({
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const { data: users, isLoading, refetch } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
       // Get all profiles
@@ -40,6 +47,15 @@ export default function AdminUsers() {
       })) || [];
     },
   });
+
+  const handleManageUser = (user: any) => {
+    setSelectedUser(user);
+    setDialogOpen(true);
+  };
+
+  const handleUserDeleted = () => {
+    refetch();
+  };
 
   if (isLoading) {
     return (
@@ -88,6 +104,7 @@ export default function AdminUsers() {
                 <TableHead>Status</TableHead>
                 <TableHead>Roles</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -133,12 +150,29 @@ export default function AdminUsers() {
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleManageUser(user)}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Manage
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      <UserManagementDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        user={selectedUser}
+        onUserDeleted={handleUserDeleted}
+      />
     </div>
   );
 }
