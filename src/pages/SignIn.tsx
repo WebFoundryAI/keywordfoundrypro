@@ -67,7 +67,13 @@ export default function SignIn() {
       if (error) throw error
 
       setNotice('Password reset link sent! Check your email and click the link to set a new password.')
-      toast({ title: 'Reset email sent', description: 'Check your inbox for the link.' })
+      toast({ 
+        title: 'Reset email sent', 
+        description: import.meta.env.DEV 
+          ? 'Check your inbox. Dev tip: Email confirmation can be disabled in Supabase settings for faster testing (see PASSWORD_RESET_SETUP.md).'
+          : 'Check your inbox for the password reset link.',
+        duration: 8000
+      })
     } catch (err: any) {
       setError(err?.message || 'Could not start password reset.')
     }

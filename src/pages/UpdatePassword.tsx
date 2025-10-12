@@ -1,3 +1,17 @@
+/**
+ * Password Reset Flow
+ * 
+ * IMPORTANT: For faster testing, consider disabling "Confirm email" in Supabase:
+ * 1. Go to Supabase Dashboard > Authentication > Settings
+ * 2. Under Email Auth, toggle OFF "Confirm email"
+ * 3. This allows immediate password resets without email verification
+ * 
+ * Production: Keep email confirmation ENABLED for security
+ * Development: Can disable for faster testing iteration
+ * 
+ * See PASSWORD_RESET_SETUP.md for detailed configuration instructions
+ */
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";

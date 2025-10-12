@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 import { OrDivider } from '@/components/auth/OrDivider'
+import { storePlanSelection } from '@/lib/planStorage'
 
 export default function SignUp() {
   const navigate = useNavigate()
@@ -48,6 +49,15 @@ export default function SignUp() {
 
     setLoading(true)
     try {
+      // Store plan selection in localStorage for OAuth consistency
+      if (selectedPlan && selectedPlanId) {
+        storePlanSelection({
+          tier: selectedPlan,
+          planId: selectedPlanId,
+          billing: billingPeriod as 'monthly' | 'yearly'
+        });
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,

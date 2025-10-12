@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getStoredPlanSelection, clearStoredPlanSelection } from '@/lib/planStorage';
 
 interface AuthContextType {
   user: User | null;
@@ -36,6 +37,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Apply stored plan selection after SIGNED_IN event
+        if (event === 'SIGNED_IN' && session?.user) {
+          setTimeout(() => {
+            const storedPlan = getStoredPlanSelection();
+            if (storedPlan) {
+              console.log('Applying stored plan selection:', storedPlan);
+              supabase.auth.updateUser({
+                data: {
+                  selected_plan: storedPlan.tier,
+                  billing_period: storedPlan.billing
+                }
+              }).then(({ error }) => {
+                if (error) {
+                  console.error('Error applying stored plan:', error);
+                } else {
+                  console.log('Successfully applied stored plan to user metadata');
+                  clearStoredPlanSelection();
+                }
+              });
+            }
+          }, 0);
+        }
       }
     );
 

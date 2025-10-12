@@ -12,6 +12,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { storePlanSelection } from '@/lib/planStorage';
 
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
@@ -30,6 +31,13 @@ const Pricing = () => {
   };
 
   const handleGetStarted = async (planTier: string, planId: string) => {
+    // Store plan selection in localStorage before any auth flow
+    storePlanSelection({ 
+      tier: planTier, 
+      planId, 
+      billing: isYearly ? 'yearly' : 'monthly' 
+    });
+
     if (isNewUser && user) {
       // New user selecting initial plan - go to research
       // Subscription already created by trigger with default free_trial
