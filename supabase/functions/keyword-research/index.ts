@@ -7,14 +7,16 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 const allowedOrigins = [
   'https://vhjffdzroebdkbmvcpgv.supabase.co',
   'http://localhost:5173',
-  'http://localhost:8080'
+  'http://localhost:8080',
+  'https://lovable.app',
+  'https://lovable.dev'
 ];
 
 // Dynamic CORS headers based on request origin
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
   const isAllowedOrigin = allowedOrigins.some(allowed => 
-    origin === allowed || origin.startsWith(allowed)
+    origin === allowed || origin.startsWith(allowed) || origin.endsWith('.lovable.app') || origin.endsWith('.lovable.dev')
   );
   
   return {
@@ -67,9 +69,16 @@ interface KeywordRequest {
 }
 
 serve(async (req) => {
+  console.log('=== KEYWORD RESEARCH REQUEST RECEIVED ===');
+  console.log('Method:', req.method);
+  console.log('Origin:', req.headers.get('origin'));
+  console.log('Authorization header present:', !!req.headers.get('Authorization'));
+  console.log('Timestamp:', new Date().toISOString());
+  
   const corsHeaders = getCorsHeaders(req);
   
   if (req.method === 'OPTIONS') {
+    console.log('OPTIONS request - returning CORS headers');
     return new Response(null, { headers: corsHeaders });
   }
 

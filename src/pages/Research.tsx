@@ -30,6 +30,26 @@ const Research = () => {
       return;
     }
 
+    // Check session validity
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('Current session check:', {
+      hasSession: !!session,
+      sessionError: sessionError,
+      userId: session?.user?.id,
+      expiresAt: session?.expires_at
+    });
+    
+    if (!session) {
+      console.error('No valid session found');
+      toast({
+        title: "Session Expired",
+        description: "Your session has expired. Please sign in again.",
+        variant: "destructive",
+      });
+      navigate('/auth/sign-in');
+      return;
+    }
+
     // Input validation
     if (!formData.keyword || formData.keyword.trim().length < 2) {
       toast({
@@ -54,6 +74,12 @@ const Research = () => {
 
       if (error) {
         console.error('Function invocation error:', error);
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          context: (error as any).context,
+          status: (error as any).status
+        });
         
         // Provide specific error messages
         let errorMessage = 'Failed to analyze keywords. Please try again.';
