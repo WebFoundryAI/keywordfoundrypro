@@ -30,17 +30,18 @@ const Research = () => {
       return;
     }
 
-    // Check session validity
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    console.log('Current session check:', {
+    // Refresh session to ensure token is valid
+    const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+    console.log('Session refresh result:', {
       hasSession: !!session,
       sessionError: sessionError,
       userId: session?.user?.id,
+      hasAccessToken: !!session?.access_token,
       expiresAt: session?.expires_at
     });
     
-    if (!session) {
-      console.error('No valid session found');
+    if (!session?.access_token) {
+      console.error('No valid session or access token found');
       toast({
         title: "Session Expired",
         description: "Your session has expired. Please sign in again.",
@@ -66,9 +67,9 @@ const Research = () => {
       // Detailed pre-invocation logging
       console.log('=== CLIENT: About to invoke edge function ===');
       console.log('Function name:', 'keyword-research');
-      console.log('Supabase URL:', supabase.supabaseUrl);
       console.log('Has session:', !!session);
       console.log('User ID:', session?.user?.id);
+      console.log('Has access token:', !!session.access_token);
       console.log('Request body:', {
         keyword: formData.keyword.trim(),
         languageCode: formData.languageCode,
@@ -84,9 +85,9 @@ const Research = () => {
           locationCode: formData.locationCode,
           limit: formData.limit
         },
-        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       
