@@ -83,28 +83,26 @@ serve(async (req) => {
   }
 
   try {
-    // Get user from auth header
+    // Get JWT from header - Supabase already verified it
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
-    // Verify JWT with admin client
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    // Extract user from already-verified JWT
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       throw new Error('Unauthorized');
     }
 
-    // Create user-context Supabase client for database operations
+    console.log(`Authenticated user: ${user.id}`);
+
+    // Create Supabase client with user context
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader
-        }
-      }
+      global: { headers: { Authorization: authHeader } }
     });
 
     // Check if user can perform keyword research (quota check)
