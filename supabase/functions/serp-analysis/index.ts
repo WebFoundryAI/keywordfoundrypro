@@ -3,23 +3,34 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
-// Allowed origins for CORS
+// CORS - Allowed origins
 const allowedOrigins = [
   'https://vhjffdzroebdkbmvcpgv.supabase.co',
+  'https://keywordfoundrypro.com',
   'http://localhost:5173',
-  'http://localhost:8080'
+  'http://localhost:8080',
+  'https://lovable.app',
+  'https://lovable.dev'
 ];
 
 // Dynamic CORS headers based on request origin
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
-  const isAllowedOrigin = allowedOrigins.some(allowed => 
-    origin === allowed || origin.startsWith(allowed)
+  const isAllowed = allowedOrigins.some(allowed =>
+    origin === allowed ||
+    origin.startsWith(allowed) ||
+    origin.endsWith('.lovable.app') ||
+    origin.endsWith('.lovable.dev')
   );
+  const allowOrigin = isAllowed ? origin : allowedOrigins[0];
   
   return {
-    'Access-Control-Allow-Origin': isAllowedOrigin ? origin : allowedOrigins[0],
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, Authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
   };
 }
 
@@ -70,7 +81,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
