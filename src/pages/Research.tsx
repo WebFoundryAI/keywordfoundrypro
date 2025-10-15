@@ -63,14 +63,42 @@ const Research = () => {
     setIsLoading(true);
     
     try {
+      // Detailed pre-invocation logging
+      console.log('=== CLIENT: About to invoke edge function ===');
+      console.log('Function name:', 'keyword-research');
+      console.log('Supabase URL:', supabase.supabaseUrl);
+      console.log('Has session:', !!session);
+      console.log('User ID:', session?.user?.id);
+      console.log('Request body:', {
+        keyword: formData.keyword.trim(),
+        languageCode: formData.languageCode,
+        locationCode: formData.locationCode,
+        limit: formData.limit
+      });
+      console.log('Timestamp:', new Date().toISOString());
+      
       const { data, error } = await supabase.functions.invoke('keyword-research', {
         body: {
           keyword: formData.keyword.trim(),
           languageCode: formData.languageCode,
           locationCode: formData.locationCode,
           limit: formData.limit
+        },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         }
       });
+      
+      console.log('=== CLIENT: Function invocation response ===');
+      console.log('Has data:', !!data);
+      console.log('Has error:', !!error);
+      if (error) {
+        console.log('Error object:', error);
+      }
+      if (data) {
+        console.log('Data received:', data);
+      }
 
       if (error) {
         console.error('Function invocation error:', error);
