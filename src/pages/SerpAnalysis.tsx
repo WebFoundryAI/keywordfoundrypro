@@ -61,10 +61,10 @@ const SerpAnalysis = () => {
     return searchParams.get('keyword') || localStorage.getItem('lastKeyword') || '';
   });
   const [languageCode, setLanguageCode] = useState(() => {
-    return searchParams.get('language') || 'en';
+    return searchParams.get('language') || localStorage.getItem('lastLanguageCode') || 'en';
   });
   const [locationCode, setLocationCode] = useState(() => {
-    return parseInt(searchParams.get('location') || '2840');
+    return parseInt(searchParams.get('location') || localStorage.getItem('lastLocationCode') || '2840');
   });
   const [limit] = useState(10);
   

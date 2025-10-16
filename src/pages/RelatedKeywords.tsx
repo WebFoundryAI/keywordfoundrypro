@@ -129,10 +129,14 @@ const RelatedKeywords = () => {
     return searchParams.get('keyword') || localStorage.getItem('lastKeyword') || '';
   });
   const [languageCode, setLanguageCode] = useState(() => {
-    return searchParams.get('language') || localStorage.getItem('lastLanguageCode') || 'en';
+    const urlLang = searchParams.get('language');
+    const storedLang = localStorage.getItem('lastLanguageCode');
+    return urlLang || storedLang || 'en';
   });
   const [locationCode, setLocationCode] = useState(() => {
-    return parseInt(searchParams.get('location') || localStorage.getItem('lastLocationCode') || '2840');
+    const urlLoc = searchParams.get('location');
+    const storedLoc = localStorage.getItem('lastLocationCode');
+    return parseInt(urlLoc || storedLoc || '2840');
   });
   const [limit, setLimit] = useState(() => {
     return parseInt(searchParams.get('limit') || '100');
