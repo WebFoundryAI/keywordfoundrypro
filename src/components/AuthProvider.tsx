@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
             // Smart redirect based on subscription status (for OAuth flows)
             const currentPath = window.location.pathname;
-            if (currentPath.includes('/auth/') || currentPath === '/') {
+            if (currentPath.includes('/auth/callback')) {
               const { data: subscriptionData } = await supabase.rpc('get_user_subscription', {
                 user_id_param: session.user.id
               });
