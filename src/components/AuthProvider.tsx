@@ -67,8 +67,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               });
               
               const hasActivePlan = subscriptionData?.[0] && 
-                subscriptionData[0].tier !== 'free_trial' && 
-                subscriptionData[0].status === 'active';
+                (subscriptionData[0].tier === 'admin' || // Admin always has access
+                 (subscriptionData[0].tier !== 'free_trial' && subscriptionData[0].status === 'active'));
 
               const redirectTo = hasActivePlan ? '/research' : '/pricing?new=true';
               console.log('Smart redirect:', { hasActivePlan, redirectTo });

@@ -44,8 +44,8 @@ export default function SignIn() {
       })
       
       const hasActivePlan = subscriptionData?.[0] && 
-        subscriptionData[0].tier !== 'free_trial' && 
-        subscriptionData[0].status === 'active'
+        (subscriptionData[0].tier === 'admin' || // Admin always has access
+         (subscriptionData[0].tier !== 'free_trial' && subscriptionData[0].status === 'active'))
 
       toast({ title: 'Signed in', description: 'Welcome back!' })
       navigate(hasActivePlan ? '/research' : '/pricing?new=true')
