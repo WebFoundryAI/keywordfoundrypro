@@ -229,6 +229,50 @@ serve(async (req) => {
 
     const items = task.result[0].items
 
+    // Extract keywords for batch intent classification
+    const keywordsToClassify = items
+      .filter((item: any) => {
+        return item.keyword_data && 
+               item.keyword_data.keyword && 
+               (item.keyword_data.keyword_info?.search_volume || 0) > 0
+      })
+      .map((item: any) => item.keyword_data.keyword);
+
+    console.log(`Fetching intent for ${keywordsToClassify.length} keywords`);
+
+    // Call DataForSEO Search Intent API
+    let intentMap: Record<string, string> = {};
+    if (keywordsToClassify.length > 0) {
+      try {
+        const intentResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/search_intent/live', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(`${Deno.env.get('DATAFORSEO_LOGIN')}:${Deno.env.get('DATAFORSEO_PASSWORD')}`)}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify([{
+            "language_code": languageCode,
+            "keywords": keywordsToClassify
+          }])
+        });
+
+        if (intentResponse.ok) {
+          const intentData = await intentResponse.json();
+          if (intentData.tasks?.[0]?.status_code === 20000) {
+            const intentItems = intentData.tasks[0].result?.[0]?.items || [];
+            intentItems.forEach((item: any) => {
+              if (item.keyword && item.keyword_intent?.label) {
+                intentMap[item.keyword.toLowerCase()] = item.keyword_intent.label;
+              }
+            });
+            console.log(`Successfully classified ${Object.keys(intentMap).length} keywords with DataForSEO intent`);
+          }
+        }
+      } catch (intentError) {
+        console.error('Intent classification error (non-critical):', intentError);
+      }
+    }
+
     // Process the keywords from Labs endpoint
     const relatedKeywords = items
       .filter((item: any) => {
@@ -240,15 +284,19 @@ serve(async (req) => {
       .map((item: any) => {
         const keywordData = item.keyword_data
         const keywordInfo = keywordData.keyword_info || {}
+        const keyword = keywordData.keyword;
+        
+        // Use DataForSEO intent if available, otherwise use fallback
+        const intent = intentMap[keyword.toLowerCase()] || determineIntentFallback(keyword);
         
         return {
-          keyword: keywordData.keyword,
+          keyword: keyword,
           searchVolume: keywordInfo.search_volume || 0,
           cpc: keywordInfo.cpc || 0,
           competition: keywordInfo.competition || 0,
           competition_level: keywordInfo.competition_level || null,
           difficulty: convertCompetitionToDifficulty(keywordInfo.competition_level, keywordInfo.competition_index),
-          intent: determineIntent(keywordData.keyword),
+          intent: intent,
           relevance: Math.round((item.relevance || 0) * 100), // Use API relevance score
           trend: keywordInfo.monthly_searches || null,
           categories: keywordData.categories || []
@@ -398,31 +446,33 @@ function convertCompetitionToDifficulty(competition_level: string, competition_i
   }
 }
 
-function determineIntent(keyword: string): string {
-  const lowerKeyword = keyword.toLowerCase()
+// Fallback intent determination (used only if DataForSEO intent API fails)
+function determineIntentFallback(keyword: string): string {
+  const lowerKeyword = keyword.toLowerCase();
   
-  // Transactional intent keywords
-  if (lowerKeyword.includes('buy') || lowerKeyword.includes('purchase') || 
-      lowerKeyword.includes('order') || lowerKeyword.includes('shop') ||
-      lowerKeyword.includes('price') || lowerKeyword.includes('cost') ||
-      lowerKeyword.includes('cheap') || lowerKeyword.includes('discount') ||
-      lowerKeyword.includes('deal') || lowerKeyword.includes('sale')) {
-    return 'transactional'
+  // Local service/commercial intent - "near me", locations, service keywords
+  if (lowerKeyword.includes('near me') || 
+      lowerKeyword.includes('near by') ||
+      lowerKeyword.includes('nearby') ||
+      lowerKeyword.match(/\b(plumber|electrician|contractor|repair|service|installation|clearance|removal|cleaning|maintenance|emergency)\b/)) {
+    return 'commercial';
   }
   
-  // Commercial intent keywords
-  if (lowerKeyword.includes('best') || lowerKeyword.includes('top') ||
-      lowerKeyword.includes('review') || lowerKeyword.includes('compare') ||
-      lowerKeyword.includes('vs') || lowerKeyword.includes('alternative')) {
-    return 'commercial'
+  // Transactional intent - buying/ordering
+  if (lowerKeyword.match(/\b(buy|purchase|order|shop|checkout|cart|price|cost|cheap|discount|deal|sale|coupon|promo)\b/)) {
+    return 'transactional';
   }
   
-  // Navigational intent keywords
-  if (lowerKeyword.includes('login') || lowerKeyword.includes('website') ||
-      lowerKeyword.includes('official') || lowerKeyword.includes('homepage')) {
-    return 'navigational'
+  // Commercial intent - research before purchase
+  if (lowerKeyword.match(/\b(best|top|review|compare|comparison|vs|versus|alternative|recommendation)\b/)) {
+    return 'commercial';
+  }
+  
+  // Navigational intent - seeking specific sites
+  if (lowerKeyword.match(/\b(login|sign in|website|official|homepage|portal|account|dashboard)\b/)) {
+    return 'navigational';
   }
   
   // Default to informational
-  return 'informational'
+  return 'informational';
 }

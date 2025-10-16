@@ -278,17 +278,8 @@ serve(async (req) => {
       const competition = keywordData.competition ?? 0;
       const keywordDifficulty = item.keyword_properties?.keyword_difficulty ?? null;
       
-      // Determine intent based on keyword patterns
-      let intent = 'informational';
-      const keyword_text = keywordText.toLowerCase();
-      
-      if (keyword_text.includes('buy') || keyword_text.includes('purchase') || keyword_text.includes('order') || keyword_text.includes('shop')) {
-        intent = 'transactional';
-      } else if (keyword_text.includes('best') || keyword_text.includes('top') || keyword_text.includes('review') || keyword_text.includes('compare')) {
-        intent = 'commercial';
-      } else if (keyword_text.includes('near me') || keyword_text.includes('location') || keyword_text.includes('where')) {
-        intent = 'navigational';
-      }
+      // Determine intent using improved fallback logic
+      const intent = determineIntentFallback(keywordText);
 
       // Use DataForSEO's keyword difficulty if available, otherwise calculate from competition
       // Only calculate if we have valid search volume, otherwise keep null
@@ -425,3 +416,34 @@ serve(async (req) => {
     });
   }
 });
+
+// Fallback intent determination (used for keyword research)
+function determineIntentFallback(keyword: string): string {
+  const lowerKeyword = keyword.toLowerCase();
+  
+  // Local service/commercial intent - "near me", locations, service keywords
+  if (lowerKeyword.includes('near me') || 
+      lowerKeyword.includes('near by') ||
+      lowerKeyword.includes('nearby') ||
+      lowerKeyword.match(/\b(plumber|electrician|contractor|repair|service|installation|clearance|removal|cleaning|maintenance|emergency)\b/)) {
+    return 'commercial';
+  }
+  
+  // Transactional intent - buying/ordering
+  if (lowerKeyword.match(/\b(buy|purchase|order|shop|checkout|cart|price|cost|cheap|discount|deal|sale|coupon|promo)\b/)) {
+    return 'transactional';
+  }
+  
+  // Commercial intent - research before purchase
+  if (lowerKeyword.match(/\b(best|top|review|compare|comparison|vs|versus|alternative|recommendation)\b/)) {
+    return 'commercial';
+  }
+  
+  // Navigational intent - seeking specific sites
+  if (lowerKeyword.match(/\b(login|sign in|website|official|homepage|portal|account|dashboard)\b/)) {
+    return 'navigational';
+  }
+  
+  // Default to informational
+  return 'informational';
+}
