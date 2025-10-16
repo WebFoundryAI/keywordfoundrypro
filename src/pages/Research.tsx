@@ -6,7 +6,7 @@ import { Header } from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { invokeWithAuth } from "@/lib/supabaseHelpers";
+import { invokeFunction } from "@/lib/invoke";
 
 const Research = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +79,7 @@ const Research = () => {
       });
       console.log('Timestamp:', new Date().toISOString());
       
-      const data = await invokeWithAuth('keyword-research', {
+      const data = await invokeFunction('keyword-research', {
         keyword: formData.keyword.trim(),
         languageCode: formData.languageCode,
         locationCode: formData.locationCode,

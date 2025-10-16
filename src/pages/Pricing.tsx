@@ -11,7 +11,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/components/AuthProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import { invokeWithAuth } from '@/lib/supabaseHelpers';
+import { invokeFunction } from "@/lib/invoke";
 import { toast } from 'sonner';
 import { storePlanSelection } from '@/lib/planStorage';
 
@@ -52,7 +52,7 @@ const Pricing = () => {
         // Paid plan - create Stripe checkout session
         try {
           toast.info('Redirecting to checkout...');
-          const data = await invokeWithAuth('create-checkout-session', {
+          const data = await invokeFunction('create-checkout-session', {
             planTier, 
             billingPeriod: isYearly ? 'yearly' : 'monthly' 
           });

@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
-import { invokeWithAuth } from "@/lib/supabaseHelpers";
+import { invokeFunction } from "@/lib/invoke";
 import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter, AlertCircle } from "lucide-react";
 import { formatNumber, formatDifficulty, formatCurrency } from "@/lib/utils";
 
@@ -245,7 +245,7 @@ const RelatedKeywords = () => {
     setTotalCount(0);
     
     try {
-      const data = await invokeWithAuth('related-keywords', {
+      const data = await invokeFunction('related-keywords', {
         keyword: keyword.trim(),
         languageCode,
         locationCode,
@@ -299,7 +299,7 @@ const RelatedKeywords = () => {
     setIsLoadingMore(true);
     
     try {
-      const data = await invokeWithAuth('related-keywords', {
+      const data = await invokeFunction('related-keywords', {
         keyword: keyword.trim(),
         languageCode,
         locationCode,

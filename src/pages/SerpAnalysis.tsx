@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
-import { invokeWithAuth } from "@/lib/supabaseHelpers";
+import { invokeFunction } from "@/lib/invoke";
 import { Search, ExternalLink, Globe, MapPin, Zap, AlertCircle } from "lucide-react";
 
 interface SerpResult {
@@ -140,7 +140,7 @@ const SerpAnalysis = () => {
     setIsLoading(true);
     
     try {
-      const data = await invokeWithAuth('serp-analysis', {
+      const data = await invokeFunction('serp-analysis', {
         keyword: keyword.trim(),
         languageCode,
         locationCode,
