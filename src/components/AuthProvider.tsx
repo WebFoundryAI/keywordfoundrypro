@@ -66,12 +66,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 user_id_param: session.user.id
               });
               
-              const hasActivePlan = subscriptionData?.[0] && 
-                (subscriptionData[0].tier === 'admin' || // Admin always has access
-                 (subscriptionData[0].tier !== 'free_trial' && subscriptionData[0].status === 'active'));
+              const hasSubscription = subscriptionData?.[0]
 
-              const redirectTo = hasActivePlan ? '/research' : '/pricing?new=true';
-              console.log('Smart redirect:', { hasActivePlan, redirectTo });
+              const redirectTo = hasSubscription ? '/research' : '/pricing?new=true';
+              console.log('Smart redirect:', { hasSubscription, redirectTo });
               window.location.href = redirectTo;
             }
           }, 0);

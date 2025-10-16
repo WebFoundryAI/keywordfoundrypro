@@ -43,12 +43,10 @@ export default function SignIn() {
         user_id_param: (await supabase.auth.getUser()).data.user?.id
       })
       
-      const hasActivePlan = subscriptionData?.[0] && 
-        (subscriptionData[0].tier === 'admin' || // Admin always has access
-         (subscriptionData[0].tier !== 'free_trial' && subscriptionData[0].status === 'active'))
+      const hasSubscription = subscriptionData?.[0]
 
       toast({ title: 'Signed in', description: 'Welcome back!' })
-      navigate(hasActivePlan ? '/research' : '/pricing?new=true')
+      navigate(hasSubscription ? '/research' : '/pricing?new=true')
     } catch (err: any) {
       const errorMessage = err?.message || 'Unable to sign in. Please try again.'
       if (errorMessage.includes('Email not confirmed') || errorMessage.includes('email_not_confirmed')) {
