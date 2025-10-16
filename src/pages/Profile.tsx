@@ -7,7 +7,7 @@ import { Loader2, Camera, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/AuthProvider';
 import { useProfile } from '@/hooks/useProfile';
@@ -16,6 +16,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Header } from '@/components/Header';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
 
 const profileSchema = z.object({
   display_name: z
@@ -35,6 +38,23 @@ export default function Profile() {
   const { toast } = useToast();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: researchHistory, isLoading: researchLoading } = useQuery({
+    queryKey: ['user-research-history', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('keyword_research')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
 
   const {
     register,
@@ -168,6 +188,12 @@ export default function Profile() {
     return 'U';
   };
 
+  const handleRowClick = (researchId: string, seedKeyword: string) => {
+    localStorage.setItem('currentResearchId', researchId);
+    localStorage.setItem('keywordAnalyzed', seedKeyword);
+    navigate('/keyword-results');
+  };
+
   if (!user) return null;
 
   return (
@@ -285,6 +311,71 @@ export default function Profile() {
 
           <SubscriptionStatus />
         </div>
+
+        {/* Research History Section */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Research History</CardTitle>
+            <CardDescription>
+              Your recent keyword research sessions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {researchLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : researchHistory && researchHistory.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Keyword</TableHead>
+                    <TableHead>Results</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Language</TableHead>
+                    <TableHead>API Cost</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {researchHistory.map((item) => (
+                    <TableRow 
+                      key={item.id}
+                      onClick={() => handleRowClick(item.id, item.seed_keyword)}
+                      className="cursor-pointer hover:bg-accent/50 transition-colors"
+                    >
+                      <TableCell className="font-medium">{item.seed_keyword}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {item.total_results || 0} results
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{item.location_code}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{item.language_code}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {item.api_cost ? `$${Number(item.api_cost).toFixed(2)}` : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">No research history yet</p>
+                <Button onClick={() => navigate('/research')}>
+                  Start Your First Research
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
