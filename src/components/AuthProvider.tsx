@@ -57,6 +57,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
 
           setTimeout(async () => {
+            // Fetch user first
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
             const storedPlan = getStoredPlanSelection();
             if (storedPlan) {
               console.log('Applying stored plan selection:', storedPlan);
@@ -77,23 +81,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
             // Guarantee subscription row exists (creates trial if missing)
             const { error: rpcErr } = await supabase.rpc('ensure_user_subscription', {
-              user_id_param: session.user.id
+              user_id_param: user.id
             });
             
             if (rpcErr) {
               console.error('ensure_user_subscription error', rpcErr);
             }
 
-            // Only redirect from specific paths to avoid /research refresh loops
+            // Only redirect from specific whitelist paths
             const currentPath = window.location.pathname;
-            const shouldRedirect = ['/', '/auth/callback', '/auth/sign-in', '/auth/sign-up', '/pricing'].includes(currentPath);
+            const shouldRedirect = ['/', '/auth/callback', '/pricing'].includes(currentPath);
             
-            if (shouldRedirect && currentPath !== '/research') {
+            if (shouldRedirect) {
               didRedirectRef.current = true;
               console.log('Centralized redirect from', currentPath, '-> /research');
               window.location.replace('/research');
             } else {
-              console.log('Skipping redirect - already on', currentPath);
+              console.log('Skipping redirect - not on whitelist path:', currentPath);
             }
           }, 0);
         }
