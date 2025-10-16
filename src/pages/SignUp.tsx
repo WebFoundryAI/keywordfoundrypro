@@ -62,7 +62,7 @@ export default function SignUp() {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/pricing?new=true`,
+          emailRedirectTo: `${window.location.origin}/research`,
           data: {
             selected_plan: selectedPlan,
             billing_period: billingPeriod,

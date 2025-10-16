@@ -38,13 +38,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Apply stored plan selection after SIGNED_IN event
+        // Apply stored plan selection and handle smart redirects after SIGNED_IN event
         if (event === 'SIGNED_IN' && session?.user) {
-          setTimeout(() => {
+          setTimeout(async () => {
             const storedPlan = getStoredPlanSelection();
             if (storedPlan) {
               console.log('Applying stored plan selection:', storedPlan);
-              supabase.auth.updateUser({
+              await supabase.auth.updateUser({
                 data: {
                   selected_plan: storedPlan.tier,
                   billing_period: storedPlan.billing
@@ -57,6 +57,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                   clearStoredPlanSelection();
                 }
               });
+            }
+
+            // Smart redirect based on subscription status (for OAuth flows)
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/auth/') || currentPath === '/') {
+              const { data: subscriptionData } = await supabase.rpc('get_user_subscription', {
+                user_id_param: session.user.id
+              });
+              
+              const hasActivePlan = subscriptionData?.[0] && 
+                subscriptionData[0].tier !== 'free_trial' && 
+                subscriptionData[0].status === 'active';
+
+              const redirectTo = hasActivePlan ? '/research' : '/pricing?new=true';
+              console.log('Smart redirect:', { hasActivePlan, redirectTo });
+              window.location.href = redirectTo;
             }
           }, 0);
         }
