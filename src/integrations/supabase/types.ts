@@ -318,6 +318,15 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      ensure_user_subscription: {
+        Args: { user_id_param: string }
+        Returns: {
+          status: string
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          trial_ends_at: string
+          user_id: string
+        }[]
+      }
       get_user_subscription: {
         Args: { user_id_param: string }
         Returns: {

@@ -38,16 +38,8 @@ export default function SignIn() {
       })
       if (error) throw error
 
-      // Check subscription status to determine redirect
-      const { data: subscriptionData } = await supabase.rpc('get_user_subscription', {
-        user_id_param: (await supabase.auth.getUser()).data.user?.id
-      })
-      
-      console.log('SignIn subscription check:', subscriptionData)
-      const hasActiveSubscription = subscriptionData?.[0]?.status === 'active'
-
+      // AuthProvider handles all redirects - just show success
       toast({ title: 'Signed in', description: 'Welcome back!' })
-      navigate(hasActiveSubscription ? '/research' : '/pricing?new=true')
     } catch (err: any) {
       const errorMessage = err?.message || 'Unable to sign in. Please try again.'
       if (errorMessage.includes('Email not confirmed') || errorMessage.includes('email_not_confirmed')) {

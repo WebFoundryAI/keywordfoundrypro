@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Apply stored plan selection and handle smart redirects after SIGNED_IN event
+        // Apply stored plan selection and handle centralized redirect after SIGNED_IN
         if (event === 'SIGNED_IN' && session?.user) {
           setTimeout(async () => {
             const storedPlan = getStoredPlanSelection();
@@ -59,23 +59,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               });
             }
 
-            // Smart redirect based on subscription status (for OAuth flows)
-            const currentPath = window.location.pathname;
-            if (currentPath.includes('/auth/callback')) {
-              // Wait a bit for subscription creation trigger to complete
-              await new Promise(resolve => setTimeout(resolve, 500));
-              
-              const { data: subscriptionData } = await supabase.rpc('get_user_subscription', {
-                user_id_param: session.user.id
-              });
-              
-              console.log('OAuth subscription check:', subscriptionData)
-              const hasActiveSubscription = subscriptionData?.[0]?.status === 'active';
-
-              const redirectTo = hasActiveSubscription ? '/research' : '/pricing?new=true';
-              console.log('Smart redirect:', { hasActiveSubscription, redirectTo });
-              window.location.href = redirectTo;
+            // Guarantee subscription row exists (creates trial if missing)
+            const { error: rpcErr } = await supabase.rpc('ensure_user_subscription', {
+              user_id_param: session.user.id
+            });
+            
+            if (rpcErr) {
+              console.error('ensure_user_subscription error', rpcErr);
             }
+
+            // Single deterministic redirect - all authenticated users go to /research
+            console.log('Centralized redirect: /research');
+            window.location.replace('/research');
           }, 0);
         }
       }
