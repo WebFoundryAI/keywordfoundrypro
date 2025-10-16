@@ -278,11 +278,14 @@ const RelatedKeywords = () => {
       } else {
         throw new Error(data.error || data.message || 'No results found');
       }
-    } catch (error) {
-      console.error('Related keywords error:', error);
+    } catch (err: any) {
+      console.error('Related keywords error:', err);
+      console.error('Error status:', err?.status);
+      console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
+      
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to find related keywords. Please try again.",
+        title: "Analysis Failed",
+        description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
         variant: "destructive",
       });
       setResults([]);
@@ -333,11 +336,14 @@ const RelatedKeywords = () => {
           description: "All related keywords have been loaded.",
         });
       }
-    } catch (error) {
-      console.error('Load more error:', error);
+    } catch (err: any) {
+      console.error('Load more error:', err);
+      console.error('Error status:', err?.status);
+      console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
+      
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load more keywords.",
+        title: "Load More Failed",
+        description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {

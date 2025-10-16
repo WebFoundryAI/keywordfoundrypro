@@ -162,11 +162,14 @@ const SerpAnalysis = () => {
       } else {
         throw new Error(data.error || 'No results found');
       }
-    } catch (error) {
-      console.error('SERP analysis error:', error);
+    } catch (err: any) {
+      console.error('SERP analysis error:', err);
+      console.error('Error status:', err?.status);
+      console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
+      
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to analyze SERP results. Please try again.",
+        title: "Analysis Failed",
+        description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {

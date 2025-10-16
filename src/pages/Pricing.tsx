@@ -62,9 +62,12 @@ const Pricing = () => {
           } else {
             throw new Error('No checkout URL returned');
           }
-        } catch (error: any) {
-          console.error('Error creating checkout session:', error);
-          toast.error(error.message || 'Failed to start checkout. Please try again.');
+        } catch (err: any) {
+          console.error('Error creating checkout session:', err);
+          console.error('Error status:', err?.status);
+          console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
+          
+          toast.error(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
         }
       }
     } else {

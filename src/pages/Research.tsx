@@ -155,11 +155,14 @@ const Research = () => {
       // Navigate to results page
       navigate('/keyword-results');
       
-    } catch (error) {
-      console.error('Keyword research error:', error);
+    } catch (err: any) {
+      console.error('Keyword research error:', err);
+      console.error('Error status:', err?.status);
+      console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
+      
       toast({
         title: "Analysis Failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
+        description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
