@@ -15,6 +15,8 @@ import { invokeFunction } from "@/lib/invoke";
 import { toast } from 'sonner';
 import { storePlanSelection } from '@/lib/planStorage';
 
+const STRIPE_ENABLED = import.meta.env.VITE_STRIPE_ENABLED === 'true';
+
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
   const { plans, isLoading, calculateYearlySavings } = usePricing();
@@ -47,6 +49,10 @@ const Pricing = () => {
       // Existing user wants to upgrade
       if (planTier === 'free_trial') {
         // Downgrade to free trial (shouldn't happen but handle it)
+        navigate('/research');
+      } else if (!STRIPE_ENABLED) {
+        // Stripe is paused - just acknowledge plan selection
+        toast.info('Plan selected! (Stripe integration paused for development)');
         navigate('/research');
       } else {
         // Paid plan - create Stripe checkout session

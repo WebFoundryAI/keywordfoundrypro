@@ -75,10 +75,10 @@ export default function SignUp() {
         title: 'Account created!',
         description: selectedPlan 
           ? `You're signed up for the ${selectedPlan.replace('_', ' ')} plan. Check your email to verify your account.`
-          : 'Check your email to verify your account, then choose your subscription plan.',
+          : 'Check your email to verify your account.',
         duration: 8000,
       })
-      navigate('/pricing?new=true')
+      // AuthProvider handles all redirects after sign-in
     } catch (err: any) {
       setError(err?.message || 'Unable to create account.')
     } finally {

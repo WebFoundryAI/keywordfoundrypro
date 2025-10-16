@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { invokeFunction } from "@/lib/invoke";
 import { toast } from 'sonner';
 
+const STRIPE_ENABLED = import.meta.env.VITE_STRIPE_ENABLED === 'true';
+
 export const SubscriptionStatus = () => {
   const { subscription, plan, usage, isLoading, keywordsPercentage, serpPercentage, relatedPercentage } = useSubscription();
 
@@ -95,13 +97,13 @@ export const SubscriptionStatus = () => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            {subscription.stripe_customer_id && (
+            {STRIPE_ENABLED && subscription.stripe_customer_id && (
               <Button size="sm" variant="ghost" onClick={handleManageSubscription}>
                 <Settings className="w-4 h-4 mr-1" />
                 Manage
               </Button>
             )}
-            {subscription.tier !== 'enterprise' && subscription.tier !== 'admin' && (
+            {STRIPE_ENABLED && subscription.tier !== 'enterprise' && subscription.tier !== 'admin' && (
               <Link to="/pricing">
                 <Button size="sm" variant="outline">
                   Upgrade <ArrowUpRight className="w-4 h-4 ml-1" />

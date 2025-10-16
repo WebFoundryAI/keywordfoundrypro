@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getStoredPlanSelection, clearStoredPlanSelection } from '@/lib/planStorage';
@@ -28,18 +28,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const didRedirectRef = useRef(false);
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state change:', event, session?.user?.id);
+        
+        // Only handle SIGNED_IN for navigation, ignore TOKEN_REFRESHED and USER_UPDATED
+        if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
 
         // Apply stored plan selection and handle centralized redirect after SIGNED_IN
         if (event === 'SIGNED_IN' && session?.user) {
+          // Prevent double-redirect within one session
+          if (didRedirectRef.current) {
+            console.log('Redirect already performed, skipping');
+            return;
+          }
+
           setTimeout(async () => {
             const storedPlan = getStoredPlanSelection();
             if (storedPlan) {
@@ -68,9 +84,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               console.error('ensure_user_subscription error', rpcErr);
             }
 
-            // Single deterministic redirect - all authenticated users go to /research
-            console.log('Centralized redirect: /research');
-            window.location.replace('/research');
+            // Only redirect from specific paths to avoid /research refresh loops
+            const currentPath = window.location.pathname;
+            const shouldRedirect = ['/', '/auth/callback', '/auth/sign-in', '/auth/sign-up', '/pricing'].includes(currentPath);
+            
+            if (shouldRedirect && currentPath !== '/research') {
+              didRedirectRef.current = true;
+              console.log('Centralized redirect from', currentPath, '-> /research');
+              window.location.replace('/research');
+            } else {
+              console.log('Skipping redirect - already on', currentPath);
+            }
           }, 0);
         }
       }
