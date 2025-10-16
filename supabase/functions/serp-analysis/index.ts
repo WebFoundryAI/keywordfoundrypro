@@ -109,6 +109,24 @@ serve(async (req) => {
       }
     });
 
+    // Check if user can perform SERP analysis (quota check)
+    const { data: canPerform, error: quotaError } = await supabase
+      .rpc('can_user_perform_action', {
+        user_id_param: user.id,
+        action_type: 'serp'
+      });
+
+    if (quotaError) {
+      console.error('Error checking usage quota:', quotaError);
+      throw new Error('Unable to verify usage quota. Please try again.');
+    }
+
+    if (!canPerform) {
+      throw new Error('You have reached your SERP analysis quota for this billing period. Please upgrade your plan to continue.');
+    }
+
+    console.log(`User ${user.id} has available quota for SERP analysis`);
+
     // Parse and validate input
     const rawBody = await req.json();
     const validatedData = SerpRequestSchema.parse(rawBody);
@@ -214,6 +232,21 @@ serve(async (req) => {
       console.error('Error creating SERP research record:', researchError);
       // Don't throw error for SERP analysis, just continue without storing
     }
+
+    // Increment usage counter after successful analysis
+    const { error: usageError } = await supabase
+      .rpc('increment_usage', {
+        user_id_param: user.id,
+        action_type: 'serp',
+        amount: 1
+      });
+
+    if (usageError) {
+      console.error('Error incrementing usage (non-critical):', usageError);
+      // Don't fail the request, just log the error
+    }
+
+    console.log(`Successfully incremented SERP usage for user ${user.id}`);
 
     return new Response(JSON.stringify({
       success: true,
