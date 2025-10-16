@@ -66,7 +66,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 user_id_param: session.user.id
               });
               
-              const hasSubscription = subscriptionData?.[0]
+              console.log('OAuth subscription check:', subscriptionData)
+              const hasSubscription = subscriptionData && subscriptionData.length > 0 && subscriptionData[0] && subscriptionData[0].status === 'active'
 
               const redirectTo = hasSubscription ? '/research' : '/pricing?new=true';
               console.log('Smart redirect:', { hasSubscription, redirectTo });

@@ -43,7 +43,8 @@ export default function SignIn() {
         user_id_param: (await supabase.auth.getUser()).data.user?.id
       })
       
-      const hasSubscription = subscriptionData?.[0]
+      console.log('SignIn subscription check:', subscriptionData)
+      const hasSubscription = subscriptionData && subscriptionData.length > 0 && subscriptionData[0] && subscriptionData[0].status === 'active'
 
       toast({ title: 'Signed in', description: 'Welcome back!' })
       navigate(hasSubscription ? '/research' : '/pricing?new=true')
