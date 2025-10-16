@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeWithAuth } from "@/lib/supabaseHelpers";
 import { Search, ExternalLink, Globe, MapPin, Zap, AlertCircle } from "lucide-react";
 
 interface SerpResult {
@@ -139,18 +140,12 @@ const SerpAnalysis = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('serp-analysis', {
-        body: {
-          keyword: keyword.trim(),
-          languageCode,
-          locationCode,
-          limit
-        }
+      const data = await invokeWithAuth('serp-analysis', {
+        keyword: keyword.trim(),
+        languageCode,
+        locationCode,
+        limit
       });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to analyze SERP results');
-      }
 
       if (data.success && data.results) {
         setResults(data.results);

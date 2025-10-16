@@ -8,6 +8,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeWithAuth } from '@/lib/supabaseHelpers';
 import { toast } from 'sonner';
 
 export const SubscriptionStatus = () => {
@@ -60,10 +61,8 @@ export const SubscriptionStatus = () => {
   const handleManageSubscription = async () => {
     try {
       toast.info('Opening billing portal...');
-      const { data, error } = await supabase.functions.invoke('create-portal-session');
+      const data = await invokeWithAuth('create-portal-session', {});
 
-      if (error) throw error;
-      
       if (data?.url) {
         window.location.href = data.url;
       } else {

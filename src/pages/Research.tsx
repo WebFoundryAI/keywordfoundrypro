@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeWithAuth } from "@/lib/supabaseHelpers";
 
 const Research = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -78,49 +79,17 @@ const Research = () => {
       });
       console.log('Timestamp:', new Date().toISOString());
       
-      const { data, error } = await supabase.functions.invoke('keyword-research', {
-        body: {
-          keyword: formData.keyword.trim(),
-          languageCode: formData.languageCode,
-          locationCode: formData.locationCode,
-          limit: formData.limit
-        }
+      const data = await invokeWithAuth('keyword-research', {
+        keyword: formData.keyword.trim(),
+        languageCode: formData.languageCode,
+        locationCode: formData.locationCode,
+        limit: formData.limit
       });
       
       console.log('=== CLIENT: Function invocation response ===');
       console.log('Has data:', !!data);
-      console.log('Has error:', !!error);
-      if (error) {
-        console.log('Error object:', error);
-      }
       if (data) {
         console.log('Data received:', data);
-      }
-
-      if (error) {
-        console.error('Function invocation error:', error);
-        console.error('Error details:', {
-          name: error.name,
-          message: error.message,
-          context: (error as any).context,
-          status: (error as any).status
-        });
-        
-        // Provide specific error messages
-        let errorMessage = 'Failed to analyze keywords. Please try again.';
-        
-        if (error.message.includes('FunctionsRelayError')) {
-          errorMessage = 'API service temporarily unavailable. Please try again in a moment.';
-        } else if (error.message.includes('FunctionsFetchError')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
-        } else if (error.message.includes('Unauthorized')) {
-          errorMessage = 'Session expired. Please sign in again.';
-          setTimeout(() => navigate('/auth/sign-in'), 2000);
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        
-        throw new Error(errorMessage);
       }
 
       // Check for API response errors

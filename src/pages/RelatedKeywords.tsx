@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeWithAuth } from "@/lib/supabaseHelpers";
 import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter, AlertCircle } from "lucide-react";
 import { formatNumber, formatDifficulty, formatCurrency } from "@/lib/utils";
 
@@ -244,20 +245,14 @@ const RelatedKeywords = () => {
     setTotalCount(0);
     
     try {
-      const { data, error } = await supabase.functions.invoke('related-keywords', {
-        body: {
-          keyword: keyword.trim(),
-          languageCode,
-          locationCode,
-          limit: 100, // Always use 100 for first request
-          depth,
-          offset: 0
-        }
+      const data = await invokeWithAuth('related-keywords', {
+        keyword: keyword.trim(),
+        languageCode,
+        locationCode,
+        limit: 100,
+        depth,
+        offset: 0
       });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to find related keywords');
-      }
 
       if (data.success && data.results) {
         setResults(data.results);
@@ -304,20 +299,14 @@ const RelatedKeywords = () => {
     setIsLoadingMore(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('related-keywords', {
-        body: {
-          keyword: keyword.trim(),
-          languageCode,
-          locationCode,
-          limit: 100, // Always use 100 per request
-          depth,
-          offset: currentOffset
-        }
+      const data = await invokeWithAuth('related-keywords', {
+        keyword: keyword.trim(),
+        languageCode,
+        locationCode,
+        limit: 100,
+        depth,
+        offset: currentOffset
       });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to load more keywords');
-      }
 
       if (data.success && data.results && data.results.length > 0) {
         // Filter out duplicates based on keyword
