@@ -62,15 +62,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             // Smart redirect based on subscription status (for OAuth flows)
             const currentPath = window.location.pathname;
             if (currentPath.includes('/auth/callback')) {
+              // Wait a bit for subscription creation trigger to complete
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
               const { data: subscriptionData } = await supabase.rpc('get_user_subscription', {
                 user_id_param: session.user.id
               });
               
               console.log('OAuth subscription check:', subscriptionData)
-              const hasSubscription = subscriptionData && subscriptionData.length > 0 && subscriptionData[0] && subscriptionData[0].status === 'active'
+              const hasActiveSubscription = subscriptionData?.[0]?.status === 'active';
 
-              const redirectTo = hasSubscription ? '/research' : '/pricing?new=true';
-              console.log('Smart redirect:', { hasSubscription, redirectTo });
+              const redirectTo = hasActiveSubscription ? '/research' : '/pricing?new=true';
+              console.log('Smart redirect:', { hasActiveSubscription, redirectTo });
               window.location.href = redirectTo;
             }
           }, 0);

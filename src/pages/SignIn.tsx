@@ -44,10 +44,10 @@ export default function SignIn() {
       })
       
       console.log('SignIn subscription check:', subscriptionData)
-      const hasSubscription = subscriptionData && subscriptionData.length > 0 && subscriptionData[0] && subscriptionData[0].status === 'active'
+      const hasActiveSubscription = subscriptionData?.[0]?.status === 'active'
 
       toast({ title: 'Signed in', description: 'Welcome back!' })
-      navigate(hasSubscription ? '/research' : '/pricing?new=true')
+      navigate(hasActiveSubscription ? '/research' : '/pricing?new=true')
     } catch (err: any) {
       const errorMessage = err?.message || 'Unable to sign in. Please try again.'
       if (errorMessage.includes('Email not confirmed') || errorMessage.includes('email_not_confirmed')) {
