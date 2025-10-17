@@ -17,3 +17,9 @@ verify_jwt = true
 
 [functions.generate-ai-insights]
 verify_jwt = true
+
+[functions.competitor-analyze-demo]
+verify_jwt = false
+
+[functions.generate-ai-insights-demo]
+verify_jwt = false

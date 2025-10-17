@@ -12,6 +12,7 @@ import KeywordResults from "./pages/KeywordResults";
 import SerpAnalysis from "./pages/SerpAnalysis";
 import RelatedKeywords from "./pages/RelatedKeywords";
 import CompetitorAnalyzer from "./pages/CompetitorAnalyzer";
+import DemoCompetitorAnalyzer from "./pages/DemoCompetitorAnalyzer";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -40,12 +41,13 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/research" element={<Research />} />
-              <Route path="/keyword-results" element={<KeywordResults />} />
-              <Route path="/serp-analysis" element={<SerpAnalysis />} />
-              <Route path="/related-keywords" element={<RelatedKeywords />} />
-              <Route path="/competitor-analyzer" element={<CompetitorAnalyzer />} />
+          <Route path="/" element={<Index />} />
+          <Route path="/research" element={<Research />} />
+          <Route path="/keyword-results" element={<KeywordResults />} />
+          <Route path="/serp-analysis" element={<SerpAnalysis />} />
+          <Route path="/related-keywords" element={<RelatedKeywords />} />
+          <Route path="/competitor-analyzer" element={<CompetitorAnalyzer />} />
+          <Route path="/demo/competitor" element={<DemoCompetitorAnalyzer />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/admin" element={<AdminLayout />}>
