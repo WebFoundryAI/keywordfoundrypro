@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileDown, FileText, Loader2 } from "lucide-react";
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { Loader2 } from "lucide-react";
 import { useCompetitorGap } from "@/hooks/useCompetitorGap";
-import { getAvailableMarkets, MARKETS } from "@/lib/markets";
+import { MARKETS } from "@/lib/markets";
 import { toast } from "@/hooks/use-toast";
+import { GapKpi } from "@/components/GapKpi";
+import { OpportunityScatter } from "@/components/OpportunityScatter";
+import { OverlapPie } from "@/components/OverlapPie";
+import { GapTable } from "@/components/GapTable";
 
 const CompetitorGap = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -112,19 +114,15 @@ const CompetitorGap = () => {
   };
 
   // Chart data from report
-  const scatterData = reportData?.scatterData || [];
-  const pieData = reportData?.pieData || [
-    { name: "Overlap", value: 0, color: "hsl(var(--primary))" },
-    { name: "Your Only", value: 0, color: "hsl(var(--secondary))" },
-    { name: "Their Only", value: 0, color: "hsl(var(--accent))" },
-  ];
+  const scatterPoints = (reportData?.scatterData || []).map((item: any) => ({
+    x: item.difficulty,
+    y: item.volume,
+    label: item.keyword,
+    score: item.opportunityScore,
+  }));
 
   const handleGenerateReport = () => {
     console.log("Generate report clicked");
-  };
-
-  const handleDownloadCSV = () => {
-    console.log("Download CSV clicked");
   };
 
   return (
@@ -132,19 +130,8 @@ const CompetitorGap = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Header Bar */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Competitor Gap Analysis</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleGenerateReport}>
-              <FileText className="w-4 h-4 mr-2" />
-              Generate Report
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
-              <FileDown className="w-4 h-4 mr-2" />
-              Download CSV
-            </Button>
-          </div>
         </div>
 
         {/* Controls Card */}
@@ -229,89 +216,27 @@ const CompetitorGap = () => {
           </CardContent>
         </Card>
 
-        {/* KPI Cards Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Total Keywords (You)</CardDescription>
-              <CardTitle className="text-3xl">
-                {reportData?.kpis?.totalYourKeywords?.toLocaleString() || "—"}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Total Keywords (Competitor)</CardDescription>
-              <CardTitle className="text-3xl">
-                {reportData?.kpis?.totalTheirKeywords?.toLocaleString() || "—"}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Overlap</CardDescription>
-              <CardTitle className="text-3xl">
-                {reportData?.kpis?.overlapCount?.toLocaleString() || "—"}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Missing (Their Only)</CardDescription>
-              <CardTitle className="text-3xl text-destructive">
-                {reportData?.kpis?.missingCount?.toLocaleString() || "—"}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
+        {/* KPI Cards */}
+        {reportData && (
+          <GapKpi
+            totalYourKeywords={reportData.kpis.totalYourKeywords}
+            totalTheirKeywords={reportData.kpis.totalTheirKeywords}
+            overlapCount={reportData.kpis.overlapCount}
+            missingCount={reportData.kpis.missingCount}
+          />
+        )}
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Opportunity Scatter</CardTitle>
-              <CardDescription>Volume vs Difficulty</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="volume" name="Volume" className="text-muted-foreground" />
-                  <YAxis dataKey="difficulty" name="Difficulty" className="text-muted-foreground" />
-                  <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-                  <Scatter data={scatterData} fill="hsl(var(--primary))" />
-                </ScatterChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Overlap vs Unique</CardTitle>
-              <CardDescription>Keyword distribution</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
-                    outerRadius={80}
-                    fill="hsl(var(--primary))"
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+        {reportData && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <OpportunityScatter points={scatterPoints} />
+            <OverlapPie
+              overlapCount={reportData.kpis.overlapCount}
+              yourOnlyCount={reportData.kpis.totalYourKeywords - reportData.kpis.overlapCount}
+              theirOnlyCount={reportData.kpis.missingCount}
+            />
+          </div>
+        )}
 
         {/* Tabs Section */}
         <Card>
@@ -320,116 +245,23 @@ const CompetitorGap = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="missing" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="missing">Missing Keywords</TabsTrigger>
                 <TabsTrigger value="overlap">Overlap / Rank Delta</TabsTrigger>
-                <TabsTrigger value="page-level">Page-Level Gaps</TabsTrigger>
               </TabsList>
-              <TabsContent value="missing" className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Input placeholder="Filter keywords..." className="max-w-sm" />
-                  <Button variant="outline" size="sm">Filter</Button>
-                </div>
-                <div className="border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Keyword</TableHead>
-                        <TableHead>Volume</TableHead>
-                        <TableHead>Difficulty</TableHead>
-                        <TableHead>CPC</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {missingKeywords.length > 0 ? (
-                        missingKeywords.map((kw) => (
-                          <TableRow key={kw.id}>
-                            <TableCell>{kw.keyword}</TableCell>
-                            <TableCell>{kw.volume?.toLocaleString() || "—"}</TableCell>
-                            <TableCell>{kw.difficulty || "—"}</TableCell>
-                            <TableCell>${kw.cpc?.toFixed(2) || "—"}</TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground">
-                            {reportData ? "No missing keywords found" : "Run a comparison to see results"}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+              <TabsContent value="missing" className="mt-6">
+                <GapTable 
+                  type="missing" 
+                  data={missingKeywords} 
+                  loading={isLoadingReport}
+                />
               </TabsContent>
-              <TabsContent value="overlap" className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Input placeholder="Filter keywords..." className="max-w-sm" />
-                  <Button variant="outline" size="sm">Filter</Button>
-                </div>
-                <div className="border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Keyword</TableHead>
-                        <TableHead>Your Rank</TableHead>
-                        <TableHead>Their Rank</TableHead>
-                        <TableHead>Delta</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {overlapKeywords.length > 0 ? (
-                        overlapKeywords.map((kw) => (
-                          <TableRow key={kw.id}>
-                            <TableCell>{kw.keyword}</TableCell>
-                            <TableCell>{kw.your_pos || "—"}</TableCell>
-                            <TableCell>{kw.their_pos || "—"}</TableCell>
-                            <TableCell className={kw.delta && kw.delta > 0 ? "text-green-600" : "text-destructive"}>
-                              {kw.delta ? (kw.delta > 0 ? `+${kw.delta}` : kw.delta) : "—"}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground">
-                            {reportData ? "No overlap keywords found" : "Run a comparison to see results"}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-              <TabsContent value="page-level" className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Input placeholder="Filter pages..." className="max-w-sm" />
-                  <Button variant="outline" size="sm">Filter</Button>
-                </div>
-                <div className="border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Page URL</TableHead>
-                        <TableHead>Keywords</TableHead>
-                        <TableHead>Avg Position</TableHead>
-                        <TableHead>Traffic Est.</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-mono text-sm">/page-1</TableCell>
-                        <TableCell>42</TableCell>
-                        <TableCell>8.5</TableCell>
-                        <TableCell>2,150</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-mono text-sm">/page-2</TableCell>
-                        <TableCell>28</TableCell>
-                        <TableCell>12.3</TableCell>
-                        <TableCell>890</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
+              <TabsContent value="overlap" className="mt-6">
+                <GapTable 
+                  type="overlap" 
+                  data={overlapKeywords} 
+                  loading={isLoadingReport}
+                />
               </TabsContent>
             </Tabs>
           </CardContent>
