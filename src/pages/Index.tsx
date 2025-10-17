@@ -153,6 +153,9 @@ const Index = () => {
                 <button onClick={() => navigate('/research')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
                   Research
                 </button>
+                <button onClick={() => navigate('/competitor-gap')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Competitor Gap
+                </button>
                 <button onClick={() => navigate('/pricing')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
                   Pricing
                 </button>

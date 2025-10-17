@@ -16,11 +16,13 @@ import { GapKpi } from "@/components/GapKpi";
 import { OpportunityScatter } from "@/components/OpportunityScatter";
 import { OverlapPie } from "@/components/OverlapPie";
 import { GapTable } from "@/components/GapTable";
+import { useAuth } from "@/components/AuthProvider";
 
 const CompetitorGap = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { startComparison, getReport, getKeywords, isStarting, isLoadingReport } = useCompetitorGap();
   const [isPending, startTransition] = useTransition();
+  const { user } = useAuth();
   
   // Form state - sync with URL params
   const [yourDomain, setYourDomain] = useState(() => searchParams.get("yourDomain") || "");
@@ -127,7 +129,7 @@ const CompetitorGap = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header user={user} />
       
       <div className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between">
