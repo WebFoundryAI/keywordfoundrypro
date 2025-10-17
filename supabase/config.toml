@@ -11,3 +11,9 @@ verify_jwt = true
 
 [functions.serp-analysis]
 verify_jwt = true
+
+[functions.competitor-analyze]
+verify_jwt = true
+
+[functions.generate-ai-insights]
+verify_jwt = true
