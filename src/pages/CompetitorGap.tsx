@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,41 +9,115 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileDown, FileText } from "lucide-react";
+import { FileDown, FileText, Loader2 } from "lucide-react";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { useCompetitorGap } from "@/hooks/useCompetitorGap";
+import { getAvailableMarkets, MARKETS } from "@/lib/markets";
+import { toast } from "@/hooks/use-toast";
 
 const CompetitorGap = () => {
-  const [yourDomain, setYourDomain] = useState("keywordfoundrypro.com");
-  const [competitorDomain, setCompetitorDomain] = useState("");
-  const [market, setMarket] = useState("");
-  const [freshness, setFreshness] = useState("");
-  const [includeRelated, setIncludeRelated] = useState(false);
-  const [pullSerpFeatures, setPullSerpFeatures] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { startComparison, getReport, getKeywords, isStarting, isLoadingReport } = useCompetitorGap();
+  const [isPending, startTransition] = useTransition();
+  
+  // Form state - sync with URL params
+  const [yourDomain, setYourDomain] = useState(() => searchParams.get("yourDomain") || "");
+  const [competitorDomain, setCompetitorDomain] = useState(() => searchParams.get("competitorDomain") || "");
+  const [market, setMarket] = useState(() => searchParams.get("market") || "us");
+  const [freshness, setFreshness] = useState(() => searchParams.get("freshness") || "live");
+  const [includeRelated, setIncludeRelated] = useState(() => searchParams.get("includeRelated") === "true");
+  const [pullSerpFeatures, setPullSerpFeatures] = useState(() => searchParams.get("pullSerpFeatures") === "true");
+  
+  // Report state
+  const [reportId, setReportId] = useState<string | null>(null);
+  const [reportData, setReportData] = useState<any>(null);
+  const [missingKeywords, setMissingKeywords] = useState<any[]>([]);
+  const [overlapKeywords, setOverlapKeywords] = useState<any[]>([]);
 
-  // Stub data for charts
-  const scatterData = [
-    { volume: 1000, difficulty: 30, name: "keyword 1" },
-    { volume: 5000, difficulty: 50, name: "keyword 2" },
-    { volume: 2000, difficulty: 20, name: "keyword 3" },
-    { volume: 8000, difficulty: 70, name: "keyword 4" },
-  ];
+  // Sync form state to URL params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (yourDomain) params.set("yourDomain", yourDomain);
+    if (competitorDomain) params.set("competitorDomain", competitorDomain);
+    if (market) params.set("market", market);
+    if (freshness) params.set("freshness", freshness);
+    if (includeRelated) params.set("includeRelated", "true");
+    if (pullSerpFeatures) params.set("pullSerpFeatures", "true");
+    setSearchParams(params, { replace: true });
+  }, [yourDomain, competitorDomain, market, freshness, includeRelated, pullSerpFeatures, setSearchParams]);
 
-  const pieData = [
-    { name: "Overlap", value: 150, color: "hsl(var(--primary))" },
-    { name: "Your Only", value: 200, color: "hsl(var(--secondary))" },
-    { name: "Their Only", value: 180, color: "hsl(var(--accent))" },
-  ];
+  // Poll for report completion
+  useEffect(() => {
+    if (!reportId || reportData?.report?.status === "done") return;
+
+    const pollInterval = setInterval(async () => {
+      const data = await getReport(reportId);
+      if (data) {
+        setReportData(data);
+        if (data.report.status === "done") {
+          // Fetch keywords when done
+          const missing = await getKeywords(reportId, "missing", 1, 100);
+          const overlap = await getKeywords(reportId, "overlap", 1, 100);
+          setMissingKeywords(missing.keywords);
+          setOverlapKeywords(overlap.keywords);
+          
+          toast({
+            title: "Analysis Complete",
+            description: "Your competitor gap analysis is ready!",
+          });
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [reportId, reportData?.report?.status, getReport, getKeywords]);
 
   const handleRunComparison = () => {
-    console.log("Run comparison clicked", {
-      yourDomain,
-      competitorDomain,
-      market,
-      freshness,
-      includeRelated,
-      pullSerpFeatures,
+    if (!yourDomain || !competitorDomain || !market) {
+      toast({
+        title: "Missing Fields",
+        description: "Please enter both domains and select a market.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    startTransition(() => {
+      (async () => {
+        const id = await startComparison({
+          myDomain: yourDomain,
+          competitorDomain: competitorDomain,
+          market,
+          freshness: freshness as "live" | "24h" | "7d",
+          includeRelated,
+          includeSerp: pullSerpFeatures,
+        });
+
+        if (id) {
+          setReportId(id);
+          setReportData(null);
+          toast({
+            title: "Analysis Queued",
+            description: "We'll notify you when ready. This may take a few minutes.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to start analysis. Please try again.",
+            variant: "destructive",
+          });
+        }
+      })();
     });
   };
+
+  // Chart data from report
+  const scatterData = reportData?.scatterData || [];
+  const pieData = reportData?.pieData || [
+    { name: "Overlap", value: 0, color: "hsl(var(--primary))" },
+    { name: "Your Only", value: 0, color: "hsl(var(--secondary))" },
+    { name: "Their Only", value: 0, color: "hsl(var(--accent))" },
+  ];
 
   const handleGenerateReport = () => {
     console.log("Generate report clicked");
@@ -105,10 +180,9 @@ const CompetitorGap = () => {
                     <SelectValue placeholder="Select market" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="us">United States</SelectItem>
-                    <SelectItem value="uk">United Kingdom</SelectItem>
-                    <SelectItem value="ca">Canada</SelectItem>
-                    <SelectItem value="au">Australia</SelectItem>
+                    <SelectItem value="us">{MARKETS.us.name}</SelectItem>
+                    <SelectItem value="uk">{MARKETS.uk.name}</SelectItem>
+                    <SelectItem value="au">{MARKETS.au.name}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -119,9 +193,9 @@ const CompetitorGap = () => {
                     <SelectValue placeholder="Select freshness" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="7days">Last 7 days</SelectItem>
-                    <SelectItem value="30days">Last 30 days</SelectItem>
-                    <SelectItem value="90days">Last 90 days</SelectItem>
+                    <SelectItem value="live">Live</SelectItem>
+                    <SelectItem value="24h">Last 24 hours</SelectItem>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -148,7 +222,8 @@ const CompetitorGap = () => {
                 </Label>
               </div>
             </div>
-            <Button onClick={handleRunComparison} className="w-full md:w-auto">
+            <Button onClick={handleRunComparison} className="w-full md:w-auto" disabled={isStarting || isPending}>
+              {(isStarting || isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Run Comparison
             </Button>
           </CardContent>
@@ -159,25 +234,33 @@ const CompetitorGap = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Total Keywords (You)</CardDescription>
-              <CardTitle className="text-3xl">2,450</CardTitle>
+              <CardTitle className="text-3xl">
+                {reportData?.kpis?.totalYourKeywords?.toLocaleString() || "—"}
+              </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Total Keywords (Competitor)</CardDescription>
-              <CardTitle className="text-3xl">3,120</CardTitle>
+              <CardTitle className="text-3xl">
+                {reportData?.kpis?.totalTheirKeywords?.toLocaleString() || "—"}
+              </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Overlap</CardDescription>
-              <CardTitle className="text-3xl">1,580</CardTitle>
+              <CardTitle className="text-3xl">
+                {reportData?.kpis?.overlapCount?.toLocaleString() || "—"}
+              </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Missing (Their Only)</CardDescription>
-              <CardTitle className="text-3xl text-destructive">1,540</CardTitle>
+              <CardTitle className="text-3xl text-destructive">
+                {reportData?.kpis?.missingCount?.toLocaleString() || "—"}
+              </CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -192,9 +275,9 @@ const CompetitorGap = () => {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="volume" name="Volume" />
-                  <YAxis dataKey="difficulty" name="Difficulty" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="volume" name="Volume" className="text-muted-foreground" />
+                  <YAxis dataKey="difficulty" name="Difficulty" className="text-muted-foreground" />
                   <Tooltip cursor={{ strokeDasharray: "3 3" }} />
                   <Scatter data={scatterData} fill="hsl(var(--primary))" />
                 </ScatterChart>
@@ -258,18 +341,22 @@ const CompetitorGap = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRow>
-                        <TableCell>example keyword 1</TableCell>
-                        <TableCell>5,200</TableCell>
-                        <TableCell>45</TableCell>
-                        <TableCell>$2.50</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>example keyword 2</TableCell>
-                        <TableCell>3,100</TableCell>
-                        <TableCell>38</TableCell>
-                        <TableCell>$1.80</TableCell>
-                      </TableRow>
+                      {missingKeywords.length > 0 ? (
+                        missingKeywords.map((kw) => (
+                          <TableRow key={kw.id}>
+                            <TableCell>{kw.keyword}</TableCell>
+                            <TableCell>{kw.volume?.toLocaleString() || "—"}</TableCell>
+                            <TableCell>{kw.difficulty || "—"}</TableCell>
+                            <TableCell>${kw.cpc?.toFixed(2) || "—"}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            {reportData ? "No missing keywords found" : "Run a comparison to see results"}
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -290,18 +377,24 @@ const CompetitorGap = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRow>
-                        <TableCell>shared keyword 1</TableCell>
-                        <TableCell>12</TableCell>
-                        <TableCell>8</TableCell>
-                        <TableCell className="text-destructive">-4</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>shared keyword 2</TableCell>
-                        <TableCell>5</TableCell>
-                        <TableCell>9</TableCell>
-                        <TableCell className="text-green-600">+4</TableCell>
-                      </TableRow>
+                      {overlapKeywords.length > 0 ? (
+                        overlapKeywords.map((kw) => (
+                          <TableRow key={kw.id}>
+                            <TableCell>{kw.keyword}</TableCell>
+                            <TableCell>{kw.your_pos || "—"}</TableCell>
+                            <TableCell>{kw.their_pos || "—"}</TableCell>
+                            <TableCell className={kw.delta && kw.delta > 0 ? "text-green-600" : "text-destructive"}>
+                              {kw.delta ? (kw.delta > 0 ? `+${kw.delta}` : kw.delta) : "—"}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            {reportData ? "No overlap keywords found" : "Run a comparison to see results"}
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
