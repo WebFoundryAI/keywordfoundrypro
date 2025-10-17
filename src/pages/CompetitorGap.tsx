@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
 import { useCompetitorGap } from "@/hooks/useCompetitorGap";
 import { MARKETS } from "@/lib/markets";
 import { toast } from "@/hooks/use-toast";
@@ -17,6 +17,7 @@ import { OpportunityScatter } from "@/components/OpportunityScatter";
 import { OverlapPie } from "@/components/OverlapPie";
 import { GapTable } from "@/components/GapTable";
 import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 
 const CompetitorGap = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -123,8 +124,52 @@ const CompetitorGap = () => {
     score: item.opportunityScore,
   }));
 
-  const handleGenerateReport = () => {
-    console.log("Generate report clicked");
+  const [generatingReport, setGeneratingReport] = useState(false);
+
+  const handleGenerateReport = async () => {
+    if (!reportId) {
+      toast({
+        title: "No report available",
+        description: "Please run a comparison first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingReport(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-gap-report', {
+        body: { reportId },
+      });
+
+      if (error) throw error;
+
+      // Create a blob from the HTML response
+      const blob = new Blob([data], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      // Open in new window for print-to-PDF
+      const win = window.open(url, '_blank');
+      
+      // Clean up
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+
+      toast({
+        title: "Report Generated",
+        description: "Use your browser's print function (Ctrl+P / Cmd+P) to save as PDF.",
+      });
+
+    } catch (error: any) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate report",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingReport(false);
+    }
   };
 
   return (
@@ -134,6 +179,18 @@ const CompetitorGap = () => {
       <div className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Competitor Gap Analysis</h1>
+          {reportData && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleGenerateReport}
+              disabled={generatingReport}
+            >
+              {generatingReport && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <FileText className="w-4 h-4 mr-2" />
+              Generate Report
+            </Button>
+          )}
         </div>
 
         {/* Controls Card */}
