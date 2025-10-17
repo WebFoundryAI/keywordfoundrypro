@@ -11,6 +11,7 @@ import Research from "./pages/Research";
 import KeywordResults from "./pages/KeywordResults";
 import SerpAnalysis from "./pages/SerpAnalysis";
 import RelatedKeywords from "./pages/RelatedKeywords";
+import CompetitorGap from "./pages/CompetitorGap";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/keyword-results" element={<KeywordResults />} />
               <Route path="/serp-analysis" element={<SerpAnalysis />} />
               <Route path="/related-keywords" element={<RelatedKeywords />} />
+              <Route path="/competitor-gap" element={<CompetitorGap />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/admin" element={<AdminLayout />}>
