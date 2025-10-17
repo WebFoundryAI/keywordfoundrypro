@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AdminLayout } from "@/components/AdminLayout";
 import Index from "./pages/Index";
@@ -45,7 +46,7 @@ const App = () => (
               <Route path="/keyword-results" element={<KeywordResults />} />
               <Route path="/serp-analysis" element={<SerpAnalysis />} />
               <Route path="/related-keywords" element={<RelatedKeywords />} />
-              <Route path="/competitor-gap" element={<CompetitorGap />} />
+              <Route path="/competitor-gap" element={<ProtectedRoute><CompetitorGap /></ProtectedRoute>} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/admin" element={<AdminLayout />}>

@@ -25,11 +25,42 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Get the authenticated user from the JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Fetch report details
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Create client with anon key to verify JWT
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    });
+
+    // Verify the user's JWT and get user info
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use service role key for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch report details and verify ownership
     const { data: report, error: reportError } = await supabase
       .from('domain_gap_reports')
       .select('*')
@@ -38,6 +69,14 @@ serve(async (req) => {
 
     if (reportError || !report) {
       throw new Error('Report not found');
+    }
+
+    // Security check: verify the report belongs to the authenticated user
+    if (report.user_id !== user.id) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Report does not belong to user' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Update status to processing
@@ -218,10 +257,10 @@ serve(async (req) => {
       console.log(`Inserted chunk ${Math.floor(i / chunkSize) + 1} of ${Math.ceil(gapKeywords.length / chunkSize)}`);
     }
 
-    // Update report status
+    // Update report status to 'done' (matching the client expectation)
     await supabase
       .from('domain_gap_reports')
-      .update({ status: 'completed' })
+      .update({ status: 'done' })
       .eq('id', reportId);
 
     console.log(`Completed processing report ${reportId}`);
