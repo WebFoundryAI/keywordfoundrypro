@@ -14,6 +14,169 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_reports: {
+        Row: {
+          competitor: string
+          created_at: string
+          id: string
+          report_text: string
+          user_id: string
+        }
+        Insert: {
+          competitor: string
+          created_at?: string
+          id?: string
+          report_text: string
+          user_id: string
+        }
+        Update: {
+          competitor?: string
+          created_at?: string
+          id?: string
+          report_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      domain_gap_reports: {
+        Row: {
+          competitor_domain: string
+          created_at: string
+          freshness: string
+          id: string
+          include_related: boolean
+          include_serp: boolean
+          market: string
+          my_domain: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          competitor_domain: string
+          created_at?: string
+          freshness: string
+          id?: string
+          include_related?: boolean
+          include_serp?: boolean
+          market: string
+          my_domain: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          competitor_domain?: string
+          created_at?: string
+          freshness?: string
+          id?: string
+          include_related?: boolean
+          include_serp?: boolean
+          market?: string
+          my_domain?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gap_keywords: {
+        Row: {
+          cpc: number | null
+          created_at: string
+          delta: number | null
+          difficulty: number | null
+          id: string
+          keyword: string
+          kind: string
+          opportunity_score: number | null
+          report_id: string
+          serp_features: Json | null
+          their_pos: number | null
+          volume: number | null
+          your_pos: number | null
+        }
+        Insert: {
+          cpc?: number | null
+          created_at?: string
+          delta?: number | null
+          difficulty?: number | null
+          id?: string
+          keyword: string
+          kind: string
+          opportunity_score?: number | null
+          report_id: string
+          serp_features?: Json | null
+          their_pos?: number | null
+          volume?: number | null
+          your_pos?: number | null
+        }
+        Update: {
+          cpc?: number | null
+          created_at?: string
+          delta?: number | null
+          difficulty?: number | null
+          id?: string
+          keyword?: string
+          kind?: string
+          opportunity_score?: number | null
+          report_id?: string
+          serp_features?: Json | null
+          their_pos?: number | null
+          volume?: number | null
+          your_pos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gap_keywords_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "domain_gap_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gap_pages: {
+        Row: {
+          created_at: string
+          gaps: Json | null
+          id: string
+          report_id: string
+          their_keywords: Json | null
+          their_url: string | null
+          your_keywords: Json | null
+          your_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          gaps?: Json | null
+          id?: string
+          report_id: string
+          their_keywords?: Json | null
+          their_url?: string | null
+          your_keywords?: Json | null
+          your_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          gaps?: Json | null
+          id?: string
+          report_id?: string
+          their_keywords?: Json | null
+          their_url?: string | null
+          your_keywords?: Json | null
+          your_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gap_pages_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "domain_gap_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       keyword_research: {
         Row: {
           api_cost: number | null
