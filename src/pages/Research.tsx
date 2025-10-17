@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { KeywordResearchForm, KeywordFormData } from "@/components/KeywordResearchForm";
 import { KeywordResult } from "@/components/KeywordResultsTable";
-import { Header } from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -183,18 +182,14 @@ const Research = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header user={user} />
-
-      <section className="px-6 py-8">
-        <div className="container mx-auto max-w-4xl space-y-6">
-          <KeywordResearchForm 
-            onSubmit={handleFormSubmit}
-            isLoading={isLoading}
-          />
-        </div>
-      </section>
-    </div>
+    <section className="px-6 py-8">
+      <div className="container mx-auto max-w-4xl space-y-6">
+        <KeywordResearchForm 
+          onSubmit={handleFormSubmit}
+          isLoading={isLoading}
+        />
+      </div>
+    </section>
   );
 };
 

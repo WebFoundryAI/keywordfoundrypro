@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
-import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeFunction } from "@/lib/invoke";
 import { Search, ExternalLink, Globe, MapPin, Zap, AlertCircle } from "lucide-react";
@@ -189,206 +188,201 @@ const SerpAnalysis = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header user={user} />
-
-      {/* Search Form */}
-      <section className="px-6 py-8">
-        <div className="container mx-auto max-w-4xl">
-          <Card className="bg-gradient-card shadow-card border-border/50 mb-6">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Analyze SERP Results
-              </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Get the top organic search results for any keyword with competitive insights
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="keyword" className="text-sm font-medium flex items-center gap-2">
-                    <Search className="w-4 h-4 text-primary" />
-                    Seed Keyword
-                  </Label>
-                  <Input
-                    id="keyword"
-                    type="text"
-                    placeholder="e.g., best running shoes"
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    spellCheck={true}
-                    autoCorrect="on"
-                    autoComplete="off"
-                    className="bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-smooth"
-                  />
-                  {showSuggestion && spellingSuggestion && (
-                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border border-border/50 text-sm">
-                      <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Did you mean:</span>
-                      <button
-                        type="button"
-                        onClick={applySuggestion}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {spellingSuggestion}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowSuggestion(false)}
-                        className="ml-auto text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Ignore
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="language" className="text-sm font-medium flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-primary" />
-                      Language
-                    </Label>
-                    <Select value={languageCode} onValueChange={setLanguageCode}>
-                      <SelectTrigger className="bg-background/50 border-border/50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LANGUAGE_OPTIONS.map((lang) => (
-                          <SelectItem key={lang.code} value={lang.code}>
-                            {lang.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+    <section className="px-6 py-8">
+      <div className="container mx-auto max-w-4xl">
+        <Card className="bg-gradient-card shadow-card border-border/50 mb-6">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              Analyze SERP Results
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Get the top organic search results for any keyword with competitive insights
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="keyword" className="text-sm font-medium flex items-center gap-2">
+                  <Search className="w-4 h-4 text-primary" />
+                  Seed Keyword
+                </Label>
+                <Input
+                  id="keyword"
+                  type="text"
+                  placeholder="e.g., best running shoes"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  spellCheck={true}
+                  autoCorrect="on"
+                  autoComplete="off"
+                  className="bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-smooth"
+                />
+                {showSuggestion && spellingSuggestion && (
+                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border border-border/50 text-sm">
+                    <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Did you mean:</span>
+                    <button
+                      type="button"
+                      onClick={applySuggestion}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {spellingSuggestion}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSuggestion(false)}
+                      className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Ignore
+                    </button>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-primary" />
-                      Location
-                    </Label>
-                    <Select value={locationCode.toString()} onValueChange={(value) => setLocationCode(parseInt(value))}>
-                      <SelectTrigger className="bg-background/50 border-border/50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LOCATION_OPTIONS.map((location) => (
-                          <SelectItem key={location.code} value={location.code.toString()}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">Results:</span>
-                    <span className="text-sm">10 top organic results</span>
-                  </div>
-                </div>
-
-                <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Estimated Cost:</span>
-                    <span className="text-primary font-bold">
-                      ${(() => {
-                        const serpsNeeded = Math.ceil(limit / 10);
-                        const cost = serpsNeeded === 0 ? 0 : 
-                                   serpsNeeded === 1 ? 0.002 : 
-                                   0.002 + ((serpsNeeded - 1) * 0.0015);
-                        return cost.toFixed(3);
-                      })()}
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Based on DataForSEO Live Mode pricing: $0.002 for first SERP (10 results), $0.0015 for each additional SERP.
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handleSearch}
-                  disabled={!keyword.trim() || isLoading}
-                  className="w-full bg-gradient-primary hover:shadow-button transition-smooth h-12 text-base font-semibold"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      Analyzing SERP...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Search className="w-5 h-5" />
-                      Analyze SERP Results
-                    </div>
-                  )}
-                </Button>
+                )}
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Results */}
-          {results.length > 0 && (
-            <div ref={resultsRef} className="space-y-4">
-              <h2 className="text-2xl font-bold">
-                SERP Results for "{keyword}"
-              </h2>
-              <ScrollArea className="h-[600px] rounded-md border border-border/50 p-4">
-                <div className="space-y-4">
-                  {results.map((result) => (
-                    <Card key={result.position} className="bg-gradient-card shadow-card border-border/50">
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-shrink-0 w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-                            <span className="text-sm font-bold text-primary">
-                              {result.position}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Globe className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">
-                                {result.domain}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => window.open(result.url, '_blank')}
-                                className="ml-auto p-1 h-auto"
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            <h3 className="text-lg font-semibold mb-2 text-primary hover:underline">
-                              <a href={result.url} target="_blank" rel="noopener noreferrer">
-                                {result.title}
-                              </a>
-                            </h3>
-                            <p className="text-muted-foreground text-sm mb-2">
-                              {result.description}
-                            </p>
-                            {result.breadcrumb && (
-                              <div className="text-xs text-muted-foreground">
-                                {result.breadcrumb}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="language" className="text-sm font-medium flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-primary" />
+                    Language
+                  </Label>
+                  <Select value={languageCode} onValueChange={setLanguageCode}>
+                    <SelectTrigger className="bg-background/50 border-border/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGE_OPTIONS.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </ScrollArea>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    Location
+                  </Label>
+                  <Select value={locationCode.toString()} onValueChange={(value) => setLocationCode(parseInt(value))}>
+                    <SelectTrigger className="bg-background/50 border-border/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LOCATION_OPTIONS.map((location) => (
+                        <SelectItem key={location.code} value={location.code.toString()}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">Results:</span>
+                  <span className="text-sm">10 top organic results</span>
+                </div>
+              </div>
+
+              <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Estimated Cost:</span>
+                  <span className="text-primary font-bold">
+                    ${(() => {
+                      const serpsNeeded = Math.ceil(limit / 10);
+                      const cost = serpsNeeded === 0 ? 0 : 
+                                 serpsNeeded === 1 ? 0.002 : 
+                                 0.002 + ((serpsNeeded - 1) * 0.0015);
+                      return cost.toFixed(3);
+                    })()}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Based on DataForSEO Live Mode pricing: $0.002 for first SERP (10 results), $0.0015 for each additional SERP.
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleSearch}
+                disabled={!keyword.trim() || isLoading}
+                className="w-full bg-gradient-primary hover:shadow-button transition-smooth h-12 text-base font-semibold"
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Analyzing SERP...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Search className="w-5 h-5" />
+                    Analyze SERP Results
+                  </div>
+                )}
+              </Button>
             </div>
-          )}
-        </div>
-      </section>
-    </div>
+          </CardContent>
+        </Card>
+
+        {/* Results */}
+        {results.length > 0 && (
+          <div ref={resultsRef} className="space-y-4">
+            <h2 className="text-2xl font-bold">
+              SERP Results for "{keyword}"
+            </h2>
+            <ScrollArea className="h-[600px] rounded-md border border-border/50 p-4">
+              <div className="space-y-4">
+                {results.map((result) => (
+                  <Card key={result.position} className="bg-gradient-card shadow-card border-border/50">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary">
+                            {result.position}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Globe className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              {result.domain}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(result.url, '_blank')}
+                              className="ml-auto p-1 h-auto"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2 text-primary hover:underline">
+                            <a href={result.url} target="_blank" rel="noopener noreferrer">
+                              {result.title}
+                            </a>
+                          </h3>
+                          <p className="text-muted-foreground text-sm mb-2">
+                            {result.description}
+                          </p>
+                          {result.breadcrumb && (
+                            <div className="text-xs text-muted-foreground">
+                              {result.breadcrumb}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+      </div>
+    </section>
   );
 };
 
