@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, BarChart, Target, GitCompare } from "lucide-react";
+import { Search, BarChart, Target } from "lucide-react";
 
 export const Navigation = () => {
   const location = useLocation();
@@ -29,12 +29,6 @@ export const Navigation = () => {
       label: "Related Keywords", 
       icon: Target,
       description: "Find content pillars and opportunities"
-    },
-    {
-      path: "/competitor-gap",
-      label: "Competitor Gap",
-      icon: GitCompare,
-      description: "Analyze competitor keyword gaps"
     },
     {
       path: "/pricing",

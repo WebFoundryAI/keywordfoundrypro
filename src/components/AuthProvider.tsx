@@ -96,19 +96,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               didRedirectRef.current = true;
               console.log('Centralized redirect from', currentPath, '-> /research');
               window.location.replace('/research');
-            } else if (currentPath === '/auth/sign-in' || currentPath === '/auth/sign-up') {
-              // Check if there's a return URL in sessionStorage
-              const returnUrl = sessionStorage.getItem('auth_return_url');
-              if (returnUrl) {
-                sessionStorage.removeItem('auth_return_url');
-                didRedirectRef.current = true;
-                console.log('Redirecting to return URL:', returnUrl);
-                window.location.replace(returnUrl);
-              } else {
-                didRedirectRef.current = true;
-                console.log('Centralized redirect from auth page -> /research');
-                window.location.replace('/research');
-              }
             } else {
               console.log('Skipping redirect - not on whitelist path:', currentPath);
             }

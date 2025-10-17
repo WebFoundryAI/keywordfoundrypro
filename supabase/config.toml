@@ -11,9 +11,3 @@ verify_jwt = true
 
 [functions.serp-analysis]
 verify_jwt = true
-
-[functions.competitor-gap-process]
-verify_jwt = true
-
-[functions.generate-gap-report]
-verify_jwt = true
