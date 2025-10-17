@@ -245,13 +245,190 @@ export default function CompetitorAnalyzer() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-...
+                    <TrendingUp className="h-4 w-4" />
+                    Keyword Gaps
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{analysisData.keyword_gap_list.length}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Keywords where competitor ranks
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <LinkIcon className="h-4 w-4" />
+                    Backlinks
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs">Your Domain</span>
+                      <span className="font-semibold">{analysisData.backlink_summary.your_domain.backlinks.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs">Competitor</span>
+                      <span className="font-semibold">{analysisData.backlink_summary.competitor_domain.backlinks.toLocaleString()}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            </>
-          )}
-        </div>
-      </main>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    Technical Score
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs">Your Domain</span>
+                      <Badge variant={analysisData.onpage_summary.your_domain.tech_score >= 75 ? "default" : "secondary"}>
+                        {analysisData.onpage_summary.your_domain.tech_score}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs">Competitor</span>
+                      <Badge variant={analysisData.onpage_summary.competitor_domain.tech_score >= 75 ? "default" : "secondary"}>
+                        {analysisData.onpage_summary.competitor_domain.tech_score}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Keyword Gap Analysis</span>
+                  <Badge variant="secondary">{sortedKeywords.length} keywords</Badge>
+                </CardTitle>
+                <CardDescription>Keywords where your competitor ranks but you don't</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('keyword')}>
+                          Keyword {sortField === 'keyword' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('position')}>
+                          Position {sortField === 'position' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('search_volume')}>
+                          Volume {sortField === 'search_volume' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('cpc')}>
+                          CPC {sortField === 'cpc' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedKeywords.map((kw, idx) => (
+                        <tr key={idx} className="border-b hover:bg-muted/30">
+                          <td className="py-2 px-2">{kw.keyword}</td>
+                          <td className="text-right py-2 px-2">#{kw.position}</td>
+                          <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
+                          <td className="text-right py-2 px-2">${kw.cpc.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {aiInsights && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    AI Strategic Insights
+                    <Badge variant="secondary" className="ml-auto">Powered by AI</Badge>
+                  </CardTitle>
+                  <CardDescription>Strategic recommendations based on the analysis</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="whitespace-pre-wrap text-sm bg-muted/50 p-4 rounded-lg">{aiInsights}</pre>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {!aiInsights && !generatingInsights && (
+              <Card>
+                <CardContent className="pt-6">
+                  <Button 
+                    onClick={() => generateAIInsights()} 
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Regenerate AI Insights
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Backlink Comparison</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={backlinksChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="backlinks" fill={COLORS[0]} />
+                      <Bar dataKey="referring_domains" fill={COLORS[1]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Technical Score Comparison</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={techScorePieData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={(entry) => `${entry.name}: ${entry.value}`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {techScorePieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+      </div>
+    </main>
   );
 }

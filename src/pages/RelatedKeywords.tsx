@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeFunction } from "@/lib/invoke";
-import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter, AlertCircle } from "lucide-react";
+import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter, AlertCircle, Download } from "lucide-react";
 import { formatNumber, formatDifficulty, formatCurrency } from "@/lib/utils";
 
 interface RelatedKeyword {
@@ -200,7 +200,6 @@ const RelatedKeywords = () => {
 
     const timer = setTimeout(async () => {
       try {
-        // Use Datamuse API for spelling suggestions (free, no API key needed)
         const response = await fetch(`https://api.datamuse.com/sug?s=${encodeURIComponent(keyword)}&max=1`);
         const suggestions = await response.json();
         
@@ -211,10 +210,9 @@ const RelatedKeywords = () => {
           setShowSuggestion(false);
         }
       } catch (error) {
-        // Silently fail - spell check is optional
         setShowSuggestion(false);
       }
-    }, 800); // Wait for user to stop typing
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [keyword]);
@@ -234,7 +232,6 @@ const RelatedKeywords = () => {
       return;
     }
 
-    // Update URL with search parameters
     setSearchParams({
       keyword: keyword.trim(),
       language: languageCode,
@@ -276,16 +273,12 @@ const RelatedKeywords = () => {
           description: message,
         });
       } else if (!data.success && data.status_code) {
-        // Show API error with status code
         throw new Error(`${data.error} (Status: ${data.status_code})`);
       } else {
         throw new Error(data.error || data.message || 'No results found');
       }
     } catch (err: any) {
       console.error('Related keywords error:', err);
-      console.error('Error status:', err?.status);
-      console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
-      
       toast({
         title: "Analysis Failed",
         description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
@@ -315,7 +308,6 @@ const RelatedKeywords = () => {
       });
 
       if (data.success && data.results && data.results.length > 0) {
-        // Filter out duplicates based on keyword
         const existingKeywords = new Set(results.map(r => r.keyword.toLowerCase()));
         const newUniqueResults = data.results.filter(
           (r: RelatedKeyword) => !existingKeywords.has(r.keyword.toLowerCase())
@@ -341,9 +333,6 @@ const RelatedKeywords = () => {
       }
     } catch (err: any) {
       console.error('Load more error:', err);
-      console.error('Error status:', err?.status);
-      console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
-      
       toast({
         title: "Load More Failed",
         description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
@@ -405,24 +394,21 @@ const RelatedKeywords = () => {
   };
 
   const resetFilters = () => {
-    setVolumeFilter({ field: "searchVolume" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false });
-    setCpcFilter({ field: "cpc" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false });
-    setDifficultyFilter({ field: "difficulty" as FilterField, operator: "<" as FilterOperator, value: 100, enabled: false });
+    setVolumeFilter({ field: "searchVolume", operator: ">=", value: 0, enabled: false });
+    setCpcFilter({ field: "cpc", operator: ">=", value: 0, enabled: false });
+    setDifficultyFilter({ field: "difficulty", operator: "<=", value: 100, enabled: false });
   };
 
   const getActiveFilterCount = () => {
     return [volumeFilter, cpcFilter, difficultyFilter].filter(f => f.enabled).length;
   };
 
-
-  // Apply filtering
   const filteredResults = filterResults(results, searchTerm, [volumeFilter, cpcFilter, difficultyFilter]);
 
   const sortedResults = [...filteredResults].sort((a, b) => {
     const aValue = a[sortBy];
     const bValue = b[sortBy];
     
-    // Handle null values - push them to the end
     if (aValue === null && bValue === null) return 0;
     if (aValue === null) return 1;
     if (bValue === null) return -1;
@@ -524,14 +510,192 @@ const RelatedKeywords = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-...
+                  <Label htmlFor="language" className="text-sm font-medium flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-primary" />
+                    Language
+                  </Label>
+                  <Select value={languageCode} onValueChange={setLanguageCode}>
+                    <SelectTrigger id="language">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGE_OPTIONS.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    Location
+                  </Label>
+                  <Select value={locationCode.toString()} onValueChange={(val) => setLocationCode(parseInt(val))}>
+                    <SelectTrigger id="location">
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LOCATION_OPTIONS.map((loc) => (
+                        <SelectItem key={loc.code} value={loc.code.toString()}>
+                          {loc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="depth" className="text-sm font-medium flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    Search Depth
+                  </Label>
+                  <Select value={depth.toString()} onValueChange={(val) => setDepth(parseInt(val))}>
+                    <SelectTrigger id="depth">
+                      <SelectValue placeholder="Select depth" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Shallow (Faster, Fewer Results)</SelectItem>
+                      <SelectItem value="2">Medium (Balanced)</SelectItem>
+                      <SelectItem value="3">Deep (Slower, More Results)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleSearch}
+                disabled={isLoading || !keyword.trim()}
+                className="w-full"
+                size="lg"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 mr-2" />
+                    Find Related Keywords
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {results.length > 0 && (
+          <>
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Results</CardTitle>
+                    <CardDescription>
+                      {filteredResults.length} keywords {totalCount > results.length && `(${totalCount} total available)`}
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filters {getActiveFilterCount() > 0 && `(${getActiveFilterCount()})`}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={exportToCSV}>
+                      <Download className="w-4 h-4 mr-2" />
+                      CSV
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={exportToJSON}>
+                      <Download className="w-4 h-4 mr-2" />
+                      JSON
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {showFilters && (
+                  <div className="mb-4 p-4 bg-muted/30 rounded-lg space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">Filters</h3>
+                      <Button variant="ghost" size="sm" onClick={resetFilters}>
+                        Reset All
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Search in results</Label>
+                      <Input
+                        placeholder="Filter keywords..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="cursor-pointer" onClick={() => handleSort('keyword')}>
+                          Keyword {getSortIcon('keyword')}
+                        </TableHead>
+                        <TableHead className="text-right cursor-pointer" onClick={() => handleSort('searchVolume')}>
+                          Volume {getSortIcon('searchVolume')}
+                        </TableHead>
+                        <TableHead className="text-right cursor-pointer" onClick={() => handleSort('cpc')}>
+                          CPC {getSortIcon('cpc')}
+                        </TableHead>
+                        <TableHead className="text-right cursor-pointer" onClick={() => handleSort('difficulty')}>
+                          Difficulty {getSortIcon('difficulty')}
+                        </TableHead>
+                        <TableHead>Intent</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedResults.map((result, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{result.keyword}</TableCell>
+                          <TableCell className="text-right">{formatNumber(result.searchVolume)}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(result.cpc, locationCode)}</TableCell>
+                          <TableCell className="text-right">{formatDifficulty(result.difficulty)}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{result.intent}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {hasMore && (
+                  <div className="mt-4 text-center">
+                    <Button
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      variant="outline"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
+                          Loading More...
+                        </>
+                      ) : (
+                        'Load More Results'
+                      )}
+                    </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
-          )}
-        </div>
-      </section>
+          </>
+        )}
+      </div>
+    </section>
   );
+};
 
 export default RelatedKeywords;

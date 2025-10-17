@@ -144,7 +144,169 @@ export default function DemoCompetitorAnalyzer() {
               <div>
                 <Label htmlFor="your-domain">Your Domain</Label>
                 <Input
-...
+                  id="your-domain"
+                  placeholder="example.com"
+                  value={yourDomain}
+                  onChange={(e) => setYourDomain(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <Label htmlFor="competitor-domain">Competitor Domain</Label>
+                <Input
+                  id="competitor-domain"
+                  placeholder="competitor.com"
+                  value={competitorDomain}
+                  onChange={(e) => setCompetitorDomain(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleCompare} 
+              disabled={loading || !yourDomain || !competitorDomain}
+              className="w-full"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                'Compare Domains (Demo)'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {analysisData && (
+          <>
+            <div className="grid md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Keyword Gaps (Limited)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{analysisData.keyword_gap_list.length}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Showing 5 sample keywords
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <LinkIcon className="h-4 w-4" />
+                    Backlinks Preview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs">Your Domain</span>
+                      <Badge variant="outline">
+                        {analysisData.backlink_summary.your_domain.backlinks.toLocaleString()}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs">Competitor</span>
+                      <Badge variant="outline">
+                        {analysisData.backlink_summary.competitor_domain.backlinks.toLocaleString()}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    Technical Score
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs">Your Domain</span>
+                      <Badge>{analysisData.onpage_summary.your_domain.tech_score}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs">Competitor</span>
+                      <Badge>{analysisData.onpage_summary.competitor_domain.tech_score}</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Sample Keyword Gaps</span>
+                  <Badge variant="secondary">Limited to 5</Badge>
+                </CardTitle>
+                <CardDescription>Sign up to see all keyword opportunities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-2">Keyword</th>
+                        <th className="text-right py-3 px-2">Position</th>
+                        <th className="text-right py-3 px-2">Volume</th>
+                        <th className="text-right py-3 px-2">CPC</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analysisData.keyword_gap_list.map((kw, idx) => (
+                        <tr key={idx} className="border-b">
+                          <td className="py-2 px-2">{kw.keyword}</td>
+                          <td className="text-right py-2 px-2">#{kw.position}</td>
+                          <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
+                          <td className="text-right py-2 px-2">${kw.cpc.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {aiInsights && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    AI Insights Preview
+                    <Badge variant="secondary" className="ml-auto">Truncated</Badge>
+                  </CardTitle>
+                  <CardDescription>Sign up for complete strategic recommendations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="whitespace-pre-wrap text-sm bg-muted/50 p-4 rounded-lg">{aiInsights}</pre>
+                    <p className="text-xs text-muted-foreground mt-2 italic">
+                      ... Full report available with signup
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="pt-6">
+                <div className="text-center space-y-4">
+                  <h3 className="text-xl font-semibold">Want the Full Report?</h3>
+                  <p className="text-muted-foreground">
+                    Get unlimited keyword gaps, detailed backlink analysis, and complete AI insights
+                  </p>
                   <Button onClick={() => navigate('/auth/sign-up')} size="lg" className="w-full md:w-auto">
                     Sign Up to See Full Report
                   </Button>
