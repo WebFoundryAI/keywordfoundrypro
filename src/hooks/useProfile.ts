@@ -37,9 +37,20 @@ export const useProfile = () => {
     mutationFn: async (updates: { display_name?: string; avatar_url?: string }) => {
       if (!user) throw new Error('Not authenticated');
 
+      // Sanitize display_name if present
+      const sanitizedUpdates = { ...updates };
+      if (sanitizedUpdates.display_name) {
+        // Strip HTML tags and dangerous characters
+        sanitizedUpdates.display_name = sanitizedUpdates.display_name
+          .replace(/<[^>]*>/g, '') // Remove HTML tags
+          .replace(/[<>'"]/g, '') // Remove dangerous characters
+          .trim()
+          .slice(0, 50); // Enforce max length
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update(sanitizedUpdates)
         .eq('user_id', user.id);
 
       if (error) throw error;

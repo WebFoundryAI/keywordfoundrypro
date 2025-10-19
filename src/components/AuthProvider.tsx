@@ -131,12 +131,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     try {
       setLoading(true);
+      
+      // Clear all client-side caches and storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
         throw error;
       }
+      
       console.log('Successfully signed out');
+      
+      // Reset redirect flag
+      didRedirectRef.current = false;
     } catch (error) {
       console.error('Sign out error:', error);
     } finally {

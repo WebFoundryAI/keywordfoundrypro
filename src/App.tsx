@@ -29,6 +29,7 @@ import AdminSubscriptions from "./pages/admin/Subscriptions";
 import AdminUsage from "./pages/admin/Usage";
 import AdminClustering from "./pages/admin/Clustering";
 import AdminEnvCheck from "./pages/admin/EnvCheck";
+import AdminLogs from "./pages/admin/Logs";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -36,6 +37,9 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancelled from "./pages/PaymentCancelled";
+import Troubleshooting from "./pages/Troubleshooting";
+import MasterPrompt from "./pages/docs/MasterPrompt";
+import Runbooks from "./pages/docs/Runbooks";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +67,9 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/troubleshooting" element={<Troubleshooting />} />
+                <Route path="/docs/master-prompt" element={<ProtectedRoute><MasterPrompt /></ProtectedRoute>} />
+                <Route path="/docs/runbooks" element={<ProtectedRoute><Runbooks /></ProtectedRoute>} />
                 <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
                 <Route path="/payment-cancelled" element={<ProtectedRoute><PaymentCancelled /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
@@ -76,6 +83,7 @@ const App = () => (
                 <Route path="usage" element={<AdminUsage />} />
                 <Route path="clustering" element={<AdminClustering />} />
                 <Route path="env-check" element={<AdminEnvCheck />} />
+                <Route path="logs" element={<AdminLogs />} />
               </Route>
 
               <Route path="/auth/sign-in" element={<SignIn />} />
