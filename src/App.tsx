@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import Index from "./pages/Index";
@@ -45,25 +46,25 @@ const App = () => (
             <Routes>
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Index />} />
-                <Route path="/research" element={<Research />} />
-                <Route path="/app/keyword-research" element={<AppKeywordResearch />} />
-                <Route path="/keyword-results" element={<KeywordResults />} />
-                <Route path="/serp-analysis" element={<SerpAnalysis />} />
-                <Route path="/related-keywords" element={<RelatedKeywords />} />
-                <Route path="/competitor-analyzer" element={<CompetitorAnalyzer />} />
+                <Route path="/research" element={<ProtectedRoute><Research /></ProtectedRoute>} />
+                <Route path="/app/keyword-research" element={<ProtectedRoute><AppKeywordResearch /></ProtectedRoute>} />
+                <Route path="/keyword-results" element={<ProtectedRoute><KeywordResults /></ProtectedRoute>} />
+                <Route path="/serp-analysis" element={<ProtectedRoute><SerpAnalysis /></ProtectedRoute>} />
+                <Route path="/related-keywords" element={<ProtectedRoute><RelatedKeywords /></ProtectedRoute>} />
+                <Route path="/competitor-analyzer" element={<ProtectedRoute><CompetitorAnalyzer /></ProtectedRoute>} />
                 <Route path="/demo/competitor" element={<DemoCompetitorAnalyzer />} />
-                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
-                <Route path="/payment-success" element={<PaymentSuccess />} />
-                <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+                <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+                <Route path="/payment-cancelled" element={<ProtectedRoute><PaymentCancelled /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Route>
 
-              <Route path="/admin" element={<AdminLayout />}>
+              <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="research" element={<AdminResearch />} />
