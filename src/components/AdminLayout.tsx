@@ -2,9 +2,11 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Users, FileSearch, ArrowLeft, CreditCard } from "lucide-react";
 import { Header } from "@/components/Header";
+import { useAuth } from "@/components/AuthProvider";
 
 export const AdminLayout = () => {
   const location = useLocation();
+  const { user } = useAuth();
 
   const navItems = [
     {
@@ -31,7 +33,7 @@ export const AdminLayout = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header user={user} />
       <div className="flex-1 flex">
         {/* Sidebar */}
         <aside className="w-64 border-r bg-muted/30">
