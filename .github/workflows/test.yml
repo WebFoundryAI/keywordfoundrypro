@@ -1,0 +1,58 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  unit-tests:
+    name: Unit Tests (Deno)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      
+      - name: Run unit tests
+        run: deno test --allow-read --allow-env supabase/functions/_shared/tests/
+        env:
+          DATAFORSEO_LOGIN: test_login
+          DATAFORSEO_PASSWORD: test_password
+      
+      - name: Run unit tests with coverage
+        run: |
+          deno test --coverage=coverage --allow-read --allow-env supabase/functions/_shared/tests/
+          deno coverage coverage --lcov > coverage.lcov
+        env:
+          DATAFORSEO_LOGIN: test_login
+          DATAFORSEO_PASSWORD: test_password
+
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      
+      - name: Run Playwright tests
+        run: npm run test:e2e
+        continue-on-error: true

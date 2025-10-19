@@ -1,0 +1,83 @@
+{
+  "version": "0.1.20250419",
+  "status_code": 200,
+  "status_message": "Ok.",
+  "time": "1.2345 sec.",
+  "cost": 0.002,
+  "tasks_count": 1,
+  "tasks_error": 0,
+  "tasks": [
+    {
+      "id": "02191234-5678-0000-0000-000000000000",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "1.1234 sec.",
+      "cost": 0.002,
+      "result_count": 1,
+      "path": ["v3", "serp", "google", "organic", "live", "advanced"],
+      "data": {
+        "api_version": "2.1",
+        "se_type": "google"
+      },
+      "result": [
+        {
+          "keyword": "seo tools",
+          "type": "organic",
+          "se_domain": "google.com",
+          "location_code": 2840,
+          "language_code": "en",
+          "check_url": "https://www.google.com/search?q=seo+tools",
+          "datetime": "2025-10-19 12:00:00 +00:00",
+          "items_count": 10,
+          "items": [
+            {
+              "type": "organic",
+              "rank_group": 1,
+              "rank_absolute": 1,
+              "position": "left",
+              "xpath": "/html[1]/body[1]/div[6]/div[1]/div[10]/div[1]/div[2]/div[2]/div[1]/div[1]/div[1]",
+              "domain": "ahrefs.com",
+              "title": "Best SEO Tools (Free & Paid) - Ahrefs",
+              "url": "https://ahrefs.com/seo-tools",
+              "breadcrumb": "https://ahrefs.com › seo-tools",
+              "is_image": false,
+              "is_video": false,
+              "is_featured_snippet": false,
+              "is_malicious": false,
+              "is_web_story": false,
+              "is_paid": false,
+              "description": "Discover the best SEO tools for keyword research, backlink analysis, and site audits. Compare features and pricing.",
+              "highlighted": ["SEO", "tools"]
+            },
+            {
+              "type": "organic",
+              "rank_group": 2,
+              "rank_absolute": 2,
+              "position": "left",
+              "domain": "semrush.com",
+              "title": "SEMrush: All-in-One SEO Tool Suite",
+              "url": "https://www.semrush.com/",
+              "breadcrumb": "https://www.semrush.com",
+              "is_paid": false,
+              "description": "Comprehensive SEO tools for ranking analysis, keyword tracking, and competitor research.",
+              "highlighted": ["SEO", "tools"]
+            },
+            {
+              "type": "organic",
+              "rank_group": 3,
+              "rank_absolute": 3,
+              "position": "left",
+              "domain": "moz.com",
+              "title": "Moz - SEO Software for Smarter Marketing",
+              "url": "https://moz.com/",
+              "breadcrumb": "https://moz.com",
+              "is_paid": false,
+              "description": "Moz offers tools and resources you need to improve your search rankings and drive traffic.",
+              "highlighted": ["SEO"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

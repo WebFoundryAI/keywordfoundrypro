@@ -1,0 +1,34 @@
+{
+  "version": "0.1.20250419",
+  "status_code": 200,
+  "status_message": "Ok.",
+  "time": "0.3456 sec.",
+  "cost": 0.003,
+  "tasks_count": 1,
+  "tasks_error": 0,
+  "tasks": [
+    {
+      "id": "04191234-5678-0000-0000-000000000000",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.2345 sec.",
+      "cost": 0.003,
+      "result_count": 1,
+      "path": ["v3", "backlinks", "summary", "live"],
+      "data": {
+        "api_version": "1.0"
+      },
+      "result": [
+        {
+          "target": "example.com",
+          "backlinks": 125430,
+          "referring_domains": 3420,
+          "referring_ips": 2850,
+          "referring_subnets": 1980,
+          "first_seen": "2020-01-15",
+          "lost_date": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "version": "0.1.20250419",
+  "status_code": 200,
+  "status_message": "Ok.",
+  "time": "0.5042 sec.",
+  "cost": 0.01,
+  "tasks_count": 1,
+  "tasks_error": 0,
+  "tasks": [
+    {
+      "id": "01191234-5678-0000-0000-000000000000",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4521 sec.",
+      "cost": 0.01,
+      "result_count": 1,
+      "path": ["v3", "dataforseo_labs", "google", "keyword_ideas", "live"],
+      "data": {
+        "api_version": "2.1",
+        "se_type": "google"
+      },
+      "result": [
+        {
+          "se_type": "google",
+          "location_code": 2840,
+          "language_code": "en",
+          "total_count": 100,
+          "items_count": 5,
+          "items": [
+            {
+              "keyword": "seo tools",
+              "keyword_info": {
+                "keyword": "seo tools",
+                "search_volume": 33100,
+                "cpc": 15.23,
+                "competition": 0.89,
+                "competition_level": "HIGH",
+                "competition_index": 89
+              }
+            },
+            {
+              "keyword": "best seo tools",
+              "keyword_info": {
+                "keyword": "best seo tools",
+                "search_volume": 8100,
+                "cpc": 18.45,
+                "competition": 0.92,
+                "competition_level": "HIGH",
+                "competition_index": 92
+              }
+            },
+            {
+              "keyword": "seo tools free",
+              "keyword_info": {
+                "keyword": "seo tools free",
+                "search_volume": 5400,
+                "cpc": 12.34,
+                "competition": 0.78,
+                "competition_level": "MEDIUM",
+                "competition_index": 78
+              }
+            },
+            {
+              "keyword": "google seo tools",
+              "keyword_info": {
+                "keyword": "google seo tools",
+                "search_volume": 4400,
+                "cpc": 9.87,
+                "competition": 0.65,
+                "competition_level": "MEDIUM",
+                "competition_index": 65
+              }
+            },
+            {
+              "keyword": "seo analysis tools",
+              "keyword_info": {
+                "keyword": "seo analysis tools",
+                "search_volume": 2900,
+                "cpc": 14.56,
+                "competition": 0.88,
+                "competition_level": "HIGH",
+                "competition_index": 88
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
