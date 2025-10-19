@@ -1,6 +1,25 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
+ * Custom error class for DataForSEO API errors
+ */
+export class DataForSEOApiError extends Error {
+  errorCode: string;
+  statusCode: number;
+  isRateLimit: boolean;
+  isCreditsExhausted: boolean;
+  
+  constructor(message: string, errorCode: string, statusCode: number) {
+    super(message);
+    this.name = 'DataForSEOApiError';
+    this.errorCode = errorCode;
+    this.statusCode = statusCode;
+    this.isRateLimit = errorCode === 'RATE_LIMIT';
+    this.isCreditsExhausted = errorCode === 'CREDITS_EXHAUSTED';
+  }
+}
+
+/**
  * Invoke a Supabase edge function with automatic authentication
  * @param name - The edge function name
  * @param body - The request body
@@ -20,6 +39,23 @@ export async function invokeWithAuth(name: string, body: any) {
       Authorization: `Bearer ${session.access_token}` 
     },
   });
+  
+  // Check if the response contains DataForSEO specific error codes
+  if (data?.error_code === 'RATE_LIMIT') {
+    throw new DataForSEOApiError(
+      data.error || 'DataForSEO rate limit exceeded. Please try again in a few minutes.',
+      'RATE_LIMIT',
+      429
+    );
+  }
+  
+  if (data?.error_code === 'CREDITS_EXHAUSTED') {
+    throw new DataForSEOApiError(
+      data.error || 'DataForSEO API credits exhausted. Please add credits to your DataForSEO account.',
+      'CREDITS_EXHAUSTED',
+      402
+    );
+  }
   
   if (error) throw error;
   

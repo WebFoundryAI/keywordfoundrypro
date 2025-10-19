@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { callDataForSEO } from "../_shared/dataforseo/client.ts";
+import { callDataForSEO, DataForSEOError } from "../_shared/dataforseo/client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -226,6 +226,21 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Error in competitor-analyze:', error);
+    
+    // Handle DataForSEO specific errors (rate limit, credits)
+    if (error instanceof DataForSEOError) {
+      return new Response(
+        JSON.stringify({ 
+          error: error.message,
+          error_code: error.isRateLimit ? 'RATE_LIMIT' : error.isCreditsExhausted ? 'CREDITS_EXHAUSTED' : 'API_ERROR',
+        }),
+        { 
+          status: error.statusCode, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

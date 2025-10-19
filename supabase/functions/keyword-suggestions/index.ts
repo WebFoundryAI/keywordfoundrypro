@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { callDataForSEO } from "../_shared/dataforseo/client.ts";
+import { callDataForSEO, DataForSEOError } from "../_shared/dataforseo/client.ts";
 
 // CORS - Allowed origins
 const allowedOrigins = [
@@ -122,6 +122,18 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in keyword-suggestions function:', error);
     const corsHeaders = getCorsHeaders(req);
+    
+    // Handle DataForSEO specific errors (rate limit, credits)
+    if (error instanceof DataForSEOError) {
+      return new Response(JSON.stringify({ 
+        error: error.message,
+        error_code: error.isRateLimit ? 'RATE_LIMIT' : error.isCreditsExhausted ? 'CREDITS_EXHAUSTED' : 'API_ERROR',
+        success: false 
+      }), {
+        status: error.statusCode,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     // Handle validation errors
     if (error instanceof z.ZodError) {

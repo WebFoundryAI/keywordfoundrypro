@@ -4,6 +4,23 @@ const DATAFORSEO_BASE_URL = 'https://api.dataforseo.com/v3';
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 
+/**
+ * Custom error class for DataForSEO API errors
+ */
+export class DataForSEOError extends Error {
+  statusCode: number;
+  isRateLimit: boolean;
+  isCreditsExhausted: boolean;
+  
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.name = 'DataForSEOError';
+    this.statusCode = statusCode;
+    this.isRateLimit = statusCode === 429;
+    this.isCreditsExhausted = statusCode === 402;
+  }
+}
+
 export interface DataForSEORequest {
   endpoint: string;
   payload: any;
@@ -135,10 +152,37 @@ export async function callDataForSEO<T = any>(
         costUsd,
       });
 
-      // Check if we should retry based on status
+      // Handle rate limiting (429) and payment required (402) - DO NOT RETRY these
+      if (response.status === 429) {
+        const errorMsg = 'DataForSEO rate limit exceeded. Please try again in a few minutes.';
+        await logUsage({
+          userId: request.userId,
+          module: request.module,
+          endpoint: request.endpoint,
+          requestPayload: request.payload,
+          responseStatus: response.status,
+          errorMessage: errorMsg,
+        });
+        throw new DataForSEOError(errorMsg, 429);
+      }
+      
+      if (response.status === 402) {
+        const errorMsg = 'DataForSEO API credits exhausted. Please add credits to your DataForSEO account.';
+        await logUsage({
+          userId: request.userId,
+          module: request.module,
+          endpoint: request.endpoint,
+          requestPayload: request.payload,
+          responseStatus: response.status,
+          errorMessage: errorMsg,
+        });
+        throw new DataForSEOError(errorMsg, 402);
+      }
+
+      // Check if we should retry based on status (5xx errors only)
       if (!response.ok && shouldRetry(response.status)) {
         const errorMsg = `HTTP ${response.status}: ${data.status_message || 'Unknown error'}`;
-        lastError = new Error(errorMsg);
+        lastError = new DataForSEOError(errorMsg, response.status);
         
         if (attempt < MAX_RETRIES) {
           const delay = getBackoffDelay(attempt);
@@ -152,6 +196,11 @@ export async function callDataForSEO<T = any>(
       return data;
 
     } catch (error) {
+      // Re-throw DataForSEOError without retrying (rate limit, credits)
+      if (error instanceof DataForSEOError) {
+        throw error;
+      }
+      
       lastError = error instanceof Error ? error : new Error('Unknown error');
       console.error(`[DataForSEO] Attempt ${attempt + 1} failed:`, lastError);
 
@@ -165,7 +214,7 @@ export async function callDataForSEO<T = any>(
         errorMessage: lastError.message,
       });
 
-      // Retry on network errors
+      // Retry on network errors only
       if (attempt < MAX_RETRIES) {
         const delay = getBackoffDelay(attempt);
         console.log(`[DataForSEO] Retrying after ${delay}ms...`);
@@ -176,5 +225,5 @@ export async function callDataForSEO<T = any>(
   }
 
   // All retries exhausted
-  throw lastError || new Error('DataForSEO API request failed after all retries');
+  throw lastError || new DataForSEOError('DataForSEO API request failed after all retries', 500);
 }

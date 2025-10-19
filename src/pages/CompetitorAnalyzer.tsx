@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { invokeWithAuth } from "@/lib/supabaseHelpers";
+import { invokeWithAuth, DataForSEOApiError } from "@/lib/supabaseHelpers";
 import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
@@ -158,15 +158,58 @@ export default function CompetitorAnalyzer() {
       await generateAIInsights(data);
 
     } catch (error: any) {
-      let errorMessage = error?.message || "Unknown error.";
-      if (errorMessage.toLowerCase().includes('edge function returned a non-2xx')) {
-        errorMessage = "The analyzer returned a non‑success status. Please try again or contact support.";
-      } else if (errorMessage.toLowerCase().includes('timeout')) {
-        errorMessage = "The request timed out. Please retry in a moment.";
-      } else if (errorMessage.toLowerCase().includes('network')) {
-        errorMessage = "Network error. Please check your connection and try again.";
+      // Handle DataForSEO specific errors with helpful messages
+      if (error instanceof DataForSEOApiError) {
+        if (error.isRateLimit) {
+          toast({
+            title: "Rate Limit Exceeded",
+            description: "DataForSEO API rate limit reached. Please wait a few minutes before trying again.",
+            variant: "destructive",
+            action: (
+              <a 
+                href="https://docs.lovable.dev/tips-tricks/troubleshooting#dataforseo" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline text-sm"
+              >
+                Learn more
+              </a>
+            ),
+          });
+        } else if (error.isCreditsExhausted) {
+          toast({
+            title: "API Credits Exhausted",
+            description: "DataForSEO API credits have been exhausted. Please add credits to your DataForSEO account.",
+            variant: "destructive",
+            action: (
+              <a 
+                href="https://docs.lovable.dev/tips-tricks/troubleshooting#dataforseo" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline text-sm"
+              >
+                Learn more
+              </a>
+            ),
+          });
+        } else {
+          toast({
+            title: "API Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        let errorMessage = error?.message || "Unknown error.";
+        if (errorMessage.toLowerCase().includes('edge function returned a non-2xx')) {
+          errorMessage = "The analyzer returned a non‑success status. Please try again or contact support.";
+        } else if (errorMessage.toLowerCase().includes('timeout')) {
+          errorMessage = "The request timed out. Please retry in a moment.";
+        } else if (errorMessage.toLowerCase().includes('network')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        }
+        toast({ title: "Analysis failed", description: errorMessage, variant: "destructive" });
       }
-      toast({ title: "Analysis failed", description: errorMessage, variant: "destructive" });
     } finally {
       setLoading(false);
       setAnalyzing(false);

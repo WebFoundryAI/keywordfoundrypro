@@ -5,7 +5,7 @@ import { KeywordResult } from "@/components/KeywordResultsTable";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { invokeFunction } from "@/lib/invoke";
+import { invokeFunction, DataForSEOApiError } from "@/lib/invoke";
 
 const Research = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -159,11 +159,54 @@ const Research = () => {
       console.error('Error status:', err?.status);
       console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
       
-      toast({
-        title: "Analysis Failed",
-        description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
+      // Handle DataForSEO specific errors with helpful messages
+      if (err instanceof DataForSEOApiError) {
+        if (err.isRateLimit) {
+          toast({
+            title: "Rate Limit Exceeded",
+            description: "DataForSEO API rate limit reached. Please wait a few minutes before trying again.",
+            variant: "destructive",
+            action: (
+              <a 
+                href="https://docs.lovable.dev/tips-tricks/troubleshooting#dataforseo" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline text-sm"
+              >
+                Learn more
+              </a>
+            ),
+          });
+        } else if (err.isCreditsExhausted) {
+          toast({
+            title: "API Credits Exhausted",
+            description: "DataForSEO API credits have been exhausted. Please add credits to your DataForSEO account.",
+            variant: "destructive",
+            action: (
+              <a 
+                href="https://docs.lovable.dev/tips-tricks/troubleshooting#dataforseo" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline text-sm"
+              >
+                Learn more
+              </a>
+            ),
+          });
+        } else {
+          toast({
+            title: "API Error",
+            description: err.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Analysis Failed",
+          description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
