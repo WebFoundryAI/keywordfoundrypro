@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const FREE_LIMIT = 3;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -40,6 +42,44 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Freemium quota check
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('free_reports_used, free_reports_renewal_at')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return new Response(
+        JSON.stringify({ error: 'Profile not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const now = new Date();
+    const renewalDate = profile.free_reports_renewal_at ? new Date(profile.free_reports_renewal_at) : null;
+    const needsRenewal = !renewalDate || now > renewalDate;
+    
+    let effectiveUsed = 0;
+    let newRenewalDate = renewalDate;
+    
+    if (needsRenewal) {
+      effectiveUsed = 0;
+      newRenewalDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    } else {
+      effectiveUsed = profile.free_reports_used || 0;
+    }
+
+    if (effectiveUsed >= FREE_LIMIT) {
+      return new Response(
+        JSON.stringify({ 
+          code: 'LIMIT_EXCEEDED', 
+          message: 'Free limit reached. Please upgrade for more analyses.' 
+        }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -126,6 +166,20 @@ serve(async (req) => {
       onpage_summary: result.onpage_summary,
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     });
+
+    // Update freemium usage
+    const updateData = needsRenewal 
+      ? { free_reports_used: 1, free_reports_renewal_at: newRenewalDate?.toISOString() }
+      : { free_reports_used: effectiveUsed + 1 };
+
+    const { error: updateError } = await supabaseClient
+      .from('profiles')
+      .update(updateData)
+      .eq('user_id', user.id);
+
+    if (updateError) {
+      console.error('Failed to update usage:', updateError);
+    }
 
     return new Response(
       JSON.stringify({ ...result, cached: false }),
