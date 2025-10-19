@@ -1,12 +1,28 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileSearch, ArrowLeft, CreditCard } from "lucide-react";
+import { LayoutDashboard, Users, FileSearch, ArrowLeft, CreditCard, Activity } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/components/AuthProvider";
+import { useAdmin } from "@/hooks/useAdmin";
 
 export const AdminLayout = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const { isAdmin, isLoading } = useAdmin();
+
+  // Show loading state while checking admin status
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Redirect non-admins to home page
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
 
   const navItems = [
     {
@@ -28,6 +44,11 @@ export const AdminLayout = () => {
       path: "/admin/subscriptions",
       label: "Subscriptions",
       icon: CreditCard,
+    },
+    {
+      path: "/admin/usage",
+      label: "API Usage",
+      icon: Activity,
     },
   ];
 

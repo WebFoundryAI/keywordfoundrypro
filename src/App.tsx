@@ -26,6 +26,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminResearch from "./pages/admin/Research";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
+import AdminUsage from "./pages/admin/Usage";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -70,6 +71,7 @@ const App = () => (
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="research" element={<AdminResearch />} />
                 <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route path="usage" element={<AdminUsage />} />
               </Route>
 
               <Route path="/auth/sign-in" element={<SignIn />} />
