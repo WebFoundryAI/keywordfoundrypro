@@ -9,6 +9,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import Index from "./pages/Index";
 import Research from "./pages/Research";
+import AppKeywordResearch from "./pages/AppKeywordResearch";
 import KeywordResults from "./pages/KeywordResults";
 import SerpAnalysis from "./pages/SerpAnalysis";
 import RelatedKeywords from "./pages/RelatedKeywords";
@@ -45,6 +46,7 @@ const App = () => (
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Index />} />
                 <Route path="/research" element={<Research />} />
+                <Route path="/app/keyword-research" element={<AppKeywordResearch />} />
                 <Route path="/keyword-results" element={<KeywordResults />} />
                 <Route path="/serp-analysis" element={<SerpAnalysis />} />
                 <Route path="/related-keywords" element={<RelatedKeywords />} />
