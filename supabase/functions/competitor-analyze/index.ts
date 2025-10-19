@@ -8,6 +8,26 @@ const corsHeaders = {
 
 const FREE_LIMIT = 3;
 
+// Helper to return JSON responses
+const json = (payload: unknown, status = 200) =>
+  new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
+// Normalize domain inputs (strip protocol, www, paths)
+const normalize = (v: string) => {
+  try {
+    const u = new URL(v.trim());
+    return u.hostname.replace(/^www\./, '');
+  } catch {
+    return v.trim()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/.*/, '');
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,8 +35,10 @@ serve(async (req) => {
 
   try {
     const { yourDomain, competitorDomain } = await req.json();
+    const yourHost = normalize(yourDomain);
+    const competitorHost = normalize(competitorDomain);
     
-    if (!yourDomain || !competitorDomain) {
+    if (!yourHost || !competitorHost) {
       return new Response(
         JSON.stringify({ error: 'Both domains are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -65,13 +87,11 @@ serve(async (req) => {
 
     if (!profile) {
       console.error('Profile not found for user:', user.id);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Profile not found',
-          message: 'Please try signing out and back in to refresh your profile' 
-        }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        ok: false, 
+        code: 'PROFILE_MISSING', 
+        message: 'Profile not found for this user. Try signing out/in to refresh.' 
+      }, 200);
     }
 
     console.log('Profile loaded:', { 
@@ -99,13 +119,11 @@ serve(async (req) => {
 
     if (effectiveUsed >= FREE_LIMIT) {
       console.log('Limit exceeded for user:', user.id);
-      return new Response(
-        JSON.stringify({ 
-          code: 'LIMIT_EXCEEDED', 
-          message: 'Free limit reached. Please upgrade for more analyses.' 
-        }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        ok: false, 
+        code: 'LIMIT_EXCEEDED', 
+        message: 'Free limit reached. Please upgrade for more analyses.' 
+      }, 200);
     }
 
     // Check cache first (24-hour cache)
@@ -114,8 +132,8 @@ serve(async (req) => {
       .from('competitor_analysis')
       .select('*')
       .eq('user_id', user.id)
-      .eq('your_domain', yourDomain)
-      .eq('competitor_domain', competitorDomain)
+      .eq('your_domain', yourHost)
+      .eq('competitor_domain', competitorHost)
       .gt('created_at', expiryTime)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -146,8 +164,8 @@ serve(async (req) => {
 
     // Fetch ranked keywords for both domains
     const [yourKeywords, competitorKeywords] = await Promise.all([
-      fetchRankedKeywords(yourDomain, auth),
-      fetchRankedKeywords(competitorDomain, auth)
+      fetchRankedKeywords(yourHost, auth),
+      fetchRankedKeywords(competitorHost, auth)
     ]);
 
     // Find keyword gaps (keywords competitor ranks for but you don't)
@@ -163,10 +181,10 @@ serve(async (req) => {
 
     // Fetch backlinks and on-page summaries
     const [yourBacklinks, competitorBacklinks, yourOnPage, competitorOnPage] = await Promise.all([
-      fetchBacklinkSummary(yourDomain, auth),
-      fetchBacklinkSummary(competitorDomain, auth),
-      fetchOnPageSummary(yourDomain, auth),
-      fetchOnPageSummary(competitorDomain, auth)
+      fetchBacklinkSummary(yourHost, auth),
+      fetchBacklinkSummary(competitorHost, auth),
+      fetchOnPageSummary(yourHost, auth),
+      fetchOnPageSummary(competitorHost, auth)
     ]);
 
     const result = {
@@ -184,8 +202,8 @@ serve(async (req) => {
     // Store in cache
     await supabaseClient.from('competitor_analysis').insert({
       user_id: user.id,
-      your_domain: yourDomain,
-      competitor_domain: competitorDomain,
+      your_domain: yourHost,
+      competitor_domain: competitorHost,
       keyword_gap_list: result.keyword_gap_list,
       backlink_summary: result.backlink_summary,
       onpage_summary: result.onpage_summary,
