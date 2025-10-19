@@ -255,6 +255,50 @@ export type Database = {
           },
         ]
       }
+      keyword_clusters: {
+        Row: {
+          cluster_id: string
+          created_at: string
+          id: string
+          keyword_count: number
+          research_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["cluster_status"]
+          updated_at: string
+        }
+        Insert: {
+          cluster_id: string
+          created_at?: string
+          id?: string
+          keyword_count?: number
+          research_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["cluster_status"]
+          updated_at?: string
+        }
+        Update: {
+          cluster_id?: string
+          created_at?: string
+          id?: string
+          keyword_count?: number
+          research_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["cluster_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_clusters_research_id_fkey"
+            columns: ["research_id"]
+            isOneToOne: false
+            referencedRelation: "keyword_research"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       keyword_research: {
         Row: {
           api_cost: number | null
@@ -604,6 +648,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      cluster_status: "unreviewed" | "approved" | "rejected"
       subscription_tier:
         | "free_trial"
         | "starter"
@@ -738,6 +783,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      cluster_status: ["unreviewed", "approved", "rejected"],
       subscription_tier: [
         "free_trial",
         "starter",
