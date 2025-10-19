@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface AnalysisData {
   keyword_gap_list: Array<{
@@ -48,6 +58,8 @@ interface AnalysisData {
   cached?: boolean;
 }
 
+const FREE_LIMIT = 3;
+
 export default function CompetitorAnalyzer() {
   const [yourDomain, setYourDomain] = useState("");
   const [competitorDomain, setCompetitorDomain] = useState("");
@@ -58,8 +70,27 @@ export default function CompetitorAnalyzer() {
   const [aiInsights, setAiInsights] = useState<string | null>(null);
   const [sortField, setSortField] = useState<'keyword' | 'position' | 'search_volume' | 'cpc'>('search_volume');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('free_reports_used, free_reports_renewal_at')
+          .eq('user_id', user.id)
+          .single();
+        if (data) {
+          setProfile(data);
+        }
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleCompare = async () => {
     if (!yourDomain || !competitorDomain) {
@@ -69,6 +100,19 @@ export default function CompetitorAnalyzer() {
         variant: "destructive"
       });
       return;
+    }
+
+    // Pre-check limit
+    if (profile) {
+      const now = new Date();
+      const renewalDate = profile.free_reports_renewal_at ? new Date(profile.free_reports_renewal_at) : null;
+      const needsRenewal = !renewalDate || now > renewalDate;
+      const effectiveUsed = needsRenewal ? 0 : (profile.free_reports_used || 0);
+      
+      if (effectiveUsed >= FREE_LIMIT) {
+        setShowLimitModal(true);
+        return;
+      }
     }
 
     setLoading(true);
@@ -83,7 +127,28 @@ export default function CompetitorAnalyzer() {
 
       if (error) throw error;
 
+      // Check for limit exceeded from backend
+      if (data?.code === 'LIMIT_EXCEEDED') {
+        setShowLimitModal(true);
+        setLoading(false);
+        setAnalyzing(false);
+        return;
+      }
+
       setAnalysisData(data);
+      
+      // Refresh profile to update badge
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: updatedProfile } = await supabase
+          .from('profiles')
+          .select('free_reports_used, free_reports_renewal_at')
+          .eq('user_id', user.id)
+          .single();
+        if (updatedProfile) {
+          setProfile(updatedProfile);
+        }
+      }
       
       if (data.cached) {
         toast({
@@ -252,14 +317,23 @@ export default function CompetitorAnalyzer() {
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
 
+  const reportsLeft = profile ? Math.max(0, FREE_LIMIT - (profile.free_reports_used || 0)) : null;
+
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Competitor Analyzer</h1>
-          <p className="text-muted-foreground">
-            Compare your domain against a competitor to discover keyword gaps, backlink opportunities, and technical insights
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Competitor Analyzer</h1>
+            <p className="text-muted-foreground">
+              Compare your domain against a competitor to discover keyword gaps, backlink opportunities, and technical insights
+            </p>
+          </div>
+          {reportsLeft !== null && (
+            <Badge variant="secondary" className="text-sm">
+              Free reports left: {reportsLeft}
+            </Badge>
+          )}
         </div>
 
         <Card>
@@ -517,6 +591,23 @@ export default function CompetitorAnalyzer() {
             </div>
           </>
         )}
+
+        <AlertDialog open={showLimitModal} onOpenChange={setShowLimitModal}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>You've reached your free limit</AlertDialogTitle>
+              <AlertDialogDescription>
+                Upgrade to continue running competitor analyses.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Close</AlertDialogCancel>
+              <AlertDialogAction onClick={() => navigate('/pricing')}>
+                See Pricing
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </main>
   );
