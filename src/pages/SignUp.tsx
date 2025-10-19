@@ -8,6 +8,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 import { OrDivider } from '@/components/auth/OrDivider'
 import { storePlanSelection } from '@/lib/planStorage'
+import { getAppBaseUrl } from '@/lib/env'
 
 export default function SignUp() {
   const navigate = useNavigate()
@@ -62,7 +63,7 @@ export default function SignUp() {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/app/keyword-research`,
+          emailRedirectTo: `${getAppBaseUrl()}/app/keyword-research`,
           data: {
             selected_plan: selectedPlan,
             billing_period: billingPeriod,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { getAppBaseUrl } from '@/lib/env'
 
 export function OAuthButtons() {
   const { toast } = useToast()
@@ -12,7 +13,7 @@ export function OAuthButtons() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${getAppBaseUrl()}/auth/callback`,
         },
       })
       if (error) throw error

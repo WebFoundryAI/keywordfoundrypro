@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 import { OrDivider } from '@/components/auth/OrDivider'
+import { getAppBaseUrl } from '@/lib/env'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -62,7 +63,7 @@ export default function SignIn() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth/update-password`,
+        redirectTo: `${getAppBaseUrl()}/auth/update-password`,
       })
       if (error) throw error
 
