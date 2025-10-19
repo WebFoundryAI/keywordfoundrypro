@@ -39,25 +39,46 @@ serve(async (req) => {
 
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
+      console.error('No user found in auth header');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('User authenticated:', user.id);
+
     // Freemium quota check
-    const { data: profile } = await supabaseClient
+    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('free_reports_used, free_reports_renewal_at')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Profile query error:', profileError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch profile' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!profile) {
+      console.error('Profile not found for user:', user.id);
       return new Response(
-        JSON.stringify({ error: 'Profile not found' }),
+        JSON.stringify({ 
+          error: 'Profile not found',
+          message: 'Please try signing out and back in to refresh your profile' 
+        }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Profile loaded:', { 
+      user_id: user.id, 
+      free_reports_used: profile.free_reports_used,
+      free_reports_renewal_at: profile.free_reports_renewal_at 
+    });
 
     const now = new Date();
     const renewalDate = profile.free_reports_renewal_at ? new Date(profile.free_reports_renewal_at) : null;
@@ -69,11 +90,15 @@ serve(async (req) => {
     if (needsRenewal) {
       effectiveUsed = 0;
       newRenewalDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      console.log('Renewal needed - resetting usage counter');
     } else {
       effectiveUsed = profile.free_reports_used || 0;
     }
 
+    console.log('Quota check:', { effectiveUsed, limit: FREE_LIMIT, needsRenewal });
+
     if (effectiveUsed >= FREE_LIMIT) {
+      console.log('Limit exceeded for user:', user.id);
       return new Response(
         JSON.stringify({ 
           code: 'LIMIT_EXCEEDED', 
@@ -179,6 +204,8 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('Failed to update usage:', updateError);
+    } else {
+      console.log('Usage updated successfully:', updateData);
     }
 
     return new Response(

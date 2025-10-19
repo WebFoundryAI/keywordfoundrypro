@@ -167,9 +167,21 @@ export default function CompetitorAnalyzer() {
 
     } catch (error: any) {
       console.error('Analysis error:', error);
+      
+      let errorMessage = error.message || "Failed to analyze competitors";
+      
+      // Check for specific error types
+      if (error.message?.toLowerCase().includes('profile')) {
+        errorMessage = "Profile error detected. Please try signing out and back in.";
+      } else if (error.message?.toLowerCase().includes('unauthorized')) {
+        errorMessage = "Please sign in to run competitor analysis.";
+      } else if (error.message?.toLowerCase().includes('network')) {
+        errorMessage = "Network error. Please check your connection and try again.";
+      }
+      
       toast({
         title: "Analysis failed",
-        description: error.message || "Failed to analyze competitors",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
