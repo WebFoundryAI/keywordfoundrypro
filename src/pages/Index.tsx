@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { UserMenu } from "@/components/UserMenu";
 import { useAuth } from "@/components/AuthProvider";
-import { Search, Database, Target, TrendingUp, Lock } from "lucide-react";
+import { Database, Target, TrendingUp, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -20,43 +19,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Search className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight">Keyword Foundry Pro</h1>
-                <p className="text-xs text-muted-foreground">Professional SEO Research</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <nav className="hidden md:flex items-center gap-6">
-                <Button variant="link" size="sm" onClick={() => navigate('/pricing')} className="text-foreground hover:text-primary">
-                  Pricing
-                </Button>
-              </nav>
-              {user ? (
-                <UserMenu />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/auth/sign-in')}>
-                    Log In
-                  </Button>
-                  <Button size="sm" onClick={() => navigate('/auth/sign-up')}>
-                    Sign Up
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Hero Section */}
       <section className="py-20 px-6">
         <div className="container mx-auto max-w-4xl text-center">
@@ -142,53 +105,7 @@ const Index = () => {
           </Button>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/30 backdrop-blur-sm py-12">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <h3 className="font-semibold mb-4">Product</h3>
-              <div className="space-y-2">
-                <button onClick={() => navigate('/research')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Research
-                </button>
-                <button onClick={() => navigate('/pricing')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Pricing
-                </button>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <div className="space-y-2">
-                <button onClick={() => navigate('/about')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
-                  About
-                </button>
-                <button onClick={() => navigate('/contact')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Contact
-                </button>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Legal</h3>
-              <div className="space-y-2">
-                <button onClick={() => navigate('/terms')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Terms
-                </button>
-                <button onClick={() => navigate('/privacy')} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Privacy
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-border pt-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Built for SEO professionals • Powered by real-time data
-            </p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 };
 
