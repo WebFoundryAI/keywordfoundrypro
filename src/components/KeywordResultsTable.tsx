@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search, TrendingUp, DollarSign, Target, Filter, ChevronUp, ChevronDown } from "lucide-react";
+import { Download, Search, TrendingUp, DollarSign, Target, Filter, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 export interface KeywordResult {
   keyword: string;
@@ -28,6 +29,21 @@ interface KeywordResultsTableProps {
   seedKeyword?: KeywordResult | null;
   keywordAnalyzed?: string;
   locationCode?: number;
+  // Pagination
+  totalCount?: number;
+  page?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  // Filters
+  searchTerm?: string;
+  onSearchChange?: (search: string) => void;
+  onFiltersChange?: (filters: {
+    volumeMin?: number | null;
+    volumeMax?: number | null;
+    difficultyMin?: number | null;
+    difficultyMax?: number | null;
+  }) => void;
 }
 
 
@@ -114,37 +130,52 @@ const filterResults = (
   });
 };
 
-export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword, keywordAnalyzed, locationCode = 2840 }: KeywordResultsTableProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
+export const KeywordResultsTable = ({ 
+  results, 
+  isLoading, 
+  onExport, 
+  seedKeyword, 
+  keywordAnalyzed, 
+  locationCode = 2840,
+  // Pagination props
+  totalCount = 0,
+  page = 1,
+  pageSize = 50,
+  onPageChange,
+  onPageSizeChange,
+  // Filter props
+  searchTerm: externalSearchTerm = '',
+  onSearchChange,
+  onFiltersChange
+}: KeywordResultsTableProps) => {
+  const [localSearchTerm, setLocalSearchTerm] = useState(externalSearchTerm);
   const [sortBy, setSortBy] = useState<keyof KeywordResult>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showFilters, setShowFilters] = useState(false);
   
-  // Define all three filters with their state (live filtering)
-  const [volumeFilter, setVolumeFilter] = useState<NumericFilter>({
-    field: "searchVolume",
-    operator: ">",
-    value: 0,
-    enabled: false
-  });
-  const [cpcFilter, setCpcFilter] = useState<NumericFilter>({
-    field: "cpc",
-    operator: ">",
-    value: 0,
-    enabled: false
-  });
-  const [difficultyFilter, setDifficultyFilter] = useState<NumericFilter>({
-    field: "difficulty",
-    operator: "<",
-    value: 100,
-    enabled: false
-  });
+  // Local filter state for UI (controlled by URL params)
+  const [volumeMin, setVolumeMin] = useState<string>('');
+  const [volumeMax, setVolumeMax] = useState<string>('');
+  const [difficultyMin, setDifficultyMin] = useState<string>('');
+  const [difficultyMax, setDifficultyMax] = useState<string>('');
 
-  // Single source of truth: results prop is the original unfiltered dataset
-  // Live filtering: computed on every render when any filter state changes
-  const filteredResults = filterResults(results, searchTerm, volumeFilter, cpcFilter, difficultyFilter);
+  // Sync local search with external
+  useEffect(() => {
+    setLocalSearchTerm(externalSearchTerm);
+  }, [externalSearchTerm]);
 
-  const sortedResults = [...filteredResults].sort((a, b) => {
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearchTerm !== externalSearchTerm && onSearchChange) {
+        onSearchChange(localSearchTerm);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSearchTerm]);
+
+  // Client-side sorting only (filtering happens server-side)
+  const sortedResults = [...results].sort((a, b) => {
     const aValue = a[sortBy];
     const bValue = b[sortBy];
     
@@ -184,15 +215,34 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
     return <ChevronUp className="w-4 h-4 inline ml-1 opacity-30" />;
   };
 
-  const handleResetFilters = () => {
-    setVolumeFilter({ field: "searchVolume" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false });
-    setCpcFilter({ field: "cpc" as FilterField, operator: ">" as FilterOperator, value: 0, enabled: false });
-    setDifficultyFilter({ field: "difficulty" as FilterField, operator: "<" as FilterOperator, value: 100, enabled: false });
+  const handleApplyFilters = () => {
+    if (onFiltersChange) {
+      onFiltersChange({
+        volumeMin: volumeMin ? parseInt(volumeMin) : null,
+        volumeMax: volumeMax ? parseInt(volumeMax) : null,
+        difficultyMin: difficultyMin ? parseInt(difficultyMin) : null,
+        difficultyMax: difficultyMax ? parseInt(difficultyMax) : null,
+      });
+    }
   };
 
-  const getActiveFilterCount = () => {
-    return [volumeFilter, cpcFilter, difficultyFilter].filter(f => f.enabled).length;
+  const handleResetFilters = () => {
+    setVolumeMin('');
+    setVolumeMax('');
+    setDifficultyMin('');
+    setDifficultyMax('');
+    if (onFiltersChange) {
+      onFiltersChange({
+        volumeMin: null,
+        volumeMax: null,
+        difficultyMin: null,
+        difficultyMax: null,
+      });
+    }
   };
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasActiveFilters = volumeMin || volumeMax || difficultyMin || difficultyMax;
 
   const totalVolume = results.reduce((sum, result) => sum + (result.searchVolume ?? 0), 0);
   const avgDifficulty = results.length > 0 
@@ -269,8 +319,8 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                 <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search keywords..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={localSearchTerm}
+                  onChange={(e) => setLocalSearchTerm(e.target.value)}
                   className="pl-10 bg-background/50"
                 />
               </div>
@@ -282,122 +332,66 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
               >
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
-                {getActiveFilterCount() > 0 && (
+                {hasActiveFilters && (
                   <Badge variant="secondary" className="ml-2">
-                    {getActiveFilterCount()}
+                    Active
                   </Badge>
                 )}
               </Button>
               <Badge variant="secondary" className="flex items-center gap-1">
-                {filteredResults.length} of {results.length}
+                {results.length} results
               </Badge>
             </div>
 
             {showFilters && (
               <div className="bg-muted/30 rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Numeric Filters</span>
-                  <span className="text-xs text-muted-foreground">All filters use AND logic</span>
+                  <span className="text-sm font-medium">Filters</span>
+                  <span className="text-xs text-muted-foreground">Server-side filtering</span>
                 </div>
 
                 {/* Volume Filter */}
-                <div className="flex items-center gap-3 bg-background/80 p-3 rounded-md border border-border/30">
-                  <input
-                    type="checkbox"
-                    checked={volumeFilter.enabled}
-                    onChange={(e) => setVolumeFilter({ ...volumeFilter, enabled: e.target.checked })}
-                    className="w-4 h-4 rounded border-border"
-                  />
-                  <span className="text-sm font-medium min-w-[80px]">Volume</span>
-                  <Select
-                    value={volumeFilter.operator}
-                    onValueChange={(value) => setVolumeFilter({ ...volumeFilter, operator: value as FilterOperator })}
-                  >
-                    <SelectTrigger className="w-[80px] bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      <SelectItem value="<">{"<"}</SelectItem>
-                      <SelectItem value="<=">{"≤"}</SelectItem>
-                      <SelectItem value="=">{"="}</SelectItem>
-                      <SelectItem value=">=">{">="}</SelectItem>
-                      <SelectItem value=">">{">"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    value={volumeFilter.value}
-                    onChange={(e) => setVolumeFilter({ ...volumeFilter, value: parseFloat(e.target.value) || 0 })}
-                    placeholder="Value"
-                    className="w-[120px] bg-background"
-                  />
-                </div>
-
-                {/* CPC Filter */}
-                <div className="flex items-center gap-3 bg-background/80 p-3 rounded-md border border-border/30">
-                  <input
-                    type="checkbox"
-                    checked={cpcFilter.enabled}
-                    onChange={(e) => setCpcFilter({ ...cpcFilter, enabled: e.target.checked })}
-                    className="w-4 h-4 rounded border-border"
-                  />
-                  <span className="text-sm font-medium min-w-[80px]">CPC</span>
-                  <Select
-                    value={cpcFilter.operator}
-                    onValueChange={(value) => setCpcFilter({ ...cpcFilter, operator: value as FilterOperator })}
-                  >
-                    <SelectTrigger className="w-[80px] bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      <SelectItem value="<">{"<"}</SelectItem>
-                      <SelectItem value="<=">{"≤"}</SelectItem>
-                      <SelectItem value="=">{"="}</SelectItem>
-                      <SelectItem value=">=">{">="}</SelectItem>
-                      <SelectItem value=">">{">"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={cpcFilter.value}
-                    onChange={(e) => setCpcFilter({ ...cpcFilter, value: parseFloat(e.target.value) || 0 })}
-                    placeholder="Value"
-                    className="w-[120px] bg-background"
-                  />
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Search Volume</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Min"
+                      value={volumeMin}
+                      onChange={(e) => setVolumeMin(e.target.value)}
+                      className="bg-background"
+                    />
+                    <span className="text-muted-foreground">to</span>
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      value={volumeMax}
+                      onChange={(e) => setVolumeMax(e.target.value)}
+                      className="bg-background"
+                    />
+                  </div>
                 </div>
 
                 {/* Difficulty Filter */}
-                <div className="flex items-center gap-3 bg-background/80 p-3 rounded-md border border-border/30">
-                  <input
-                    type="checkbox"
-                    checked={difficultyFilter.enabled}
-                    onChange={(e) => setDifficultyFilter({ ...difficultyFilter, enabled: e.target.checked })}
-                    className="w-4 h-4 rounded border-border"
-                  />
-                  <span className="text-sm font-medium min-w-[80px]">Difficulty</span>
-                  <Select
-                    value={difficultyFilter.operator}
-                    onValueChange={(value) => setDifficultyFilter({ ...difficultyFilter, operator: value as FilterOperator })}
-                  >
-                    <SelectTrigger className="w-[80px] bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      <SelectItem value="<">{"<"}</SelectItem>
-                      <SelectItem value="<=">{"≤"}</SelectItem>
-                      <SelectItem value="=">{"="}</SelectItem>
-                      <SelectItem value=">=">{">="}</SelectItem>
-                      <SelectItem value=">">{">"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    value={difficultyFilter.value}
-                    onChange={(e) => setDifficultyFilter({ ...difficultyFilter, value: parseFloat(e.target.value) || 0 })}
-                    placeholder="Value"
-                    className="w-[120px] bg-background"
-                  />
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Difficulty (0-100)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Min"
+                      value={difficultyMin}
+                      onChange={(e) => setDifficultyMin(e.target.value)}
+                      className="bg-background"
+                    />
+                    <span className="text-muted-foreground">to</span>
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      value={difficultyMax}
+                      onChange={(e) => setDifficultyMax(e.target.value)}
+                      className="bg-background"
+                    />
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
@@ -408,6 +402,12 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
                     onClick={handleResetFilters}
                   >
                     Reset
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleApplyFilters}
+                  >
+                    Apply Filters
                   </Button>
                 </div>
               </div>
@@ -499,6 +499,57 @@ export const KeywordResultsTable = ({ results, isLoading, onExport, seedKeyword,
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalCount > 0 && (
+            <div className="flex items-center justify-between pt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Showing {Math.min((page - 1) * pageSize + 1, totalCount)} - {Math.min(page * pageSize, totalCount)} of {totalCount}
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">Per page:</Label>
+                  <Select 
+                    value={String(pageSize)} 
+                    onValueChange={(value) => onPageSizeChange?.(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-[80px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="250">250</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange?.(page - 1)}
+                    disabled={page <= 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm px-3">
+                    Page {page} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange?.(page + 1)}
+                    disabled={page >= totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

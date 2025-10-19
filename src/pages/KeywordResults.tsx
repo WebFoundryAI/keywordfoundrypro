@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { KeywordResultsTable, KeywordResult } from "@/components/KeywordResultsTable";
 import { KeywordMetricsSummary } from "@/components/KeywordMetricsSummary";
 import { useAuth } from "@/components/AuthProvider";
@@ -10,12 +10,23 @@ import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } fr
 
 const KeywordResults = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [seedKeyword, setSeedKeyword] = useState<KeywordResult | null>(null);
   const [keywordAnalyzed, setKeywordAnalyzed] = useState<string>("");
-  const [locationCode, setLocationCode] = useState<number>(2840); // Default to USA
+  const [locationCode, setLocationCode] = useState<number>(2840);
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Get pagination and filter params from URL
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = parseInt(searchParams.get('pageSize') || '50');
+  const searchTerm = searchParams.get('search') || '';
+  const volumeMin = searchParams.get('volumeMin');
+  const volumeMax = searchParams.get('volumeMax');
+  const difficultyMin = searchParams.get('difficultyMin');
+  const difficultyMax = searchParams.get('difficultyMax');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,11 +53,40 @@ const KeywordResults = () => {
             setLocationCode(researchData.location_code);
           }
           
-          // Fetch results from database
-          const { data: keywordResults, error } = await supabase
+          // Build query with filters
+          let query = supabase
             .from('keyword_results')
-            .select('*')
+            .select('*', { count: 'exact' })
             .eq('research_id', researchId);
+
+          // Apply search filter
+          if (searchTerm) {
+            query = query.ilike('keyword', `%${searchTerm}%`);
+          }
+
+          // Apply volume filters
+          if (volumeMin) {
+            query = query.gte('search_volume', parseInt(volumeMin));
+          }
+          if (volumeMax) {
+            query = query.lte('search_volume', parseInt(volumeMax));
+          }
+
+          // Apply difficulty filters
+          if (difficultyMin) {
+            query = query.gte('difficulty', parseInt(difficultyMin));
+          }
+          if (difficultyMax) {
+            query = query.lte('difficulty', parseInt(difficultyMax));
+          }
+
+          // Apply pagination
+          const from = (page - 1) * pageSize;
+          const to = from + pageSize - 1;
+          query = query.range(from, to);
+
+          // Execute query
+          const { data: keywordResults, error, count } = await query;
             
           if (error) {
             console.error('Error fetching keyword results:', error);
@@ -57,9 +97,12 @@ const KeywordResults = () => {
             });
             return;
           }
+
+          // Set total count for pagination
+          setTotalCount(count || 0);
           
           // Convert to frontend format
-          const convertedResults = keywordResults.map(result => ({
+          const convertedResults = (keywordResults || []).map(result => ({
             keyword: result.keyword,
             searchVolume: result.search_volume ?? null,
             cpc: result.cpc ?? null,
@@ -120,69 +163,99 @@ const KeywordResults = () => {
     setTimeout(() => {
       console.log('KeywordResults - Final component state:', {
         resultsLength: results.length,
+        totalCount,
         seedKeyword,
-        keywordAnalyzed
+        keywordAnalyzed,
+        page,
+        pageSize
       });
     }, 100);
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, page, pageSize, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax]);
 
-  const handleExport = (format: 'csv' | 'json' | 'txt') => {
-    if (results.length === 0) return;
-    
-    let content: string;
-    let filename: string;
-    let mimeType: string;
-    
-    if (format === 'csv') {
-      const headers = ['Keyword', 'Search Volume', 'CPC', 'Intent', 'Difficulty'];
-      const csvRows = [
-        headers.join(','),
-        ...results.map(r => [
-          `"${r.keyword}"`,
-          r.searchVolume === null || r.searchVolume === undefined ? '—' : r.searchVolume,
-          r.cpc === null || r.cpc === undefined ? '—' : r.cpc,
-          r.intent,
-          r.difficulty === null || r.difficulty === undefined ? '—' : r.difficulty
-        ].join(','))
-      ];
-      content = csvRows.join('\n');
-      filename = 'keyword-research.csv';
-      mimeType = 'text/csv';
-    } else if (format === 'txt') {
-      const headers = ['Keyword', 'Search Volume', 'CPC', 'Intent', 'Difficulty'];
-      const txtRows = [
-        headers.join('\t'),
-        ...results.map(r => [
-          r.keyword,
-          r.searchVolume === null || r.searchVolume === undefined ? '—' : r.searchVolume,
-          r.cpc === null || r.cpc === undefined ? '—' : r.cpc,
-          r.intent,
-          r.difficulty === null || r.difficulty === undefined ? '—' : r.difficulty
-        ].join('\t'))
-      ];
-      content = txtRows.join('\n');
-      filename = 'keyword-research.txt';
-      mimeType = 'text/plain';
-    } else {
-      content = JSON.stringify(results, null, 2);
-      filename = 'keyword-research.json';
-      mimeType = 'application/json';
+  const handleExport = async (format: 'csv' | 'json' | 'txt') => {
+    const researchId = localStorage.getItem('currentResearchId');
+    if (!researchId) return;
+
+    try {
+      // Fetch ALL results for export (not just current page)
+      const { data: allResults, error } = await supabase
+        .from('keyword_results')
+        .select('*')
+        .eq('research_id', researchId);
+
+      if (error) throw error;
+      if (!allResults || allResults.length === 0) return;
+
+      const exportData = allResults.map(result => ({
+        keyword: result.keyword,
+        searchVolume: result.search_volume,
+        cpc: result.cpc,
+        intent: result.intent,
+        difficulty: result.difficulty
+      }));
+
+      let content: string;
+      let filename: string;
+      let mimeType: string;
+      
+      if (format === 'csv') {
+        const headers = ['Keyword', 'Search Volume', 'CPC', 'Intent', 'Difficulty'];
+        const csvRows = [
+          headers.join(','),
+          ...exportData.map(r => [
+            `"${r.keyword}"`,
+            r.searchVolume === null || r.searchVolume === undefined ? '—' : r.searchVolume,
+            r.cpc === null || r.cpc === undefined ? '—' : r.cpc,
+            r.intent || 'informational',
+            r.difficulty === null || r.difficulty === undefined ? '—' : r.difficulty
+          ].join(','))
+        ];
+        content = csvRows.join('\n');
+        filename = 'keyword-research.csv';
+        mimeType = 'text/csv';
+      } else if (format === 'txt') {
+        const headers = ['Keyword', 'Search Volume', 'CPC', 'Intent', 'Difficulty'];
+        const txtRows = [
+          headers.join('\t'),
+          ...exportData.map(r => [
+            r.keyword,
+            r.searchVolume === null || r.searchVolume === undefined ? '—' : r.searchVolume,
+            r.cpc === null || r.cpc === undefined ? '—' : r.cpc,
+            r.intent || 'informational',
+            r.difficulty === null || r.difficulty === undefined ? '—' : r.difficulty
+          ].join('\t'))
+        ];
+        content = txtRows.join('\n');
+        filename = 'keyword-research.txt';
+        mimeType = 'text/plain';
+      } else {
+        content = JSON.stringify(exportData, null, 2);
+        filename = 'keyword-research.json';
+        mimeType = 'application/json';
+      }
+      
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export Complete",
+        description: `Downloaded ${allResults.length} keywords as ${format.toUpperCase()}`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export keyword results",
+        variant: "destructive"
+      });
     }
-    
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Export Complete",
-      description: `Downloaded ${results.length} keywords as ${format.toUpperCase()}`,
-    });
   };
 
   if (loading) {
@@ -289,6 +362,63 @@ const KeywordResults = () => {
               seedKeyword={seedKeyword}
               keywordAnalyzed={keywordAnalyzed}
               locationCode={locationCode}
+              // Pagination props
+              totalCount={totalCount}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={(newPage) => {
+                setSearchParams(prev => {
+                  const params = new URLSearchParams(prev);
+                  params.set('page', String(newPage));
+                  return params;
+                });
+              }}
+              onPageSizeChange={(newSize) => {
+                setSearchParams(prev => {
+                  const params = new URLSearchParams(prev);
+                  params.set('pageSize', String(newSize));
+                  params.set('page', '1'); // Reset to first page
+                  return params;
+                });
+              }}
+              // Filter props
+              searchTerm={searchTerm}
+              onSearchChange={(search) => {
+                setSearchParams(prev => {
+                  const params = new URLSearchParams(prev);
+                  if (search) {
+                    params.set('search', search);
+                  } else {
+                    params.delete('search');
+                  }
+                  params.set('page', '1'); // Reset to first page
+                  return params;
+                });
+              }}
+              onFiltersChange={(filters) => {
+                setSearchParams(prev => {
+                  const params = new URLSearchParams(prev);
+                  
+                  // Volume filters
+                  if (filters.volumeMin !== undefined) {
+                    filters.volumeMin ? params.set('volumeMin', String(filters.volumeMin)) : params.delete('volumeMin');
+                  }
+                  if (filters.volumeMax !== undefined) {
+                    filters.volumeMax ? params.set('volumeMax', String(filters.volumeMax)) : params.delete('volumeMax');
+                  }
+                  
+                  // Difficulty filters
+                  if (filters.difficultyMin !== undefined) {
+                    filters.difficultyMin ? params.set('difficultyMin', String(filters.difficultyMin)) : params.delete('difficultyMin');
+                  }
+                  if (filters.difficultyMax !== undefined) {
+                    filters.difficultyMax ? params.set('difficultyMax', String(filters.difficultyMax)) : params.delete('difficultyMax');
+                  }
+                  
+                  params.set('page', '1'); // Reset to first page
+                  return params;
+                });
+              }}
             />
           </>
         )}
