@@ -88,14 +88,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               console.error('ensure_user_subscription error', rpcErr);
             }
 
+            // Check if user is admin
+            const { data: adminRole } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', user.id)
+              .eq('role', 'admin')
+              .maybeSingle();
+
             // Only redirect from specific whitelist paths
             const currentPath = window.location.pathname;
             const shouldRedirect = ['/', '/auth/callback', '/pricing'].includes(currentPath);
             
             if (shouldRedirect) {
               didRedirectRef.current = true;
-              console.log('Centralized redirect from', currentPath, '-> /app/keyword-research');
-              window.location.replace('/app/keyword-research');
+              const redirectPath = adminRole ? '/admin' : '/app/keyword-research';
+              console.log('Centralized redirect from', currentPath, '->', redirectPath);
+              window.location.replace(redirectPath);
             } else {
               console.log('Skipping redirect - not on whitelist path:', currentPath);
             }
