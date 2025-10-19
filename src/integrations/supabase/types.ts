@@ -283,6 +283,8 @@ export type Database = {
           created_at: string
           display_name: string | null
           email: string | null
+          free_reports_renewal_at: string | null
+          free_reports_used: number
           id: string
           updated_at: string
           user_id: string
@@ -292,6 +294,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          free_reports_renewal_at?: string | null
+          free_reports_used?: number
           id?: string
           updated_at?: string
           user_id: string
@@ -301,6 +305,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          free_reports_renewal_at?: string | null
+          free_reports_used?: number
           id?: string
           updated_at?: string
           user_id?: string
