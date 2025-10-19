@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw } from "lucide-react";
+import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
 
 interface AnalysisData {
   keyword_gap_list: Array<{
@@ -165,6 +166,72 @@ export default function CompetitorAnalyzer() {
     return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   }) || [];
 
+  const handleExportCSV = () => {
+    if (!sortedKeywords.length) return;
+
+    const rows: GapKeywordRow[] = sortedKeywords.map(kw => ({
+      keyword: kw.keyword,
+      search_volume: kw.search_volume,
+      competitor_rank: kw.position,
+    }));
+
+    const meta: ExportMeta = {
+      run_timestamp: new Date().toISOString(),
+      your_domain: yourDomain,
+      competitor_domain: competitorDomain,
+      total_gaps: rows.length,
+    };
+
+    const csvContent = toCSV(rows, meta);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = normalizedFilename(yourDomain, competitorDomain, "csv");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "CSV Downloaded",
+      description: `Exported ${rows.length} keywords`,
+    });
+  };
+
+  const handleExportJSON = () => {
+    if (!sortedKeywords.length) return;
+
+    const rows: GapKeywordRow[] = sortedKeywords.map(kw => ({
+      keyword: kw.keyword,
+      search_volume: kw.search_volume,
+      competitor_rank: kw.position,
+    }));
+
+    const meta: ExportMeta = {
+      run_timestamp: new Date().toISOString(),
+      your_domain: yourDomain,
+      competitor_domain: competitorDomain,
+      total_gaps: rows.length,
+    };
+
+    const jsonContent = toJSON(rows, meta);
+    const blob = new Blob([jsonContent], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = normalizedFilename(yourDomain, competitorDomain, "json");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "JSON Downloaded",
+      description: `Exported ${rows.length} keywords`,
+    });
+  };
+
   const backlinksChartData = analysisData ? [
     {
       name: 'Your Domain',
@@ -313,6 +380,28 @@ export default function CompetitorAnalyzer() {
                 <CardDescription>Keywords where your competitor ranks but you don't</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex justify-end gap-2 mb-4">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleExportCSV}
+                    disabled={!sortedKeywords.length}
+                    title="Exports your current result set"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download CSV
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleExportJSON}
+                    disabled={!sortedKeywords.length}
+                    title="Exports your current result set"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download JSON
+                  </Button>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
