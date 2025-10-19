@@ -94,8 +94,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             
             if (shouldRedirect) {
               didRedirectRef.current = true;
-              console.log('Centralized redirect from', currentPath, '-> /research');
-              window.location.replace('/research');
+              console.log('Centralized redirect from', currentPath, '-> /app/keyword-research');
+              window.location.replace('/app/keyword-research');
             } else {
               console.log('Skipping redirect - not on whitelist path:', currentPath);
             }
