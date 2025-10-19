@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Camera, ArrowLeft } from 'lucide-react';
+import { Loader2, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,6 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Header } from '@/components/Header';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -197,19 +196,8 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header user={user} />
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/research')}
-          className="mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Research
-        </Button>
-
-        <div className="grid gap-6 md:grid-cols-2">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="grid gap-6 md:grid-cols-2">
           <Card className="p-6">
             <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
 
@@ -376,7 +364,6 @@ export default function Profile() {
             )}
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }
