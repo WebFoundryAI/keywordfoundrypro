@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Play } from "lucide-react";
 
 interface KeywordCluster {
   id: string;
@@ -91,6 +91,31 @@ const Clustering = () => {
       toast({
         title: "Error",
         description: `Failed to update status: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const runClusterJobMutation = useMutation({
+    mutationFn: async ({ research_id, cluster_id }: { research_id: string; cluster_id: string }) => {
+      const { data, error } = await supabase.functions.invoke('cluster-keywords', {
+        body: { research_id, cluster_id },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['keyword-clusters'] });
+      toast({
+        title: "Job Completed",
+        description: "Clustering job completed successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Job Failed",
+        description: `Failed to run clustering job: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -228,6 +253,19 @@ const Clustering = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => runClusterJobMutation.mutate({
+                            research_id: cluster.research_id,
+                            cluster_id: cluster.cluster_id,
+                          })}
+                          disabled={runClusterJobMutation.isPending}
+                          title="Run clustering job"
+                        >
+                          <Play className="h-4 w-4 mr-1" />
+                          Run Job
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

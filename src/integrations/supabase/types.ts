@@ -260,34 +260,49 @@ export type Database = {
           cluster_id: string
           created_at: string
           id: string
+          job_completed_at: string | null
+          job_started_at: string | null
           keyword_count: number
+          method: string
+          payload: Json | null
           research_id: string
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["cluster_status"]
           updated_at: string
+          version: string
         }
         Insert: {
           cluster_id: string
           created_at?: string
           id?: string
+          job_completed_at?: string | null
+          job_started_at?: string | null
           keyword_count?: number
+          method?: string
+          payload?: Json | null
           research_id: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["cluster_status"]
           updated_at?: string
+          version?: string
         }
         Update: {
           cluster_id?: string
           created_at?: string
           id?: string
+          job_completed_at?: string | null
+          job_started_at?: string | null
           keyword_count?: number
+          method?: string
+          payload?: Json | null
           research_id?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["cluster_status"]
           updated_at?: string
+          version?: string
         }
         Relationships: [
           {
