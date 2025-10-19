@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { callDataForSEO } from "../_shared/dataforseo/client.ts";
 
 // CORS - Allowed origins
 const allowedOrigins = [
@@ -40,6 +41,9 @@ const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
 // Admin client for JWT verification only
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+// Module name for usage tracking
+const MODULE_NAME = 'related-keywords';
 
 // Input validation schema
 const KeywordRequestSchema = z.object({
@@ -164,21 +168,14 @@ serve(async (req) => {
 
     console.log('Calling DataForSEO Labs API with payload:', JSON.stringify(apiPayload))
 
-    // Call DataForSEO Labs API for related keywords
-    const response = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/related_keywords/live', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(`${Deno.env.get('DATAFORSEO_LOGIN')}:${Deno.env.get('DATAFORSEO_PASSWORD')}`)}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify([apiPayload])
-    })
+    // Call DataForSEO Labs API for related keywords using centralized client
+    const apiData = await callDataForSEO({
+      endpoint: '/dataforseo_labs/google/related_keywords/live',
+      payload: [apiPayload],
+      module: MODULE_NAME,
+      userId: user.id,
+    });
 
-    if (!response.ok) {
-      throw new Error(`DataForSEO API error: ${response.status} ${response.statusText}`)
-    }
-
-    const apiData = await response.json()
     console.log('DataForSEO Labs API response (first 200 chars):', JSON.stringify(apiData).substring(0, 200))
 
     if (!apiData.tasks || !apiData.tasks[0]) {
@@ -244,29 +241,24 @@ serve(async (req) => {
     let intentMap: Record<string, string> = {};
     if (keywordsToClassify.length > 0) {
       try {
-        const intentResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/search_intent/live', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${btoa(`${Deno.env.get('DATAFORSEO_LOGIN')}:${Deno.env.get('DATAFORSEO_PASSWORD')}`)}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify([{
+        const intentData = await callDataForSEO({
+          endpoint: '/dataforseo_labs/google/search_intent/live',
+          payload: [{
             "language_code": languageCode,
             "keywords": keywordsToClassify
-          }])
+          }],
+          module: `${MODULE_NAME}-intent`,
+          userId: user.id,
         });
 
-        if (intentResponse.ok) {
-          const intentData = await intentResponse.json();
-          if (intentData.tasks?.[0]?.status_code === 20000) {
-            const intentItems = intentData.tasks[0].result?.[0]?.items || [];
-            intentItems.forEach((item: any) => {
-              if (item.keyword && item.keyword_intent?.label) {
-                intentMap[item.keyword.toLowerCase()] = item.keyword_intent.label;
-              }
-            });
-            console.log(`Successfully classified ${Object.keys(intentMap).length} keywords with DataForSEO intent`);
-          }
+        if (intentData.tasks?.[0]?.status_code === 20000) {
+          const intentItems = intentData.tasks[0].result?.[0]?.items || [];
+          intentItems.forEach((item: any) => {
+            if (item.keyword && item.keyword_intent?.label) {
+              intentMap[item.keyword.toLowerCase()] = item.keyword_intent.label;
+            }
+          });
+          console.log(`Successfully classified ${Object.keys(intentMap).length} keywords with DataForSEO intent`);
         }
       } catch (intentError) {
         console.error('Intent classification error (non-critical):', intentError);

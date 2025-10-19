@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { callDataForSEO } from "../_shared/dataforseo/client.ts";
 
 // CORS - Allowed origins
 const allowedOrigins = [
@@ -33,9 +34,8 @@ function getCorsHeaders(req: Request) {
   };
 }
 
-// Keyword research API credentials
-const apiLogin = Deno.env.get('DATAFORSEO_LOGIN');
-const apiPassword = Deno.env.get('DATAFORSEO_PASSWORD');
+// Module name for usage tracking
+const MODULE_NAME = 'keyword-suggestions';
 
 // Input validation schema
 const SuggestionsRequestSchema = z.object({
@@ -84,17 +84,13 @@ serve(async (req) => {
       "limit": 10
     }];
 
-    // Call keyword research API for suggestions
-    const suggestionsResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_suggestions/live', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(`${apiLogin}:${apiPassword}`)}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(apiPayload)
+    // Call DataForSEO API using centralized client
+    const suggestionsData = await callDataForSEO({
+      endpoint: '/dataforseo_labs/google/keyword_suggestions/live',
+      payload: apiPayload,
+      module: MODULE_NAME,
     });
 
-    const suggestionsData = await suggestionsResponse.json();
     console.log('Keyword suggestions response received');
 
     if (!suggestionsData.tasks || suggestionsData.tasks[0].status_code !== 20000) {

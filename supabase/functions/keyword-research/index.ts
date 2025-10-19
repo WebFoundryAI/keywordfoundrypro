@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { callDataForSEO } from "../_shared/dataforseo/client.ts";
 
 // CORS - Allowed origins
 const allowedOrigins = [
@@ -42,9 +43,8 @@ const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 // Admin client for JWT verification only
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-// API credentials
-const apiLogin = Deno.env.get('DATAFORSEO_LOGIN');
-const apiPassword = Deno.env.get('DATAFORSEO_PASSWORD');
+// Module name for usage tracking
+const MODULE_NAME = 'keyword-research';
 
 // Input validation schema
 const KeywordRequestSchema = z.object({
@@ -169,23 +169,13 @@ serve(async (req) => {
 
     console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
 
-    // Call keyword research API for ideas
-    const keywordIdeasResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_ideas/live', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(`${apiLogin}:${apiPassword}`)}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(apiPayload)
+    // Call keyword research API for ideas using centralized client
+    const keywordIdeasData = await callDataForSEO({
+      endpoint: '/dataforseo_labs/google/keyword_ideas/live',
+      payload: apiPayload,
+      module: MODULE_NAME,
+      userId: user.id,
     });
-
-    const keywordIdeasData = await keywordIdeasResponse.json();
-    console.log('Keyword ideas API response status:', keywordIdeasResponse.status);
-
-    if (!keywordIdeasResponse.ok) {
-      console.error('API response error:', keywordIdeasData);
-      throw new Error(`API request failed: ${keywordIdeasResponse.status} ${keywordIdeasResponse.statusText}`);
-    }
 
     if (!keywordIdeasData.tasks || keywordIdeasData.tasks[0].status_code !== 20000) {
       const errorMsg = keywordIdeasData.tasks?.[0]?.status_message || 'Unknown API error';
@@ -227,20 +217,16 @@ serve(async (req) => {
           "include_clickstream_data": false
         }];
         
-        const fallbackResponse = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_overview/live', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${btoa(`${apiLogin}:${apiPassword}`)}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(fallbackPayload)
+        const fallbackData = await callDataForSEO({
+          endpoint: '/dataforseo_labs/google/keyword_overview/live',
+          payload: fallbackPayload,
+          module: `${MODULE_NAME}-fallback`,
+          userId: user.id,
         });
         
-        const fallbackData = await fallbackResponse.json();
-        console.log('Fallback lookup response status:', fallbackResponse.status);
         console.log('Fallback endpoint used: /v3/dataforseo_labs/google/keyword_overview/live');
         
-        if (fallbackResponse.ok && fallbackData.tasks?.[0]?.status_code === 20000) {
+        if (fallbackData.tasks?.[0]?.status_code === 20000) {
           const fallbackResults = fallbackData.tasks[0].result?.[0]?.items || [];
           const exactMatch = fallbackResults.find((item: any) => 
             normalizeKeyword(item.keyword || '') === normalizedSeed

@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { callDataForSEO } from "../_shared/dataforseo/client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const MODULE_NAME = 'competitor-analyze';
 
 const FREE_LIMIT = 3;
 
@@ -152,20 +155,10 @@ serve(async (req) => {
       );
     }
 
-    // Call DataForSEO APIs
-    const login = Deno.env.get('DATAFORSEO_LOGIN');
-    const password = Deno.env.get('DATAFORSEO_PASSWORD');
-    
-    if (!login || !password) {
-      throw new Error('DataForSEO credentials not configured');
-    }
-
-    const auth = btoa(`${login}:${password}`);
-
     // Fetch ranked keywords for both domains
     const [yourKeywords, competitorKeywords] = await Promise.all([
-      fetchRankedKeywords(yourHost, auth),
-      fetchRankedKeywords(competitorHost, auth)
+      fetchRankedKeywords(yourHost, user.id),
+      fetchRankedKeywords(competitorHost, user.id)
     ]);
 
     // Find keyword gaps (keywords competitor ranks for but you don't)
@@ -181,10 +174,10 @@ serve(async (req) => {
 
     // Fetch backlinks and on-page summaries
     const [yourBacklinks, competitorBacklinks, yourOnPage, competitorOnPage] = await Promise.all([
-      fetchBacklinkSummary(yourHost, auth),
-      fetchBacklinkSummary(competitorHost, auth),
-      fetchOnPageSummary(yourHost, auth),
-      fetchOnPageSummary(competitorHost, auth)
+      fetchBacklinkSummary(yourHost, user.id),
+      fetchBacklinkSummary(competitorHost, user.id),
+      fetchOnPageSummary(yourHost, user.id),
+      fetchOnPageSummary(competitorHost, user.id)
     ]);
 
     const result = {
@@ -240,42 +233,36 @@ serve(async (req) => {
   }
 });
 
-async function fetchRankedKeywords(domain: string, auth: string) {
-  const response = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/ranked_keywords/live', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify([{
+async function fetchRankedKeywords(domain: string, userId: string) {
+  const data = await callDataForSEO({
+    endpoint: '/dataforseo_labs/google/ranked_keywords/live',
+    payload: [{
       target: domain,
       location_code: 2840,
       language_code: 'en',
       limit: 1000
-    }])
+    }],
+    module: MODULE_NAME,
+    userId,
   });
 
-  const data = await response.json();
   if (data.tasks?.[0]?.result?.[0]?.items) {
     return data.tasks[0].result[0].items;
   }
   return [];
 }
 
-async function fetchBacklinkSummary(domain: string, auth: string) {
-  const response = await fetch('https://api.dataforseo.com/v3/backlinks/summary/live', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify([{
+async function fetchBacklinkSummary(domain: string, userId: string) {
+  const data = await callDataForSEO({
+    endpoint: '/backlinks/summary/live',
+    payload: [{
       target: domain,
       include_subdomains: true
-    }])
+    }],
+    module: MODULE_NAME,
+    userId,
   });
 
-  const data = await response.json();
   if (data.tasks?.[0]?.result?.[0]) {
     const result = data.tasks[0].result[0];
     return {
@@ -287,19 +274,16 @@ async function fetchBacklinkSummary(domain: string, auth: string) {
   return { backlinks: 0, referring_domains: 0, referring_ips: 0 };
 }
 
-async function fetchOnPageSummary(domain: string, auth: string) {
-  const response = await fetch('https://api.dataforseo.com/v3/on_page/summary', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify([{
+async function fetchOnPageSummary(domain: string, userId: string) {
+  const data = await callDataForSEO({
+    endpoint: '/on_page/summary',
+    payload: [{
       id: domain
-    }])
+    }],
+    module: MODULE_NAME,
+    userId,
   });
 
-  const data = await response.json();
   if (data.tasks?.[0]?.result?.[0]) {
     const result = data.tasks[0].result[0];
     return {

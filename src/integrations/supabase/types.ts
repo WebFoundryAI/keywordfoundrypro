@@ -74,6 +74,48 @@ export type Database = {
         }
         Relationships: []
       }
+      dataforseo_usage: {
+        Row: {
+          cost_usd: number | null
+          created_at: string
+          credits_used: number | null
+          endpoint: string
+          error_message: string | null
+          id: string
+          module: string
+          request_payload: Json | null
+          response_status: number | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string
+          credits_used?: number | null
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          module: string
+          request_payload?: Json | null
+          response_status?: number | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string
+          credits_used?: number | null
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          module?: string
+          request_payload?: Json | null
+          response_status?: number | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       domain_gap_reports: {
         Row: {
           competitor_domain: string
