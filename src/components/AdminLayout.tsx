@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileSearch, ArrowLeft, CreditCard, Activity, Layers } from "lucide-react";
+import { LayoutDashboard, Users, FileSearch, ArrowLeft, CreditCard, Activity, Layers, Settings } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/components/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -54,6 +54,11 @@ export const AdminLayout = () => {
       path: "/admin/clustering",
       label: "Clustering",
       icon: Layers,
+    },
+    {
+      path: "/admin/env-check",
+      label: "Environment",
+      icon: Settings,
     },
   ];
 
