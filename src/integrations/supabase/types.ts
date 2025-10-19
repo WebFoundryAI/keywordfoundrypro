@@ -38,6 +38,42 @@ export type Database = {
         }
         Relationships: []
       }
+      competitor_analysis: {
+        Row: {
+          backlink_summary: Json | null
+          competitor_domain: string
+          created_at: string
+          expires_at: string
+          id: string
+          keyword_gap_list: Json | null
+          onpage_summary: Json | null
+          user_id: string
+          your_domain: string
+        }
+        Insert: {
+          backlink_summary?: Json | null
+          competitor_domain: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          keyword_gap_list?: Json | null
+          onpage_summary?: Json | null
+          user_id: string
+          your_domain: string
+        }
+        Update: {
+          backlink_summary?: Json | null
+          competitor_domain?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          keyword_gap_list?: Json | null
+          onpage_summary?: Json | null
+          user_id?: string
+          your_domain?: string
+        }
+        Relationships: []
+      }
       domain_gap_reports: {
         Row: {
           competitor_domain: string
