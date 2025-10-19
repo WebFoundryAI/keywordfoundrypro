@@ -94,25 +94,26 @@ export default function CompetitorAnalyzer() {
 
   const handleCompare = async () => {
     if (!yourDomain || !competitorDomain) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter both domains",
-        variant: "destructive"
-      });
+      toast({ title: "Missing Information", description: "Please enter both domains", variant: "destructive" });
       return;
     }
 
-    // Pre-check limit
+    // Domain normalization to bare host
+    const normalize = (v: string) => {
+      try { const u = new URL(v.trim()); return u.hostname.replace(/^www\./, ''); }
+      catch {
+        return v.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*/, '');
+      }
+    };
+    const payload = { yourDomain: normalize(yourDomain), competitorDomain: normalize(competitorDomain) };
+
+    // Pre-check local badge if available
     if (profile) {
       const now = new Date();
       const renewalDate = profile.free_reports_renewal_at ? new Date(profile.free_reports_renewal_at) : null;
       const needsRenewal = !renewalDate || now > renewalDate;
       const effectiveUsed = needsRenewal ? 0 : (profile.free_reports_used || 0);
-      
-      if (effectiveUsed >= FREE_LIMIT) {
-        setShowLimitModal(true);
-        return;
-      }
+      if (effectiveUsed >= FREE_LIMIT) { setShowLimitModal(true); return; }
     }
 
     setLoading(true);
@@ -121,23 +122,31 @@ export default function CompetitorAnalyzer() {
     setAiInsights(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('competitor-analyze', {
-        body: { yourDomain, competitorDomain }
-      });
+      const { data, error } = await supabase.functions.invoke('competitor-analyze', { body: payload });
 
-      if (error) throw error;
+      // Fallback: extract HTTP status from error context (supabase-js v2)
+      const status = (error as any)?.context?.response?.status as number | undefined;
 
-      // Check for limit exceeded from backend
-      if (data?.code === 'LIMIT_EXCEEDED') {
+      // Handle expected business outcomes either via data.code or via status
+      if (data?.code === 'LIMIT_EXCEEDED' || status === 402) {
         setShowLimitModal(true);
-        setLoading(false);
-        setAnalyzing(false);
+        return;
+      }
+      if (data?.code === 'PROFILE_MISSING' || status === 404) {
+        toast({ title: "Profile issue", description: "Please sign out and back in, then retry.", variant: "destructive" });
+        return;
+      }
+      if (status === 401) {
+        toast({ title: "Please sign in", description: "Sign in to run competitor analysis.", variant: "destructive" });
         return;
       }
 
+      // For any other error bubble up AFTER business-code checks
+      if (error) throw error;
+
       setAnalysisData(data);
-      
-      // Refresh profile to update badge
+
+      // Refresh profile badge after a successful run
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: updatedProfile } = await supabase
@@ -145,45 +154,28 @@ export default function CompetitorAnalyzer() {
           .select('free_reports_used, free_reports_renewal_at')
           .eq('user_id', user.id)
           .single();
-        if (updatedProfile) {
-          setProfile(updatedProfile);
-        }
+        if (updatedProfile) setProfile(updatedProfile);
       }
-      
-      if (data.cached) {
-        toast({
-          title: "Loaded from cache",
-          description: "Using cached analysis results (last 24 hours)"
-        });
+
+      if (data?.cached) {
+        toast({ title: "Loaded from cache", description: "Using cached analysis results (last 24 hours)" });
       } else {
-        toast({
-          title: "Analysis complete",
-          description: "Competitor analysis successfully generated"
-        });
+        toast({ title: "Analysis complete", description: "Competitor report is ready." });
       }
 
       // Auto-generate AI insights
       await generateAIInsights(data);
 
     } catch (error: any) {
-      console.error('Analysis error:', error);
-      
-      let errorMessage = error.message || "Failed to analyze competitors";
-      
-      // Check for specific error types
-      if (error.message?.toLowerCase().includes('profile')) {
-        errorMessage = "Profile error detected. Please try signing out and back in.";
-      } else if (error.message?.toLowerCase().includes('unauthorized')) {
-        errorMessage = "Please sign in to run competitor analysis.";
-      } else if (error.message?.toLowerCase().includes('network')) {
+      let errorMessage = error?.message || "Unknown error.";
+      if (errorMessage.toLowerCase().includes('edge function returned a non-2xx')) {
+        errorMessage = "The analyzer returned a non‑success status. Please try again or contact support.";
+      } else if (errorMessage.toLowerCase().includes('timeout')) {
+        errorMessage = "The request timed out. Please retry in a moment.";
+      } else if (errorMessage.toLowerCase().includes('network')) {
         errorMessage = "Network error. Please check your connection and try again.";
       }
-      
-      toast({
-        title: "Analysis failed",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      toast({ title: "Analysis failed", description: errorMessage, variant: "destructive" });
     } finally {
       setLoading(false);
       setAnalyzing(false);
