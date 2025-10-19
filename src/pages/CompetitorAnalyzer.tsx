@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeWithAuth } from "@/lib/supabaseHelpers";
 import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
@@ -122,27 +123,17 @@ export default function CompetitorAnalyzer() {
     setAiInsights(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('competitor-analyze', { body: payload });
+      const data = await invokeWithAuth('competitor-analyze', payload);
 
-      // Fallback: extract HTTP status from error context (supabase-js v2)
-      const status = (error as any)?.context?.response?.status as number | undefined;
-
-      // Handle expected business outcomes either via data.code or via status
-      if (data?.code === 'LIMIT_EXCEEDED' || status === 402) {
+      // Handle expected business outcomes via data.code
+      if (data?.code === 'LIMIT_EXCEEDED') {
         setShowLimitModal(true);
         return;
       }
-      if (data?.code === 'PROFILE_MISSING' || status === 404) {
+      if (data?.code === 'PROFILE_MISSING') {
         toast({ title: "Profile issue", description: "Please sign out and back in, then retry.", variant: "destructive" });
         return;
       }
-      if (status === 401) {
-        toast({ title: "Please sign in", description: "Sign in to run competitor analysis.", variant: "destructive" });
-        return;
-      }
-
-      // For any other error bubble up AFTER business-code checks
-      if (error) throw error;
 
       setAnalysisData(data);
 
