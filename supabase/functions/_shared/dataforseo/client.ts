@@ -120,6 +120,7 @@ export async function callDataForSEO<T = any>(
   
   let lastError: Error | null = null;
   let lastStatus = 0;
+  let lastResponse: DataForSEOResponse<T> | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -136,36 +137,9 @@ export async function callDataForSEO<T = any>(
 
       lastStatus = response.status;
       const data: DataForSEOResponse<T> = await response.json();
+      lastResponse = data;
 
-      // Extract cost information if available
-      const creditsUsed = data.cost || data.tasks?.[0]?.cost;
-      const costUsd = creditsUsed;
-
-      // Log successful request
-      await logUsage({
-        userId: request.userId,
-        module: request.module,
-        endpoint: request.endpoint,
-        requestPayload: request.payload,
-        responseStatus: response.status,
-        creditsUsed,
-        costUsd,
-      });
-
-      // Handle rate limiting (429) and payment required (402) - DO NOT RETRY these
-      if (response.status === 429) {
-        const errorMsg = 'DataForSEO rate limit exceeded. Please try again in a few minutes.';
-        await logUsage({
-          userId: request.userId,
-          module: request.module,
-          endpoint: request.endpoint,
-          requestPayload: request.payload,
-          responseStatus: response.status,
-          errorMessage: errorMsg,
-        });
-        throw new DataForSEOError(errorMsg, 429);
-      }
-      
+      // Handle 402 (payment required) - DO NOT RETRY
       if (response.status === 402) {
         const errorMsg = 'DataForSEO API credits exhausted. Please add credits to your DataForSEO account.';
         await logUsage({
@@ -179,24 +153,39 @@ export async function callDataForSEO<T = any>(
         throw new DataForSEOError(errorMsg, 402);
       }
 
-      // Check if we should retry based on status (5xx errors only)
+      // Check if we should retry based on status (429 or 5xx errors)
       if (!response.ok && shouldRetry(response.status)) {
         const errorMsg = `HTTP ${response.status}: ${data.status_message || 'Unknown error'}`;
         lastError = new DataForSEOError(errorMsg, response.status);
         
         if (attempt < MAX_RETRIES) {
           const delay = getBackoffDelay(attempt);
-          console.log(`[DataForSEO] Retrying after ${delay}ms...`);
+          console.log(`[DataForSEO] Retrying after ${delay}ms due to ${response.status}...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
+        // Final attempt failed - will log below
       }
 
-      // Return response even if not OK (let caller handle business logic)
+      // Success or non-retryable error - log once and return
+      const creditsUsed = data.cost || data.tasks?.[0]?.cost;
+      const costUsd = creditsUsed;
+
+      await logUsage({
+        userId: request.userId,
+        module: request.module,
+        endpoint: request.endpoint,
+        requestPayload: request.payload,
+        responseStatus: response.status,
+        creditsUsed,
+        costUsd,
+        errorMessage: response.ok ? undefined : (data.status_message || 'Request failed'),
+      });
+
       return data;
 
     } catch (error) {
-      // Re-throw DataForSEOError without retrying (rate limit, credits)
+      // Re-throw DataForSEOError without retrying (credits exhausted)
       if (error instanceof DataForSEOError) {
         throw error;
       }
@@ -204,17 +193,7 @@ export async function callDataForSEO<T = any>(
       lastError = error instanceof Error ? error : new Error('Unknown error');
       console.error(`[DataForSEO] Attempt ${attempt + 1} failed:`, lastError);
 
-      // Log failed request
-      await logUsage({
-        userId: request.userId,
-        module: request.module,
-        endpoint: request.endpoint,
-        requestPayload: request.payload,
-        responseStatus: lastStatus || 0,
-        errorMessage: lastError.message,
-      });
-
-      // Retry on network errors only
+      // Retry on network errors
       if (attempt < MAX_RETRIES) {
         const delay = getBackoffDelay(attempt);
         console.log(`[DataForSEO] Retrying after ${delay}ms...`);
@@ -224,6 +203,15 @@ export async function callDataForSEO<T = any>(
     }
   }
 
-  // All retries exhausted
+  // All retries exhausted - log final failure once
+  await logUsage({
+    userId: request.userId,
+    module: request.module,
+    endpoint: request.endpoint,
+    requestPayload: request.payload,
+    responseStatus: lastStatus || 0,
+    errorMessage: lastError?.message || 'Request failed after all retries',
+  });
+
   throw lastError || new DataForSEOError('DataForSEO API request failed after all retries', 500);
 }
