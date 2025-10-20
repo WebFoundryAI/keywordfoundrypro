@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { callDataForSEO, DataForSEOError } from "../_shared/dataforseo/client.ts";
+import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,6 +30,22 @@ const normalize = (v: string) => {
       .replace(/^www\./, '')
       .replace(/\/.*/, '');
   }
+};
+
+// Compute checksum for cache deduplication
+const computeChecksum = async (
+  yourDomain: string,
+  competitorDomain: string,
+  locationCode: number,
+  languageCode: string,
+  limit: number
+): Promise<string> => {
+  const payload = `${yourDomain.toLowerCase()}|${competitorDomain.toLowerCase()}|${locationCode}|${languageCode}|${limit}`;
+  const msgUint8 = new TextEncoder().encode(payload);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
 };
 
 serve(async (req) => {
@@ -160,6 +177,31 @@ serve(async (req) => {
       }, 200);
     }
 
+    // Compute checksum for cache deduplication
+    const checksum = await computeChecksum(yourHost, competitorHost, locationCode, languageCode, keywordLimit);
+    console.log('Request checksum:', checksum);
+
+    // Check competitor_cache for recent identical request (24-hour window)
+    const cacheExpiryTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: cachedEntry } = await supabaseClient
+      .from('competitor_cache')
+      .select('payload')
+      .eq('checksum', checksum)
+      .gt('created_at', cacheExpiryTime)
+      .maybeSingle();
+
+    if (cachedEntry) {
+      console.log('Cache hit - returning cached payload');
+      return new Response(
+        JSON.stringify({
+          ...cachedEntry.payload,
+          warnings: ['cache_hit'],
+          cached: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check cache first (24-hour cache)
     const expiryTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: cachedData } = await supabaseClient
@@ -281,6 +323,20 @@ serve(async (req) => {
       warnings: result.warnings,
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     });
+
+    // Store in competitor_cache only if no warnings (full success)
+    if (warnings.length === 0) {
+      console.log('Storing result in competitor_cache with checksum:', checksum);
+      await supabaseClient.from('competitor_cache').upsert({
+        user_id: user.id,
+        checksum: checksum,
+        payload: result
+      }, {
+        onConflict: 'checksum'
+      });
+    } else {
+      console.log('Skipping cache storage due to warnings:', warnings);
+    }
 
     // Update freemium usage
     const updateData = needsRenewal 
