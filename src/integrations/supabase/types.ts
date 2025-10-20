@@ -74,6 +74,30 @@ export type Database = {
         }
         Relationships: []
       }
+      competitor_cache: {
+        Row: {
+          checksum: string
+          created_at: string
+          id: string
+          payload: Json
+          user_id: string
+        }
+        Insert: {
+          checksum: string
+          created_at?: string
+          id?: string
+          payload: Json
+          user_id: string
+        }
+        Update: {
+          checksum?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       dataforseo_usage: {
         Row: {
           cost_usd: number | null
