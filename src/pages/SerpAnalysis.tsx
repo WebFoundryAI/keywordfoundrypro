@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -329,11 +329,11 @@ const SerpAnalysis = () => {
 
         {/* Results */}
         {results.length > 0 && (
-          <div ref={resultsRef} className="space-y-4">
-            <h2 className="text-2xl font-bold">
-              SERP Results for "{keyword}"
-            </h2>
-            <ScrollArea className="h-[600px] rounded-md border border-border/50 p-4">
+          <section id="serp-results" data-testid="serp-results" className="mt-6">
+            <div ref={resultsRef} className="space-y-4">
+              <h2 className="text-2xl font-bold">
+                SERP Results for "{keyword}"
+              </h2>
               <div className="space-y-4">
                 {results.map((result) => (
                   <Card key={result.position} className="bg-gradient-card shadow-card border-border/50">
@@ -378,8 +378,8 @@ const SerpAnalysis = () => {
                   </Card>
                 ))}
               </div>
-            </ScrollArea>
-          </div>
+            </div>
+          </section>
         )}
       </div>
     </section>
