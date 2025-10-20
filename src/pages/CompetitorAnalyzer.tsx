@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeWithAuth, DataForSEOApiError } from "@/lib/supabaseHelpers";
-import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download } from "lucide-react";
+import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
 import {
@@ -77,6 +78,7 @@ export default function CompetitorAnalyzer() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
+  const [errorAlert, setErrorAlert] = useState<{ request_id: string; stage: string; message: string; warnings: string[] } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -137,11 +139,28 @@ export default function CompetitorAnalyzer() {
     setAnalyzing(true);
     setAnalysisData(null);
     setAiInsights(null);
+    setErrorAlert(null);
 
     try {
       const data = await invokeWithAuth('competitor-analyze', payload);
 
-      // Handle expected business outcomes via data.code
+      // Check for structured error response
+      if (data && !data.ok) {
+        setErrorAlert({
+          request_id: data.request_id || 'unknown',
+          stage: data.error?.stage || 'unknown',
+          message: data.error?.message || 'An error occurred',
+          warnings: data.warnings || []
+        });
+        
+        // Still render partial data if available
+        if (data.data) {
+          setAnalysisData(data.data);
+        }
+        return;
+      }
+
+      // Handle legacy error codes for backward compatibility
       if (data?.code === 'LIMIT_EXCEEDED') {
         setShowLimitModal(true);
         return;
@@ -151,7 +170,9 @@ export default function CompetitorAnalyzer() {
         return;
       }
 
-      setAnalysisData(data);
+      // Extract data from the new structure if present
+      const analysisResult = data?.data || data;
+      setAnalysisData(analysisResult);
 
       // Refresh profile badge after a successful run
       const { data: { user } } = await supabase.auth.getUser();
@@ -164,7 +185,7 @@ export default function CompetitorAnalyzer() {
         if (updatedProfile) setProfile(updatedProfile);
       }
 
-      if (data?.cached) {
+      if (analysisResult?.cached) {
         toast({ title: "Loaded from cache", description: "Using cached analysis results (last 24 hours)" });
       } else {
         if (data?.warnings && data.warnings.length > 0) {
@@ -179,61 +200,19 @@ export default function CompetitorAnalyzer() {
       }
 
       // Auto-generate AI insights
-      await generateAIInsights(data);
+      await generateAIInsights(analysisResult);
 
     } catch (error: any) {
-      // Handle DataForSEO specific errors with helpful messages
-      if (error instanceof DataForSEOApiError) {
-        if (error.isRateLimit) {
-          toast({
-            title: "Rate Limit Exceeded",
-            description: "DataForSEO API rate limit reached. Please wait a few minutes before trying again.",
-            variant: "destructive",
-            action: (
-              <a 
-                href="https://docs.lovable.dev/tips-tricks/troubleshooting#dataforseo" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="underline text-sm"
-              >
-                Learn more
-              </a>
-            ),
-          });
-        } else if (error.isCreditsExhausted) {
-          toast({
-            title: "API Credits Exhausted",
-            description: "DataForSEO API credits have been exhausted. Please add credits to your DataForSEO account.",
-            variant: "destructive",
-            action: (
-              <a 
-                href="https://docs.lovable.dev/tips-tricks/troubleshooting#dataforseo" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="underline text-sm"
-              >
-                Learn more
-              </a>
-            ),
-          });
-        } else {
-          toast({
-            title: "API Error",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      } else {
-        let errorMessage = error?.message || "Unknown error.";
-        if (errorMessage.toLowerCase().includes('edge function returned a non-2xx')) {
-          errorMessage = "The analyzer returned a non‑success status. Please try again or contact support.";
-        } else if (errorMessage.toLowerCase().includes('timeout')) {
-          errorMessage = "The request timed out. Please retry in a moment.";
-        } else if (errorMessage.toLowerCase().includes('network')) {
-          errorMessage = "Network error. Please check your connection and try again.";
-        }
-        toast({ title: "Analysis failed", description: errorMessage, variant: "destructive" });
+      // Only show toast for network failures (no JSON response body)
+      let errorMessage = error?.message || "Unknown error.";
+      if (errorMessage.toLowerCase().includes('timeout')) {
+        errorMessage = "The request timed out. Please retry in a moment.";
+      } else if (errorMessage.toLowerCase().includes('network')) {
+        errorMessage = "Network error. Please check your connection and try again.";
+      } else if (errorMessage.toLowerCase().includes('fetch')) {
+        errorMessage = "Failed to connect to the server. Please check your connection and try again.";
       }
+      toast({ title: "Network error", description: errorMessage, variant: "destructive" });
     } finally {
       setLoading(false);
       setAnalyzing(false);
@@ -404,6 +383,41 @@ export default function CompetitorAnalyzer() {
             </Badge>
           )}
         </div>
+
+        {errorAlert && (
+          <Alert variant="destructive" className="relative">
+            <AlertCircle className="h-4 w-4" />
+            <button
+              onClick={() => setErrorAlert(null)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+              aria-label="Dismiss alert"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <AlertTitle>Analysis Error</AlertTitle>
+            <AlertDescription className="mt-2 space-y-2">
+              <div>
+                <strong>Stage:</strong> {errorAlert.stage}
+              </div>
+              <div>
+                <strong>Message:</strong> {errorAlert.message}
+              </div>
+              <div>
+                <strong>Request ID:</strong> <code className="text-xs">{errorAlert.request_id}</code>
+              </div>
+              {errorAlert.warnings.length > 0 && (
+                <div>
+                  <strong>Warnings:</strong>
+                  <ul className="list-disc list-inside mt-1 text-sm">
+                    {errorAlert.warnings.map((warning, idx) => (
+                      <li key={idx}>{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Card>
           <CardHeader>
