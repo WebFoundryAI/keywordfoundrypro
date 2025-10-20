@@ -57,6 +57,7 @@ interface AnalysisData {
     };
   };
   cached?: boolean;
+  warnings?: string[];
 }
 
 const FREE_LIMIT = 3;
@@ -151,7 +152,15 @@ export default function CompetitorAnalyzer() {
       if (data?.cached) {
         toast({ title: "Loaded from cache", description: "Using cached analysis results (last 24 hours)" });
       } else {
-        toast({ title: "Analysis complete", description: "Competitor report is ready." });
+        if (data?.warnings && data.warnings.length > 0) {
+          toast({ 
+            title: "Analysis complete with partial data", 
+            description: "Some data unavailable - showing available results.",
+            variant: "default"
+          });
+        } else {
+          toast({ title: "Analysis complete", description: "Competitor report is ready." });
+        }
       }
 
       // Auto-generate AI insights

@@ -35,6 +35,7 @@ interface AnalysisData {
     };
   };
   is_demo: boolean;
+  warnings?: string[];
 }
 
 export default function DemoCompetitorAnalyzer() {
@@ -100,10 +101,17 @@ export default function DemoCompetitorAnalyzer() {
         setAiInsights(insightsData.report);
       }
 
-      toast({
-        title: "Demo Analysis Complete",
-        description: "Showing limited results. Sign up for the full report!"
-      });
+      if (data?.warnings && data.warnings.length > 0) {
+        toast({
+          title: "Demo Analysis Complete (Partial Data)",
+          description: "Some data unavailable. Sign up for full access!"
+        });
+      } else {
+        toast({
+          title: "Demo Analysis Complete",
+          description: "Showing limited results. Sign up for the full report!"
+        });
+      }
 
     } catch (error: any) {
       console.error('Analysis error:', error);

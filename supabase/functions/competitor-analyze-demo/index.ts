@@ -29,12 +29,25 @@ serve(async (req) => {
     }
 
     const auth = btoa(`${login}:${password}`);
+    const warnings: string[] = [];
 
     // Fetch ranked keywords for both domains (limited to 100 for demo)
-    const [yourKeywords, competitorKeywords] = await Promise.all([
-      fetchRankedKeywords(yourDomain, auth, 100),
-      fetchRankedKeywords(competitorDomain, auth, 100)
-    ]);
+    let yourKeywords: any[] = [];
+    let competitorKeywords: any[] = [];
+    
+    try {
+      yourKeywords = await fetchRankedKeywords(yourDomain, auth, 100);
+    } catch (error) {
+      console.warn('Failed to fetch ranked keywords for your domain:', error);
+      warnings.push('keywords_your_domain_failed');
+    }
+    
+    try {
+      competitorKeywords = await fetchRankedKeywords(competitorDomain, auth, 100);
+    } catch (error) {
+      console.warn('Failed to fetch ranked keywords for competitor domain:', error);
+      warnings.push('keywords_competitor_domain_failed');
+    }
 
     // Find keyword gaps (keywords competitor ranks for but you don't)
     const yourKeywordSet = new Set(yourKeywords.map((k: any) => k.keyword));
@@ -49,21 +62,33 @@ serve(async (req) => {
       }));
 
     // Fetch backlinks
-    const [yourBacklinks, competitorBacklinks] = await Promise.all([
-      fetchBacklinkSummary(yourDomain, auth),
-      fetchBacklinkSummary(competitorDomain, auth)
-    ]);
+    let yourBacklinks = { backlinks: 0, referring_domains: 0, referring_ips: 0 };
+    let competitorBacklinks = { backlinks: 0, referring_domains: 0, referring_ips: 0 };
+    
+    try {
+      yourBacklinks = await fetchBacklinkSummary(yourDomain, auth);
+    } catch (error) {
+      console.warn('Failed to fetch backlinks for your domain:', error);
+      warnings.push('backlinks_your_domain_failed');
+    }
+    
+    try {
+      competitorBacklinks = await fetchBacklinkSummary(competitorDomain, auth);
+    } catch (error) {
+      console.warn('Failed to fetch backlinks for competitor domain:', error);
+      warnings.push('backlinks_competitor_domain_failed');
+    }
 
     // Create On-Page tasks and poll for results
-    let yourOnPage;
-    let competitorOnPage;
+    let yourOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
+    let competitorOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
     
     try {
       const yourTaskId = await createOnPageTask(yourDomain, auth);
       yourOnPage = await getOnPageSummary(yourTaskId, auth);
     } catch (error) {
       console.warn('On-Page data unavailable for your domain:', error);
-      yourOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
+      warnings.push('onpage_your_domain_unavailable');
     }
 
     try {
@@ -71,7 +96,7 @@ serve(async (req) => {
       competitorOnPage = await getOnPageSummary(competitorTaskId, auth);
     } catch (error) {
       console.warn('On-Page data unavailable for competitor domain:', error);
-      competitorOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
+      warnings.push('onpage_competitor_domain_unavailable');
     }
 
     const result = {
@@ -84,6 +109,7 @@ serve(async (req) => {
         your_domain: yourOnPage,
         competitor_domain: competitorOnPage
       },
+      warnings: warnings.length > 0 ? warnings : undefined,
       is_demo: true
     };
 
