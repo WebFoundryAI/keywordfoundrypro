@@ -229,6 +229,75 @@ export default function Troubleshooting() {
         </CardContent>
       </Card>
 
+      {/* On-Page Summary Missing Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            On-Page Summary Missing
+          </CardTitle>
+          <CardDescription>
+            Technical SEO metrics not available for one or both domains
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <h3 className="font-semibold mb-2">What you see:</h3>
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Warning notification that On-Page data is unavailable, or technical scores show as 0
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Why it happens:</h3>
+            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+              <li>The on-page crawl takes time to complete (usually 30-60 seconds)</li>
+              <li>Domain blocks crawlers or has restrictive robots.txt</li>
+              <li>Website is temporarily down or slow to respond</li>
+              <li>DataForSEO crawler encountered technical issues</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">How to fix:</h3>
+            <ol className="list-decimal list-inside space-y-2 text-sm">
+              <li className="pl-2">
+                <span className="font-medium">Wait and retry:</span>
+                <ul className="list-disc list-inside pl-6 mt-1 space-y-1">
+                  <li>Wait 5-10 minutes for the initial crawl to complete</li>
+                  <li>Run the analysis again - cached keyword data will be used</li>
+                </ul>
+              </li>
+              <li className="pl-2">
+                <span className="font-medium">Check domain accessibility:</span>
+                <ul className="list-disc list-inside pl-6 mt-1 space-y-1">
+                  <li>Verify the domain is online and accessible</li>
+                  <li>Check robots.txt isn't blocking all crawlers</li>
+                  <li>Ensure the site loads within 30 seconds</li>
+                </ul>
+              </li>
+              <li className="pl-2">
+                <span className="font-medium">Use partial results:</span>
+                <ul className="list-disc list-inside pl-6 mt-1 space-y-1">
+                  <li>Keyword gap and backlink data remain accurate</li>
+                  <li>Focus on those metrics if On-Page consistently fails</li>
+                </ul>
+              </li>
+            </ol>
+          </div>
+
+          <Alert className="border-blue-500/50 bg-blue-500/10">
+            <AlertDescription className="text-sm">
+              <strong>Note:</strong> We return partial results with a warning when the crawl isn't ready, 
+              so you can still see keyword gaps and backlink data. On-Page metrics will show as 0 or be blank.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
       {/* Additional Help */}
       <Card>
         <CardHeader>

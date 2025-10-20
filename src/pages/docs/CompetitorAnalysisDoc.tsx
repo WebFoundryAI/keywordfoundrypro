@@ -93,7 +93,6 @@ export default function CompetitorAnalysisDoc() {
                 <li><strong>Keyword:</strong> The search term</li>
                 <li><strong>Competitor Rank:</strong> The position where competitor appears (e.g., #3 means third result)</li>
                 <li><strong>Search Volume:</strong> Monthly average searches for this keyword</li>
-                <li><strong>CPC:</strong> Estimated cost-per-click in USD for paid ads</li>
                 <li><strong>Ranking URL:</strong> The specific competitor page that ranks for this keyword</li>
               </ul>
             </div>
