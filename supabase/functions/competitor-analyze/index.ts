@@ -173,12 +173,27 @@ serve(async (req) => {
       }));
 
     // Fetch backlinks and on-page summaries
-    const [yourBacklinks, competitorBacklinks, yourOnPage, competitorOnPage] = await Promise.all([
+    const [yourBacklinks, competitorBacklinks] = await Promise.all([
       fetchBacklinkSummary(yourHost, user.id),
-      fetchBacklinkSummary(competitorHost, user.id),
-      fetchOnPageSummary(yourHost, user.id),
-      fetchOnPageSummary(competitorHost, user.id)
+      fetchBacklinkSummary(competitorHost, user.id)
     ]);
+
+    // Fetch On-Page data with fallback to neutral values if unavailable
+    let yourOnPage;
+    try {
+      yourOnPage = await fetchOnPageSummary(yourHost, user.id);
+    } catch (error) {
+      console.warn('On-Page data unavailable for your domain:', error);
+      yourOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
+    }
+
+    let competitorOnPage;
+    try {
+      competitorOnPage = await fetchOnPageSummary(competitorHost, user.id);
+    } catch (error) {
+      console.warn('On-Page data unavailable for competitor domain:', error);
+      competitorOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
+    }
 
     const result = {
       keyword_gap_list: keywordGaps,
