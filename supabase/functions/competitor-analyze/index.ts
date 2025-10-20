@@ -248,13 +248,15 @@ serve(async (req) => {
     const yourKeywordSet = new Set(yourKeywords.map((k: any) => k.keyword));
     const keywordGaps = competitorKeywords
       .filter((k: any) => !yourKeywordSet.has(k.keyword))
-      .map((k: any) => ({
-        keyword: k.keyword,
-        position: k.rank_absolute || k.rank || null,
-        search_volume: k.search_volume || k.keyword_info?.search_volume || 0,
-        cpc: k.cpc || 0,
-        ranking_url: k.ranked_serp_element?.serp_item?.url || k.keyword_data?.url || null
-      }));
+      .map((k: any) => {
+        const url = k?.ranked_serp_element?.serp_item?.url || k?.url || null;
+        return {
+          keyword: k.keyword,
+          competitor_rank: k.rank_absolute || k.rank,
+          search_volume: k.search_volume || 0,
+          competitor_url: url
+        };
+      });
 
     // Fetch backlinks
     let yourBacklinks = { backlinks: 0, referring_domains: 0, referring_ips: 0 };
