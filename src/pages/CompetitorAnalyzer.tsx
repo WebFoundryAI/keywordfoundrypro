@@ -559,7 +559,16 @@ export default function CompetitorAnalyzer() {
                   <span>Keyword Gap Analysis</span>
                   <Badge variant="secondary">{sortedKeywords.length} keywords</Badge>
                 </CardTitle>
-                <CardDescription>Keywords where your competitor ranks but you don't</CardDescription>
+                <CardDescription className="flex items-center gap-2">
+                  Keywords where your competitor ranks but you don't
+                  <a 
+                    href="/docs/competitor-analysis" 
+                    target="_blank"
+                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    How we calculate this
+                  </a>
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex justify-end gap-2 mb-4">
