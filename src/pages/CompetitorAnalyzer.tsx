@@ -393,6 +393,7 @@ export default function CompetitorAnalyzer() {
               <div>
                 <label className="text-sm font-medium mb-2 block">Your Domain</label>
                 <Input
+                  data-testid="your-domain-input"
                   placeholder="example.com"
                   value={yourDomain}
                   onChange={(e) => setYourDomain(e.target.value)}
@@ -402,6 +403,7 @@ export default function CompetitorAnalyzer() {
               <div>
                 <label className="text-sm font-medium mb-2 block">Competitor Domain</label>
                 <Input
+                  data-testid="competitor-domain-input"
                   placeholder="competitor.com"
                   value={competitorDomain}
                   onChange={(e) => setCompetitorDomain(e.target.value)}
@@ -411,6 +413,7 @@ export default function CompetitorAnalyzer() {
             </div>
             
             <Button 
+              data-testid="compare-button"
               onClick={handleCompare} 
               disabled={loading || !yourDomain || !competitorDomain}
               className="w-full"
@@ -492,7 +495,7 @@ export default function CompetitorAnalyzer() {
               </Card>
             </div>
 
-            <Card>
+            <Card data-testid="keyword-gap-card">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Keyword Gap Analysis</span>
@@ -524,7 +527,7 @@ export default function CompetitorAnalyzer() {
                   </Button>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full" data-testid="keyword-gap-table">
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('keyword')}>
@@ -590,7 +593,7 @@ export default function CompetitorAnalyzer() {
             )}
 
             <div className="grid md:grid-cols-2 gap-4">
-              <Card>
+              <Card data-testid="backlinks-chart-card">
                 <CardHeader>
                   <CardTitle>Backlink Comparison</CardTitle>
                 </CardHeader>
