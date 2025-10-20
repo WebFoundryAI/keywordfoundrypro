@@ -31,9 +31,9 @@ function isValidUrl(url: string, requireHttps: boolean = false): boolean {
  * Returns the config if valid, or logs warnings in development
  */
 export function validateEnv(): EnvConfig | null {
-  // Hardcoded values from Supabase connection
-  const supabaseUrl = 'https://vhjffdzroebdkbmvcpgv.supabase.co';
-  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZoamZmZHpyb2ViZGtibXZjcGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzA0MDgsImV4cCI6MjA3NDcwNjQwOH0.jxNm1b-5oJJTzFFHpmZ1BNYZGb2lJuphDlmY3Si4tHc';
+  // Get values from environment variables
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vhjffdzroebdkbmvcpgv.supabase.co';
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
   
   // App base URL from env (with fallback)
   const appBaseUrl = import.meta.env.VITE_APP_BASE_URL || window.location.origin;
@@ -47,7 +47,7 @@ export function validateEnv(): EnvConfig | null {
 
   // Validate Supabase Anon Key
   if (!supabaseAnonKey || supabaseAnonKey.length < 20) {
-    errors.push('VITE_SUPABASE_ANON_KEY must be a non-empty string');
+    errors.push('VITE_SUPABASE_ANON_KEY must be a non-empty string (check your .env file)');
   }
 
   // Validate App Base URL
@@ -60,7 +60,8 @@ export function validateEnv(): EnvConfig | null {
     console.warn(
       '⚠️  Environment Configuration Issues:\n' +
       errors.map(e => `   - ${e}`).join('\n') +
-      '\n\nPlease check your .env file. See .env.example for required format.'
+      '\n\nPlease check your .env file. See .env.example for required format.' +
+      '\n\nIMPORTANT: Never hard-code API keys in source files. Always use environment variables.'
     );
   }
 
