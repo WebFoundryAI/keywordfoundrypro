@@ -172,24 +172,27 @@ serve(async (req) => {
         cpc: k.cpc || 0
       }));
 
-    // Fetch backlinks and on-page summaries
+    // Fetch backlinks
     const [yourBacklinks, competitorBacklinks] = await Promise.all([
       fetchBacklinkSummary(yourHost, user.id),
       fetchBacklinkSummary(competitorHost, user.id)
     ]);
 
-    // Fetch On-Page data with fallback to neutral values if unavailable
+    // Create On-Page tasks for both domains
     let yourOnPage;
+    let competitorOnPage;
+    
     try {
-      yourOnPage = await fetchOnPageSummary(yourHost, user.id);
+      const yourTaskId = await createOnPageTask(yourHost, user.id);
+      yourOnPage = await getOnPageSummary(yourTaskId, user.id);
     } catch (error) {
       console.warn('On-Page data unavailable for your domain:', error);
       yourOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
     }
 
-    let competitorOnPage;
     try {
-      competitorOnPage = await fetchOnPageSummary(competitorHost, user.id);
+      const competitorTaskId = await createOnPageTask(competitorHost, user.id);
+      competitorOnPage = await getOnPageSummary(competitorTaskId, user.id);
     } catch (error) {
       console.warn('On-Page data unavailable for competitor domain:', error);
       competitorOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
@@ -304,25 +307,69 @@ async function fetchBacklinkSummary(domain: string, userId: string) {
   return { backlinks: 0, referring_domains: 0, referring_ips: 0 };
 }
 
-async function fetchOnPageSummary(domain: string, userId: string) {
+async function createOnPageTask(domain: string, userId: string): Promise<string> {
   const data = await callDataForSEO({
-    endpoint: '/on_page/summary',
+    endpoint: '/v3/on_page/task_post',
     payload: [{
-      id: domain
+      target: `https://${domain}`,
+      max_crawl_pages: 50,
+      force_sitewide_checks: true
     }],
     module: MODULE_NAME,
     userId,
   });
 
-  if (data.tasks?.[0]?.result?.[0]) {
-    const result = data.tasks[0].result[0];
-    return {
-      pages_crawled: result.crawled_pages || 0,
-      internal_links: result.links_internal || 0,
-      external_links: result.links_external || 0,
-      images: result.images || 0,
-      tech_score: Math.round((result.crawled_pages / (result.crawled_pages + result.pages_with_errors || 1)) * 100)
-    };
+  if (data.tasks?.[0]?.id) {
+    return data.tasks[0].id;
   }
+  throw new Error('Failed to create On-Page task');
+}
+
+async function getOnPageSummary(taskId: string, userId: string) {
+  const maxPolls = 6;
+  const pollDelay = 10000; // 10 seconds
+
+  for (let i = 0; i < maxPolls; i++) {
+    try {
+      const data = await callDataForSEO({
+        endpoint: `/v3/on_page/summary/${taskId}`,
+        payload: [],
+        module: MODULE_NAME,
+        userId,
+      });
+
+      if (data.tasks?.[0]?.result?.[0]) {
+        const result = data.tasks[0].result[0];
+        const crawlProgress = result.crawl_progress;
+
+        // Check if crawl is finished
+        if (crawlProgress === 'finished') {
+          return {
+            pages_crawled: result.crawled_pages || 0,
+            internal_links: result.links_internal || 0,
+            external_links: result.links_external || 0,
+            images: result.images || 0,
+            tech_score: result.onpage_score || 0
+          };
+        }
+
+        // If not finished and not last poll, wait before next attempt
+        if (i < maxPolls - 1) {
+          console.log(`On-Page task ${taskId} not finished (${crawlProgress}), polling again in ${pollDelay/1000}s...`);
+          await new Promise(resolve => setTimeout(resolve, pollDelay));
+        }
+      }
+    } catch (error) {
+      console.error(`Error polling On-Page task ${taskId}:`, error);
+      if (i === maxPolls - 1) {
+        throw error;
+      }
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, pollDelay));
+    }
+  }
+
+  // If we've exhausted all polls without completion, return neutral object
+  console.warn(`On-Page task ${taskId} did not complete after ${maxPolls} polls`);
   return { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
 }

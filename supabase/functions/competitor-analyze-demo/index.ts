@@ -48,13 +48,31 @@ serve(async (req) => {
         cpc: k.cpc || 0
       }));
 
-    // Fetch backlinks and on-page summaries
-    const [yourBacklinks, competitorBacklinks, yourOnPage, competitorOnPage] = await Promise.all([
+    // Fetch backlinks
+    const [yourBacklinks, competitorBacklinks] = await Promise.all([
       fetchBacklinkSummary(yourDomain, auth),
-      fetchBacklinkSummary(competitorDomain, auth),
-      fetchOnPageSummary(yourDomain, auth),
-      fetchOnPageSummary(competitorDomain, auth)
+      fetchBacklinkSummary(competitorDomain, auth)
     ]);
+
+    // Create On-Page tasks and poll for results
+    let yourOnPage;
+    let competitorOnPage;
+    
+    try {
+      const yourTaskId = await createOnPageTask(yourDomain, auth);
+      yourOnPage = await getOnPageSummary(yourTaskId, auth);
+    } catch (error) {
+      console.warn('On-Page data unavailable for your domain:', error);
+      yourOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
+    }
+
+    try {
+      const competitorTaskId = await createOnPageTask(competitorDomain, auth);
+      competitorOnPage = await getOnPageSummary(competitorTaskId, auth);
+    } catch (error) {
+      console.warn('On-Page data unavailable for competitor domain:', error);
+      competitorOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
+    }
 
     const result = {
       keyword_gap_list: keywordGaps,
@@ -130,28 +148,74 @@ async function fetchBacklinkSummary(domain: string, auth: string) {
   return { backlinks: 0, referring_domains: 0, referring_ips: 0 };
 }
 
-async function fetchOnPageSummary(domain: string, auth: string) {
-  const response = await fetch('https://api.dataforseo.com/v3/on_page/summary', {
+async function createOnPageTask(domain: string, auth: string): Promise<string> {
+  const response = await fetch('https://api.dataforseo.com/v3/on_page/task_post', {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${auth}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify([{
-      id: domain
+      target: `https://${domain}`,
+      max_crawl_pages: 50,
+      force_sitewide_checks: true
     }])
   });
 
   const data = await response.json();
-  if (data.tasks?.[0]?.result?.[0]) {
-    const result = data.tasks[0].result[0];
-    return {
-      pages_crawled: result.crawled_pages || 0,
-      internal_links: result.links_internal || 0,
-      external_links: result.links_external || 0,
-      images: result.images || 0,
-      tech_score: Math.round((result.crawled_pages / (result.crawled_pages + result.pages_with_errors || 1)) * 100)
-    };
+  if (data.tasks?.[0]?.id) {
+    return data.tasks[0].id;
   }
+  throw new Error('Failed to create On-Page task');
+}
+
+async function getOnPageSummary(taskId: string, auth: string) {
+  const maxPolls = 6;
+  const pollDelay = 10000; // 10 seconds
+
+  for (let i = 0; i < maxPolls; i++) {
+    try {
+      const response = await fetch(`https://api.dataforseo.com/v3/on_page/summary/${taskId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      if (data.tasks?.[0]?.result?.[0]) {
+        const result = data.tasks[0].result[0];
+        const crawlProgress = result.crawl_progress;
+
+        // Check if crawl is finished
+        if (crawlProgress === 'finished') {
+          return {
+            pages_crawled: result.crawled_pages || 0,
+            internal_links: result.links_internal || 0,
+            external_links: result.links_external || 0,
+            images: result.images || 0,
+            tech_score: result.onpage_score || 0
+          };
+        }
+
+        // If not finished and not last poll, wait before next attempt
+        if (i < maxPolls - 1) {
+          console.log(`On-Page task ${taskId} not finished (${crawlProgress}), polling again in ${pollDelay/1000}s...`);
+          await new Promise(resolve => setTimeout(resolve, pollDelay));
+        }
+      }
+    } catch (error) {
+      console.error(`Error polling On-Page task ${taskId}:`, error);
+      if (i === maxPolls - 1) {
+        throw error;
+      }
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, pollDelay));
+    }
+  }
+
+  // If we've exhausted all polls without completion, return neutral object
+  console.warn(`On-Page task ${taskId} did not complete after ${maxPolls} polls`);
   return { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
 }
