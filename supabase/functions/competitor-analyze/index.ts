@@ -37,9 +37,11 @@ serve(async (req) => {
   }
 
   try {
-    const { yourDomain, competitorDomain } = await req.json();
+    const { yourDomain, competitorDomain, location_code, language_code } = await req.json();
     const yourHost = normalize(yourDomain);
     const competitorHost = normalize(competitorDomain);
+    const locationCode = location_code || 2840;
+    const languageCode = language_code || 'en';
     
     if (!yourHost || !competitorHost) {
       return new Response(
@@ -163,14 +165,14 @@ serve(async (req) => {
     let competitorKeywords: any[] = [];
     
     try {
-      yourKeywords = await fetchRankedKeywords(yourHost, user.id);
+      yourKeywords = await fetchRankedKeywords(yourHost, user.id, locationCode, languageCode);
     } catch (error) {
       console.warn('Failed to fetch ranked keywords for your domain:', error);
       warnings.push('keywords_your_domain_failed');
     }
     
     try {
-      competitorKeywords = await fetchRankedKeywords(competitorHost, user.id);
+      competitorKeywords = await fetchRankedKeywords(competitorHost, user.id, locationCode, languageCode);
     } catch (error) {
       console.warn('Failed to fetch ranked keywords for competitor domain:', error);
       warnings.push('keywords_competitor_domain_failed');
@@ -295,13 +297,13 @@ serve(async (req) => {
   }
 });
 
-async function fetchRankedKeywords(domain: string, userId: string) {
+async function fetchRankedKeywords(domain: string, userId: string, locationCode: number = 2840, languageCode: string = 'en') {
   const data = await callDataForSEO({
     endpoint: '/dataforseo_labs/google/ranked_keywords/live',
     payload: [{
       target: domain,
-      location_code: 2840,
-      language_code: 'en',
+      location_code: locationCode,
+      language_code: languageCode,
       limit: 1000
     }],
     module: MODULE_NAME,

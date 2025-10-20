@@ -65,6 +65,8 @@ const FREE_LIMIT = 3;
 export default function CompetitorAnalyzer() {
   const [yourDomain, setYourDomain] = useState("");
   const [competitorDomain, setCompetitorDomain] = useState("");
+  const [locationCode, setLocationCode] = useState(() => localStorage.getItem("kfp_loc_code") || "");
+  const [languageCode, setLanguageCode] = useState(() => localStorage.getItem("kfp_lang_code") || "");
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [generatingInsights, setGeneratingInsights] = useState(false);
@@ -107,7 +109,17 @@ export default function CompetitorAnalyzer() {
         return v.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*/, '');
       }
     };
-    const payload = { yourDomain: normalize(yourDomain), competitorDomain: normalize(competitorDomain) };
+    
+    // Save location/language to localStorage
+    if (locationCode) localStorage.setItem("kfp_loc_code", locationCode);
+    if (languageCode) localStorage.setItem("kfp_lang_code", languageCode);
+    
+    const payload: any = { 
+      yourDomain: normalize(yourDomain), 
+      competitorDomain: normalize(competitorDomain) 
+    };
+    if (locationCode) payload.location_code = parseInt(locationCode, 10);
+    if (languageCode) payload.language_code = languageCode;
 
     // Pre-check local badge if available
     if (profile) {
@@ -409,6 +421,31 @@ export default function CompetitorAnalyzer() {
                   onChange={(e) => setCompetitorDomain(e.target.value)}
                   disabled={loading}
                 />
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Location Code</label>
+                <Input
+                  type="number"
+                  placeholder="2840"
+                  value={locationCode}
+                  onChange={(e) => setLocationCode(e.target.value)}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground mt-1">DataForSEO location_code</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Language Code</label>
+                <Input
+                  type="text"
+                  placeholder="en"
+                  value={languageCode}
+                  onChange={(e) => setLanguageCode(e.target.value)}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground mt-1">DataForSEO language_code</p>
               </div>
             </div>
             
