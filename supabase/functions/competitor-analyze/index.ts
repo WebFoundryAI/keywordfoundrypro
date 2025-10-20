@@ -59,36 +59,21 @@ serve(async (req) => {
     const yourHost = normalize(yourDomain);
     const competitorHost = normalize(competitorDomain);
     
-    // Validate and apply defaults
-    let locationCode = 2840;
-    if (location_code !== undefined && location_code !== null && location_code !== '') {
-      const parsed = typeof location_code === 'number' ? location_code : parseInt(String(location_code), 10);
-      if (Number.isFinite(parsed) && parsed > 0) {
-        locationCode = parsed;
-      } else {
-        console.warn('Invalid location_code provided, using default 2840');
-      }
-    }
+    // Sanitize and validate parameters
+    const locationCode = Number.isFinite(location_code) && location_code > 0 
+      ? Math.floor(location_code) 
+      : 2840;
     
-    let languageCode = 'en';
-    if (language_code && typeof language_code === 'string') {
-      const trimmed = language_code.trim();
-      if (trimmed.length >= 2 && trimmed.length <= 10 && /^[a-z-]+$/.test(trimmed)) {
-        languageCode = trimmed;
-      } else {
-        console.warn('Invalid language_code provided, using default "en"');
-      }
-    }
+    const languageCode = (typeof language_code === 'string' && /^[a-z-]{2,10}$/i.test(language_code))
+      ? language_code.toLowerCase()
+      : 'en';
     
-    let keywordLimit = 300;
-    if (limit !== undefined && limit !== null && limit !== '') {
-      const parsed = typeof limit === 'number' ? limit : parseInt(String(limit), 10);
-      if (Number.isFinite(parsed) && parsed >= 50 && parsed <= 1000) {
-        keywordLimit = parsed;
-      } else {
-        console.warn('Invalid limit provided (must be 50-1000), using default 300');
-      }
-    }
+    const keywordLimit = Number.isFinite(limit)
+      ? Math.min(Math.max(Math.floor(limit), 50), 1000)
+      : 300;
+    
+    // Check if using default parameters (for caching)
+    const isDefaultParams = locationCode === 2840 && languageCode === 'en' && keywordLimit === 300;
     
     if (!yourHost || !competitorHost) {
       return new Response(
@@ -178,59 +163,68 @@ serve(async (req) => {
       }, 200);
     }
 
-    // Compute checksum for cache deduplication
-    const checksum = await computeChecksum(yourHost, competitorHost, locationCode, languageCode, keywordLimit);
-    console.log('Request checksum:', checksum);
-
-    // Check competitor_cache for recent identical request (24-hour window)
-    const cacheExpiryTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: cachedEntry } = await supabaseClient
-      .from('competitor_cache')
-      .select('payload')
-      .eq('checksum', checksum)
-      .gt('created_at', cacheExpiryTime)
-      .maybeSingle();
-
-    if (cachedEntry) {
-      console.log('Cache hit - returning cached payload');
-      return new Response(
-        JSON.stringify({
-          ...cachedEntry.payload,
-          warnings: ['cache_hit'],
-          cached: true
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check cache first (24-hour cache)
-    const expiryTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: cachedData } = await supabaseClient
-      .from('competitor_analysis')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('your_domain', yourHost)
-      .eq('competitor_domain', competitorHost)
-      .gt('created_at', expiryTime)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (cachedData) {
-      console.log('Returning cached data');
-      return new Response(
-        JSON.stringify({
-          keyword_gap_list: cachedData.keyword_gap_list,
-          backlink_summary: cachedData.backlink_summary,
-          onpage_summary: cachedData.onpage_summary,
-          warnings: cachedData.warnings,
-          cached: true
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const warnings: string[] = [];
+    
+    // Only use cache for default parameters to avoid mixing results
+    let cachedData = null;
+    let cachedEntry = null;
+    
+    if (isDefaultParams) {
+      // Compute checksum for cache deduplication
+      const checksum = await computeChecksum(yourHost, competitorHost, locationCode, languageCode, keywordLimit);
+      console.log('Request checksum:', checksum);
+
+      // Check competitor_cache for recent identical request (24-hour window)
+      const cacheExpiryTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: entry } = await supabaseClient
+        .from('competitor_cache')
+        .select('payload')
+        .eq('checksum', checksum)
+        .gt('created_at', cacheExpiryTime)
+        .maybeSingle();
+
+      if (entry) {
+        console.log('Cache hit - returning cached payload');
+        return new Response(
+          JSON.stringify({
+            ...entry.payload,
+            warnings: ['cache_hit'],
+            cached: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check cache first (24-hour cache)
+      const expiryTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabaseClient
+        .from('competitor_analysis')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('your_domain', yourHost)
+        .eq('competitor_domain', competitorHost)
+        .gt('created_at', expiryTime)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (data) {
+        console.log('Returning cached data');
+        return new Response(
+          JSON.stringify({
+            keyword_gap_list: data.keyword_gap_list,
+            backlink_summary: data.backlink_summary,
+            onpage_summary: data.onpage_summary,
+            warnings: data.warnings,
+            cached: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      console.log('Cache bypassed due to custom parameters');
+      warnings.push('cache_bypass_custom_params');
+    }
     
     // Fetch ranked keywords for both domains
     let yourKeywords: any[] = [];
@@ -298,30 +292,35 @@ serve(async (req) => {
       warnings
     };
 
-    // Store in cache
-    await supabaseClient.from('competitor_analysis').insert({
-      user_id: user.id,
-      your_domain: yourHost,
-      competitor_domain: competitorHost,
-      keyword_gap_list: result.keyword_gap_list,
-      backlink_summary: result.backlink_summary,
-      onpage_summary: result.onpage_summary,
-      warnings: result.warnings,
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-    });
-
-    // Store in competitor_cache only if no warnings (full success)
-    if (warnings.length === 0) {
-      console.log('Storing result in competitor_cache with checksum:', checksum);
-      await supabaseClient.from('competitor_cache').upsert({
+    // Store in cache only if using default parameters
+    if (isDefaultParams) {
+      await supabaseClient.from('competitor_analysis').insert({
         user_id: user.id,
-        checksum: checksum,
-        payload: result
-      }, {
-        onConflict: 'checksum'
+        your_domain: yourHost,
+        competitor_domain: competitorHost,
+        keyword_gap_list: result.keyword_gap_list,
+        backlink_summary: result.backlink_summary,
+        onpage_summary: result.onpage_summary,
+        warnings: result.warnings,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       });
+
+      // Store in competitor_cache only if no warnings (full success)
+      if (warnings.length === 0 || (warnings.length === 1 && warnings[0] === 'cache_bypass_custom_params')) {
+        const checksum = await computeChecksum(yourHost, competitorHost, locationCode, languageCode, keywordLimit);
+        console.log('Storing result in competitor_cache with checksum:', checksum);
+        await supabaseClient.from('competitor_cache').upsert({
+          user_id: user.id,
+          checksum: checksum,
+          payload: result
+        }, {
+          onConflict: 'checksum'
+        });
+      } else {
+        console.log('Skipping cache storage due to warnings:', warnings);
+      }
     } else {
-      console.log('Skipping cache storage due to warnings:', warnings);
+      console.log('Skipping cache storage due to custom parameters');
     }
 
     // Update freemium usage
