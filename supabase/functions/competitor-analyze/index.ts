@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { callDataForSEO, DataForSEOError } from "../_shared/dataforseo/client.ts";
+import { retryFetch } from "../_shared/retry.ts";
 import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
 const corsHeaders = {
@@ -368,30 +369,6 @@ serve(async (req) => {
   }
 });
 
-// Retry helper for direct DataForSEO calls
-async function retryFetch(url: string, init: RequestInit, options = { tries: 3, baseDelay: 400 }) {
-  const auth = btoa(`${Deno.env.get('DATAFORSEO_LOGIN')}:${Deno.env.get('DATAFORSEO_PASSWORD')}`);
-  const headers = { ...init.headers, 'Authorization': `Basic ${auth}` };
-  
-  for (let attempt = 1; attempt <= options.tries; attempt++) {
-    try {
-      const res = await fetch(url, { ...init, headers });
-      if (res.ok || (res.status !== 429 && res.status < 500)) {
-        return res;
-      }
-      if (attempt < options.tries) {
-        const delay = options.baseDelay * Math.pow(2, attempt - 1) + Math.random() * 200;
-        await new Promise(r => setTimeout(r, delay));
-      }
-    } catch (err) {
-      if (attempt === options.tries) throw err;
-      const delay = options.baseDelay * Math.pow(2, attempt - 1) + Math.random() * 200;
-      await new Promise(r => setTimeout(r, delay));
-    }
-  }
-  throw new Error('Max retries exceeded');
-}
-
 function extractTaskId(data: any): string | null {
   try {
     return data?.tasks?.[0]?.result?.[0]?.id
@@ -450,7 +427,10 @@ async function createOnPageTask(domain: string, auth: string): Promise<string> {
   }];
   const res = await retryFetch('https://api.dataforseo.com/v3/on_page/task_post', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/json' 
+    },
     body: JSON.stringify(body)
   });
   const data = await res.json();
@@ -461,7 +441,11 @@ async function createOnPageTask(domain: string, auth: string): Promise<string> {
 
 async function getOnPageSummary(taskId: string, auth: string) {
   const url = `https://api.dataforseo.com/v3/on_page/summary/${taskId}`;
-  const res = await retryFetch(url, { headers: {} });
+  const res = await retryFetch(url, { 
+    headers: { 
+      'Authorization': `Basic ${auth}`
+    } 
+  });
   const data = await res.json();
   const r = data?.tasks?.[0]?.result?.[0];
   if (!r) throw new Error('onpage_summary_unavailable');
