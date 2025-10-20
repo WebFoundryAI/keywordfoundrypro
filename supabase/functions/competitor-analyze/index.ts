@@ -37,7 +37,7 @@ serve(async (req) => {
   }
 
   try {
-    const { yourDomain, competitorDomain, location_code, language_code } = await req.json();
+    const { yourDomain, competitorDomain, location_code, language_code, limit } = await req.json();
     const yourHost = normalize(yourDomain);
     const competitorHost = normalize(competitorDomain);
     
@@ -59,6 +59,16 @@ serve(async (req) => {
         languageCode = trimmed;
       } else {
         console.warn('Invalid language_code provided, using default "en"');
+      }
+    }
+    
+    let keywordLimit = 300;
+    if (limit !== undefined && limit !== null && limit !== '') {
+      const parsed = typeof limit === 'number' ? limit : parseInt(String(limit), 10);
+      if (Number.isFinite(parsed) && parsed >= 50 && parsed <= 1000) {
+        keywordLimit = parsed;
+      } else {
+        console.warn('Invalid limit provided (must be 50-1000), using default 300');
       }
     }
     
@@ -184,14 +194,14 @@ serve(async (req) => {
     let competitorKeywords: any[] = [];
     
     try {
-      yourKeywords = await fetchRankedKeywords(yourHost, user.id, locationCode, languageCode);
+      yourKeywords = await fetchRankedKeywords(yourHost, user.id, locationCode, languageCode, keywordLimit);
     } catch (error) {
       console.warn('Failed to fetch ranked keywords for your domain:', error);
       warnings.push('keywords_your_domain_failed');
     }
     
     try {
-      competitorKeywords = await fetchRankedKeywords(competitorHost, user.id, locationCode, languageCode);
+      competitorKeywords = await fetchRankedKeywords(competitorHost, user.id, locationCode, languageCode, keywordLimit);
     } catch (error) {
       console.warn('Failed to fetch ranked keywords for competitor domain:', error);
       warnings.push('keywords_competitor_domain_failed');
@@ -316,14 +326,14 @@ serve(async (req) => {
   }
 });
 
-async function fetchRankedKeywords(domain: string, userId: string, locationCode: number = 2840, languageCode: string = 'en') {
+async function fetchRankedKeywords(domain: string, userId: string, locationCode: number = 2840, languageCode: string = 'en', limit: number = 300) {
   const data = await callDataForSEO({
     endpoint: '/dataforseo_labs/google/ranked_keywords/live',
     payload: [{
       target: domain,
       location_code: locationCode,
       language_code: languageCode,
-      limit: 1000
+      limit: limit
     }],
     module: MODULE_NAME,
     userId,

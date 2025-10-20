@@ -67,6 +67,7 @@ export default function CompetitorAnalyzer() {
   const [competitorDomain, setCompetitorDomain] = useState("");
   const [locationCode, setLocationCode] = useState(() => localStorage.getItem("kfp_loc_code") || "");
   const [languageCode, setLanguageCode] = useState(() => localStorage.getItem("kfp_lang_code") || "");
+  const [limit, setLimit] = useState(() => localStorage.getItem("kfp_limit") || "300");
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [generatingInsights, setGeneratingInsights] = useState(false);
@@ -110,9 +111,10 @@ export default function CompetitorAnalyzer() {
       }
     };
     
-    // Save location/language to localStorage
+    // Save location/language/limit to localStorage
     if (locationCode) localStorage.setItem("kfp_loc_code", locationCode);
     if (languageCode) localStorage.setItem("kfp_lang_code", languageCode);
+    if (limit) localStorage.setItem("kfp_limit", limit);
     
     const payload: any = { 
       yourDomain: normalize(yourDomain), 
@@ -120,6 +122,7 @@ export default function CompetitorAnalyzer() {
     };
     if (locationCode) payload.location_code = parseInt(locationCode, 10);
     if (languageCode) payload.language_code = languageCode;
+    if (limit) payload.limit = parseInt(limit, 10);
 
     // Pre-check local badge if available
     if (profile) {
@@ -447,6 +450,21 @@ export default function CompetitorAnalyzer() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">DataForSEO language_code</p>
               </div>
+            </div>
+            
+            <div className="mb-4">
+              <label className="text-sm font-medium mb-2 block">Top N Keywords</label>
+              <Input
+                type="number"
+                min="50"
+                max="1000"
+                step="50"
+                placeholder="300"
+                value={limit}
+                onChange={(e) => setLimit(e.target.value)}
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Limits per domain; higher N uses more credits.</p>
             </div>
             
             <Button 
