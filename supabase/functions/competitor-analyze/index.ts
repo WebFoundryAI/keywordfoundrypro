@@ -58,25 +58,35 @@ serve(async (req) => {
   const warnings: string[] = [];
 
   try {
-    const { yourDomain, competitorDomain, location_code, language_code, limit } = await req.json();
+    const body = await req.json();
+    const { yourDomain, competitorDomain } = body;
     const yourHost = normalize(yourDomain);
     const competitorHost = normalize(competitorDomain);
     
-    // Sanitize and validate parameters
-    const locationCode = Number.isFinite(location_code) && location_code > 0 
-      ? Math.floor(location_code) 
+    // Sanitize and validate parameters with fallback tracking
+    const loc = Number.isFinite(+body.location_code) && +body.location_code > 0 
+      ? Math.floor(+body.location_code) 
       : 2840;
+    if (body.location_code !== undefined && loc !== +body.location_code) {
+      warnings.push('param_location_code_fallback');
+    }
     
-    const languageCode = (typeof language_code === 'string' && /^[a-z-]{2,10}$/i.test(language_code))
-      ? language_code.toLowerCase()
+    const lang = (typeof body.language_code === 'string' && /^[a-z-]{2,10}$/i.test(body.language_code))
+      ? body.language_code.toLowerCase()
       : 'en';
+    if (body.language_code !== undefined && lang !== body.language_code?.toLowerCase()) {
+      warnings.push('param_language_code_fallback');
+    }
     
-    const keywordLimit = Number.isFinite(limit)
-      ? Math.min(Math.max(Math.floor(limit), 50), 1000)
+    const lim = Number.isFinite(+body.limit)
+      ? Math.min(Math.max(Math.floor(+body.limit), 50), 1000)
       : 300;
+    if (body.limit !== undefined && lim !== +body.limit) {
+      warnings.push('param_limit_fallback');
+    }
     
     // Check if using default parameters (for caching)
-    const isDefaultParams = locationCode === 2840 && languageCode === 'en' && keywordLimit === 300;
+    const isDefaultParams = loc === 2840 && lang === 'en' && lim === 300;
     
     if (!yourHost || !competitorHost) {
       return json({ 
@@ -182,7 +192,7 @@ serve(async (req) => {
     
     if (isDefaultParams) {
       // Compute checksum for cache deduplication
-      const checksum = await computeChecksum(yourHost, competitorHost, locationCode, languageCode, keywordLimit);
+      const checksum = await computeChecksum(yourHost, competitorHost, loc, lang, lim);
       console.log('Request checksum:', checksum);
 
       // Check competitor_cache for recent identical request (24-hour window)
@@ -244,14 +254,14 @@ serve(async (req) => {
     let competitorKeywords: any[] = [];
     
     try {
-      yourKeywords = await fetchRankedKeywords(yourHost, user.id, locationCode, languageCode, keywordLimit);
+      yourKeywords = await fetchRankedKeywords(yourHost, user.id, loc, lang, lim);
     } catch (error: any) {
       console.error('[competitor-analyze]', request_id, 'keywords_your_domain', String(error?.message || error));
       warnings.push('keywords_your_domain_failed');
     }
     
     try {
-      competitorKeywords = await fetchRankedKeywords(competitorHost, user.id, locationCode, languageCode, keywordLimit);
+      competitorKeywords = await fetchRankedKeywords(competitorHost, user.id, loc, lang, lim);
     } catch (error: any) {
       console.error('[competitor-analyze]', request_id, 'keywords_competitor', String(error?.message || error));
       warnings.push('keywords_competitor_domain_failed');
@@ -322,7 +332,7 @@ serve(async (req) => {
 
       // Store in competitor_cache only if no warnings (full success)
       if (warnings.length === 0 || (warnings.length === 1 && warnings[0] === 'cache_bypass_custom_params')) {
-        const checksum = await computeChecksum(yourHost, competitorHost, locationCode, languageCode, keywordLimit);
+        const checksum = await computeChecksum(yourHost, competitorHost, loc, lang, lim);
         console.log('Storing result in competitor_cache with checksum:', checksum);
         await supabaseClient.from('competitor_cache').upsert({
           user_id: user.id,
