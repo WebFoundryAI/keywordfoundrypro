@@ -96,6 +96,19 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    
+    // Health check endpoint
+    if (body.op === 'health') {
+      return json({
+        ok: true,
+        request_id,
+        warnings: [],
+        data: {
+          d4s_creds_present: !!(Deno.env.get('DATAFORSEO_LOGIN') && Deno.env.get('DATAFORSEO_PASSWORD'))
+        }
+      }, 200);
+    }
+    
     const { yourDomain, competitorDomain } = body;
     const yourHost = normalize(yourDomain);
     const competitorHost = normalize(competitorDomain);
