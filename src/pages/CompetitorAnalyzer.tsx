@@ -24,10 +24,9 @@ import {
 interface AnalysisData {
   keyword_gap_list: Array<{
     keyword: string;
-    position: number;
+    competitor_rank: number;
     search_volume: number;
-    cpc: number;
-    ranking_url?: string | null;
+    competitor_url?: string | null;
   }>;
   backlink_summary: {
     your_domain: {
@@ -74,7 +73,7 @@ export default function CompetitorAnalyzer() {
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [aiInsights, setAiInsights] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<'keyword' | 'position' | 'search_volume' | 'cpc'>('search_volume');
+  const [sortField, setSortField] = useState<'keyword' | 'competitor_rank' | 'search_volume'>('search_volume');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
@@ -286,11 +285,11 @@ export default function CompetitorAnalyzer() {
   };
 
   const sortedKeywords = analysisData?.keyword_gap_list.slice().sort((a, b) => {
-    const aVal = a[sortField] as number;
-    const bVal = b[sortField] as number;
     if (sortField === 'keyword') {
       return sortOrder === 'asc' ? a.keyword.localeCompare(b.keyword) : b.keyword.localeCompare(a.keyword);
     }
+    const aVal = a[sortField] as number;
+    const bVal = b[sortField] as number;
     return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   }) || [];
 
@@ -300,8 +299,8 @@ export default function CompetitorAnalyzer() {
     const rows: GapKeywordRow[] = sortedKeywords.map(kw => ({
       keyword: kw.keyword,
       search_volume: kw.search_volume,
-      competitor_rank: kw.position,
-      competitor_url: kw.ranking_url || undefined,
+      competitor_rank: kw.competitor_rank,
+      competitor_url: kw.competitor_url || undefined,
     }));
 
     const meta: ExportMeta = {
@@ -334,8 +333,8 @@ export default function CompetitorAnalyzer() {
     const rows: GapKeywordRow[] = sortedKeywords.map(kw => ({
       keyword: kw.keyword,
       search_volume: kw.search_volume,
-      competitor_rank: kw.position,
-      competitor_url: kw.ranking_url || undefined,
+      competitor_rank: kw.competitor_rank,
+      competitor_url: kw.competitor_url || undefined,
     }));
 
     const meta: ExportMeta = {
@@ -600,14 +599,11 @@ export default function CompetitorAnalyzer() {
                         <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('keyword')}>
                           Keyword {sortField === 'keyword' && (sortOrder === 'asc' ? '↑' : '↓')}
                         </th>
-                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('position')}>
-                          Competitor Rank {sortField === 'position' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('competitor_rank')}>
+                          Competitor Rank {sortField === 'competitor_rank' && (sortOrder === 'asc' ? '↑' : '↓')}
                         </th>
                         <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('search_volume')}>
                           Search Volume {sortField === 'search_volume' && (sortOrder === 'asc' ? '↑' : '↓')}
-                        </th>
-                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('cpc')}>
-                          CPC {sortField === 'cpc' && (sortOrder === 'asc' ? '↑' : '↓')}
                         </th>
                         <th className="text-left py-3 px-2">
                           Ranking URL
@@ -618,18 +614,17 @@ export default function CompetitorAnalyzer() {
                       {sortedKeywords.map((kw, idx) => (
                         <tr key={idx} className="border-b hover:bg-muted/30">
                           <td className="py-2 px-2">{kw.keyword}</td>
-                          <td className="text-right py-2 px-2">#{kw.position}</td>
+                          <td className="text-right py-2 px-2">#{kw.competitor_rank}</td>
                           <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
-                          <td className="text-right py-2 px-2">${kw.cpc.toFixed(2)}</td>
                           <td className="py-2 px-2">
-                            {kw.ranking_url ? (
+                            {kw.competitor_url ? (
                               <a 
-                                href={kw.ranking_url} 
+                                href={kw.competitor_url} 
                                 target="_blank" 
                                 rel="nofollow noopener noreferrer"
                                 className="text-primary hover:underline text-xs truncate max-w-xs block"
                               >
-                                {kw.ranking_url}
+                                {kw.competitor_url}
                               </a>
                             ) : (
                               <span className="text-muted-foreground text-xs">—</span>
