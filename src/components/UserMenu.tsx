@@ -1,5 +1,5 @@
 import { User, LogOut, Database, Shield } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdmin } from '@/hooks/useAdmin';
 import {
@@ -15,12 +15,39 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
+import { getOrCreateUserResearchHome } from '@/lib/researchHome';
+import { useState } from 'react';
 
 export const UserMenu = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const { isAdmin } = useAdmin();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isNavigatingToResearch, setIsNavigatingToResearch] = useState(false);
+
+  const handleMyResearchClick = async () => {
+    if (!user) {
+      navigate('/auth/sign-in');
+      return;
+    }
+
+    setIsNavigatingToResearch(true);
+    try {
+      const path = await getOrCreateUserResearchHome(supabase, user.id);
+      navigate(path);
+    } catch (error) {
+      console.error('Error navigating to research:', error);
+      toast({
+        title: "Error loading research space",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsNavigatingToResearch(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -82,11 +109,13 @@ export const UserMenu = () => {
             <span>Profile</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/research" className="cursor-pointer">
-            <Database className="mr-2 h-4 w-4" />
-            <span>My Research</span>
-          </Link>
+        <DropdownMenuItem 
+          className="cursor-pointer" 
+          onClick={handleMyResearchClick}
+          disabled={isNavigatingToResearch}
+        >
+          <Database className="mr-2 h-4 w-4" />
+          <span>{isNavigatingToResearch ? 'Loading...' : 'My Research'}</span>
         </DropdownMenuItem>
         {isAdmin && (
           <>

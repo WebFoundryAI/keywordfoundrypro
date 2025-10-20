@@ -10,6 +10,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import Index from "./pages/Index";
 import Research from "./pages/Research";
+import ResearchRedirect from "./pages/ResearchRedirect";
 import AppKeywordResearch from "./pages/AppKeywordResearch";
 import KeywordResults from "./pages/KeywordResults";
 import SerpAnalysis from "./pages/SerpAnalysis";
@@ -55,7 +56,7 @@ const App = () => (
             <Routes>
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Index />} />
-                <Route path="/research" element={<ProtectedRoute><Research /></ProtectedRoute>} />
+                <Route path="/research" element={<ResearchRedirect />} />
                 <Route path="/app/keyword-research" element={<ProtectedRoute><AppKeywordResearch /></ProtectedRoute>} />
                 <Route path="/keyword-results" element={<ProtectedRoute><KeywordResults /></ProtectedRoute>} />
                 <Route path="/serp-analysis" element={<ProtectedRoute><SerpAnalysis /></ProtectedRoute>} />
