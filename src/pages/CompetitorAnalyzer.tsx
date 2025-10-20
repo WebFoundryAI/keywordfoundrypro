@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeWithAuth, DataForSEOApiError } from "@/lib/supabaseHelpers";
-import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X } from "lucide-react";
+import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X, Globe, MapPin } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
 import {
@@ -63,11 +65,40 @@ interface AnalysisData {
 
 const FREE_LIMIT = 3;
 
+const LANGUAGE_OPTIONS = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "pt", name: "Portuguese" },
+  { code: "ru", name: "Russian" },
+  { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
+  { code: "zh", name: "Chinese" },
+];
+
+const LOCATION_OPTIONS = [
+  { code: 2840, name: "United States" },
+  { code: 2826, name: "United Kingdom" },
+  { code: 2124, name: "Canada" },
+  { code: 2036, name: "Australia" },
+  { code: 2276, name: "Germany" },
+  { code: 2250, name: "France" },
+  { code: 2724, name: "Spain" },
+  { code: 2380, name: "Italy" },
+  { code: 2392, name: "Japan" },
+  { code: 2156, name: "China" },
+];
+
 export default function CompetitorAnalyzer() {
   const [yourDomain, setYourDomain] = useState("");
   const [competitorDomain, setCompetitorDomain] = useState("");
-  const [locationCode, setLocationCode] = useState(() => localStorage.getItem("kfp_loc_code") || "");
-  const [languageCode, setLanguageCode] = useState(() => localStorage.getItem("kfp_lang_code") || "");
+  const [locationCode, setLocationCode] = useState<number>(() => {
+    const stored = localStorage.getItem("kfp_loc_code");
+    return stored ? parseInt(stored, 10) : 2840;
+  });
+  const [languageCode, setLanguageCode] = useState(() => localStorage.getItem("kfp_lang_code") || "en");
   const [limit, setLimit] = useState(() => localStorage.getItem("kfp_limit") || "300");
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -114,17 +145,17 @@ export default function CompetitorAnalyzer() {
     };
     
     // Save location/language/limit to localStorage
-    if (locationCode) localStorage.setItem("kfp_loc_code", locationCode);
-    if (languageCode) localStorage.setItem("kfp_lang_code", languageCode);
-    if (limit) localStorage.setItem("kfp_limit", limit);
+    localStorage.setItem("kfp_loc_code", locationCode.toString());
+    localStorage.setItem("kfp_lang_code", languageCode);
+    localStorage.setItem("kfp_limit", limit);
     
     const payload: any = { 
       yourDomain: normalize(yourDomain), 
-      competitorDomain: normalize(competitorDomain) 
+      competitorDomain: normalize(competitorDomain),
+      location_code: locationCode,
+      language_code: languageCode,
+      limit: parseInt(limit, 10)
     };
-    if (locationCode) payload.location_code = parseInt(locationCode, 10);
-    if (languageCode) payload.language_code = languageCode;
-    if (limit) payload.limit = parseInt(limit, 10);
 
     // Pre-check local badge if available
     if (profile) {
@@ -449,29 +480,49 @@ export default function CompetitorAnalyzer() {
             </div>
             
             <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Location Code</label>
-                <Input
-                  data-testid="location-code-input"
-                  type="number"
-                  placeholder="2840"
-                  value={locationCode}
-                  onChange={(e) => setLocationCode(e.target.value)}
+              <div className="space-y-2">
+                <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  Location
+                </Label>
+                <Select 
+                  value={locationCode.toString()} 
+                  onValueChange={(value) => setLocationCode(parseInt(value, 10))}
                   disabled={loading}
-                />
-                <p className="text-xs text-muted-foreground mt-1">DataForSEO location_code</p>
+                >
+                  <SelectTrigger data-testid="location-code-input" className="bg-background/50 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {LOCATION_OPTIONS.map((location) => (
+                      <SelectItem key={location.code} value={location.code.toString()}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Language Code</label>
-                <Input
-                  data-testid="language-code-input"
-                  type="text"
-                  placeholder="en"
-                  value={languageCode}
-                  onChange={(e) => setLanguageCode(e.target.value)}
+              <div className="space-y-2">
+                <Label htmlFor="language" className="text-sm font-medium flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-primary" />
+                  Language
+                </Label>
+                <Select 
+                  value={languageCode} 
+                  onValueChange={setLanguageCode}
                   disabled={loading}
-                />
-                <p className="text-xs text-muted-foreground mt-1">DataForSEO language_code</p>
+                >
+                  <SelectTrigger data-testid="language-code-input" className="bg-background/50 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {LANGUAGE_OPTIONS.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             
