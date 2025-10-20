@@ -392,6 +392,11 @@ export default function CompetitorAnalyzer() {
             <p className="text-muted-foreground">
               Compare your domain against a competitor to discover keyword gaps, backlink opportunities, and technical insights
             </p>
+            <p style={{ margin: '8px 0' }}>
+              <a href="/docs/competitor-analysis" target="_self" rel="noopener" data-testid="docs-link">
+                How we calculate this
+              </a>
+            </p>
           </div>
           {reportsLeft !== null && (
             <Badge variant="secondary" className="text-sm">
