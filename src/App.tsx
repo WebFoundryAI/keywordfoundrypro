@@ -37,10 +37,10 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancelled from "./pages/PaymentCancelled";
-import Troubleshooting from "./pages/Troubleshooting";
 import MasterPrompt from "./pages/docs/MasterPrompt";
 import Runbooks from "./pages/docs/Runbooks";
 import CompetitorAnalysisDoc from "./pages/docs/CompetitorAnalysisDoc";
+import TroubleshootingDoc from "./pages/docs/Troubleshooting";
 
 const queryClient = new QueryClient();
 
@@ -68,10 +68,10 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
-                <Route path="/troubleshooting" element={<Troubleshooting />} />
                 <Route path="/docs/master-prompt" element={<ProtectedRoute><MasterPrompt /></ProtectedRoute>} />
                 <Route path="/docs/runbooks" element={<ProtectedRoute><Runbooks /></ProtectedRoute>} />
                 <Route path="/docs/competitor-analysis" element={<ProtectedRoute><CompetitorAnalysisDoc /></ProtectedRoute>} />
+                <Route path="/docs/troubleshooting" element={<TroubleshootingDoc />} />
                 <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
                 <Route path="/payment-cancelled" element={<ProtectedRoute><PaymentCancelled /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
