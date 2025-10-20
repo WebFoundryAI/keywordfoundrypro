@@ -213,9 +213,10 @@ serve(async (req) => {
       .filter((k: any) => !yourKeywordSet.has(k.keyword))
       .map((k: any) => ({
         keyword: k.keyword,
-        position: k.rank_absolute,
-        search_volume: k.search_volume || 0,
-        cpc: k.cpc || 0
+        position: k.rank_absolute || k.rank || null,
+        search_volume: k.search_volume || k.keyword_info?.search_volume || 0,
+        cpc: k.cpc || 0,
+        ranking_url: k.ranked_serp_element?.serp_item?.url || k.keyword_data?.url || null
       }));
 
     // Fetch backlinks

@@ -27,6 +27,7 @@ interface AnalysisData {
     position: number;
     search_volume: number;
     cpc: number;
+    ranking_url?: string | null;
   }>;
   backlink_summary: {
     your_domain: {
@@ -300,6 +301,7 @@ export default function CompetitorAnalyzer() {
       keyword: kw.keyword,
       search_volume: kw.search_volume,
       competitor_rank: kw.position,
+      competitor_url: kw.ranking_url || undefined,
     }));
 
     const meta: ExportMeta = {
@@ -333,6 +335,7 @@ export default function CompetitorAnalyzer() {
       keyword: kw.keyword,
       search_volume: kw.search_volume,
       competitor_rank: kw.position,
+      competitor_url: kw.ranking_url || undefined,
     }));
 
     const meta: ExportMeta = {
@@ -589,13 +592,16 @@ export default function CompetitorAnalyzer() {
                           Keyword {sortField === 'keyword' && (sortOrder === 'asc' ? '↑' : '↓')}
                         </th>
                         <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('position')}>
-                          Position {sortField === 'position' && (sortOrder === 'asc' ? '↑' : '↓')}
+                          Competitor Rank {sortField === 'position' && (sortOrder === 'asc' ? '↑' : '↓')}
                         </th>
                         <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('search_volume')}>
-                          Volume {sortField === 'search_volume' && (sortOrder === 'asc' ? '↑' : '↓')}
+                          Search Volume {sortField === 'search_volume' && (sortOrder === 'asc' ? '↑' : '↓')}
                         </th>
                         <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('cpc')}>
                           CPC {sortField === 'cpc' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th className="text-left py-3 px-2">
+                          Ranking URL
                         </th>
                       </tr>
                     </thead>
@@ -606,6 +612,20 @@ export default function CompetitorAnalyzer() {
                           <td className="text-right py-2 px-2">#{kw.position}</td>
                           <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
                           <td className="text-right py-2 px-2">${kw.cpc.toFixed(2)}</td>
+                          <td className="py-2 px-2">
+                            {kw.ranking_url ? (
+                              <a 
+                                href={kw.ranking_url} 
+                                target="_blank" 
+                                rel="nofollow noopener noreferrer"
+                                className="text-primary hover:underline text-xs truncate max-w-xs block"
+                              >
+                                {kw.ranking_url}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
