@@ -54,6 +54,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const request_id = crypto.randomUUID?.() || (Date.now() + '-' + Math.random().toString(16).slice(2));
+  const warnings: string[] = [];
+
   try {
     const { yourDomain, competitorDomain, location_code, language_code, limit } = await req.json();
     const yourHost = normalize(yourDomain);
@@ -76,18 +79,22 @@ serve(async (req) => {
     const isDefaultParams = locationCode === 2840 && languageCode === 'en' && keywordLimit === 300;
     
     if (!yourHost || !competitorHost) {
-      return new Response(
-        JSON.stringify({ error: 'Both domains are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        ok: false, 
+        request_id, 
+        warnings, 
+        error: { stage: 'validation', message: 'Both domains are required' } 
+      }, 200);
     }
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        ok: false, 
+        request_id, 
+        warnings, 
+        error: { stage: 'auth', message: 'Missing authorization header' } 
+      }, 200);
     }
 
     const supabaseClient = createClient(
@@ -98,11 +105,13 @@ serve(async (req) => {
 
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
-      console.error('No user found in auth header');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('[competitor-analyze]', request_id, 'auth', 'No user found in auth header');
+      return json({ 
+        ok: false, 
+        request_id, 
+        warnings, 
+        error: { stage: 'auth', message: 'Unauthorized' } 
+      }, 200);
     }
 
     console.log('User authenticated:', user.id);
@@ -115,19 +124,22 @@ serve(async (req) => {
       .maybeSingle();
 
     if (profileError) {
-      console.error('Profile query error:', profileError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch profile' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('[competitor-analyze]', request_id, 'profile', profileError);
+      return json({ 
+        ok: false, 
+        request_id, 
+        warnings, 
+        error: { stage: 'profile', message: 'Failed to fetch profile' } 
+      }, 200);
     }
 
     if (!profile) {
-      console.error('Profile not found for user:', user.id);
+      console.error('[competitor-analyze]', request_id, 'profile', 'Profile not found for user:', user.id);
       return json({ 
         ok: false, 
-        code: 'PROFILE_MISSING', 
-        message: 'Profile not found for this user. Try signing out/in to refresh.' 
+        request_id, 
+        warnings, 
+        error: { stage: 'profile', message: 'Profile not found for this user. Try signing out/in to refresh.' } 
       }, 200);
     }
 
@@ -155,15 +167,14 @@ serve(async (req) => {
     console.log('Quota check:', { effectiveUsed, limit: FREE_LIMIT, needsRenewal });
 
     if (effectiveUsed >= FREE_LIMIT) {
-      console.log('Limit exceeded for user:', user.id);
+      console.log('[competitor-analyze]', request_id, 'quota', 'Limit exceeded for user:', user.id);
       return json({ 
         ok: false, 
-        code: 'LIMIT_EXCEEDED', 
-        message: 'Free limit reached. Please upgrade for more analyses.' 
+        request_id, 
+        warnings, 
+        error: { stage: 'quota', message: 'Free limit reached. Please upgrade for more analyses.' } 
       }, 200);
     }
-
-    const warnings: string[] = [];
     
     // Only use cache for default parameters to avoid mixing results
     let cachedData = null;
@@ -184,15 +195,16 @@ serve(async (req) => {
         .maybeSingle();
 
       if (entry) {
-        console.log('Cache hit - returning cached payload');
-        return new Response(
-          JSON.stringify({
+        console.log('[competitor-analyze]', request_id, 'Cache hit - returning cached payload');
+        return json({
+          ok: true,
+          request_id,
+          warnings: ['cache_hit'],
+          data: {
             ...entry.payload,
-            warnings: ['cache_hit'],
             cached: true
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+          }
+        }, 200);
       }
 
       // Check cache first (24-hour cache)
@@ -209,17 +221,18 @@ serve(async (req) => {
         .single();
 
       if (data) {
-        console.log('Returning cached data');
-        return new Response(
-          JSON.stringify({
+        console.log('[competitor-analyze]', request_id, 'Returning cached data');
+        return json({
+          ok: true,
+          request_id,
+          warnings: data.warnings || [],
+          data: {
             keyword_gap_list: data.keyword_gap_list,
             backlink_summary: data.backlink_summary,
             onpage_summary: data.onpage_summary,
-            warnings: data.warnings,
             cached: true
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+          }
+        }, 200);
       }
     } else {
       console.log('Cache bypassed due to custom parameters');
@@ -232,15 +245,15 @@ serve(async (req) => {
     
     try {
       yourKeywords = await fetchRankedKeywords(yourHost, user.id, locationCode, languageCode, keywordLimit);
-    } catch (error) {
-      console.warn('Failed to fetch ranked keywords for your domain:', error);
+    } catch (error: any) {
+      console.error('[competitor-analyze]', request_id, 'keywords_your_domain', String(error?.message || error));
       warnings.push('keywords_your_domain_failed');
     }
     
     try {
       competitorKeywords = await fetchRankedKeywords(competitorHost, user.id, locationCode, languageCode, keywordLimit);
-    } catch (error) {
-      console.warn('Failed to fetch ranked keywords for competitor domain:', error);
+    } catch (error: any) {
+      console.error('[competitor-analyze]', request_id, 'keywords_competitor', String(error?.message || error));
       warnings.push('keywords_competitor_domain_failed');
     }
 
@@ -264,15 +277,15 @@ serve(async (req) => {
     
     try {
       yourBacklinks = await fetchBacklinkSummary(yourHost, user.id);
-    } catch (error) {
-      console.warn('Failed to fetch backlinks for your domain:', error);
+    } catch (error: any) {
+      console.error('[competitor-analyze]', request_id, 'backlinks_your_domain', String(error?.message || error));
       warnings.push('backlinks_your_domain_failed');
     }
     
     try {
       competitorBacklinks = await fetchBacklinkSummary(competitorHost, user.id);
-    } catch (error) {
-      console.warn('Failed to fetch backlinks for competitor domain:', error);
+    } catch (error: any) {
+      console.error('[competitor-analyze]', request_id, 'backlinks_competitor', String(error?.message || error));
       warnings.push('backlinks_competitor_domain_failed');
     }
 
@@ -341,32 +354,42 @@ serve(async (req) => {
       console.log('Usage updated successfully:', updateData);
     }
 
-    return new Response(
-      JSON.stringify({ ...result, cached: false }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({
+      ok: true,
+      request_id,
+      warnings,
+      data: {
+        ...result,
+        cached: false
+      }
+    }, 200);
 
   } catch (error: any) {
-    console.error('Error in competitor-analyze:', error);
+    console.error('[competitor-analyze]', request_id, 'handler', String(error?.message || error));
     
     // Handle DataForSEO specific errors (rate limit, credits)
     if (error instanceof DataForSEOError) {
-      return new Response(
-        JSON.stringify({ 
-          error: error.message,
-          error_code: error.isRateLimit ? 'RATE_LIMIT' : error.isCreditsExhausted ? 'CREDITS_EXHAUSTED' : 'API_ERROR',
-        }),
-        { 
-          status: error.statusCode, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      return json({
+        ok: false,
+        request_id,
+        warnings,
+        error: {
+          stage: 'dataforseo',
+          message: error.message,
+          code: error.isRateLimit ? 'RATE_LIMIT' : error.isCreditsExhausted ? 'CREDITS_EXHAUSTED' : 'API_ERROR'
         }
-      );
+      }, 200);
     }
     
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({
+      ok: false,
+      request_id,
+      warnings,
+      error: {
+        stage: 'unknown',
+        message: String(error?.message || error)
+      }
+    }, 200);
   }
 });
 
