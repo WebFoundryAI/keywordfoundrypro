@@ -13,6 +13,43 @@ const MODULE_NAME = 'competitor-analyze';
 
 const FREE_LIMIT = 3;
 
+// Helper to extract compact error details for debugging (max 600 chars, no secrets)
+const extractErrorDetails = (error: any, stage: string): string => {
+  try {
+    let details = '';
+    
+    // If it's a DataForSEO error with response data
+    if (error?.response) {
+      const resp = error.response;
+      details += `status:${resp.status || 'unknown'}`;
+      if (resp.status_message) details += ` msg:"${resp.status_message.slice(0, 100)}"`;
+      if (resp.tasks?.[0]) {
+        const task = resp.tasks[0];
+        if (task.status_code) details += ` task_code:${task.status_code}`;
+        if (task.status_message) details += ` task_msg:"${task.status_message.slice(0, 100)}"`;
+      }
+    }
+    
+    // If it's a fetch/HTTP error with status
+    if (error?.status) {
+      details += `http_status:${error.status}`;
+    }
+    
+    // Add error message
+    const msg = String(error?.message || error || 'unknown');
+    if (msg && !details.includes(msg.slice(0, 50))) {
+      details += ` err:"${msg.slice(0, 150)}"`;
+    }
+    
+    // Add stage context
+    details = `[${stage}] ${details}`;
+    
+    return details.slice(0, 600);
+  } catch {
+    return `[${stage}] error_parse_failed`;
+  }
+};
+
 // Helper to return JSON responses
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -256,14 +293,16 @@ serve(async (req) => {
     try {
       yourKeywords = await fetchRankedKeywords(yourHost, user.id, loc, lang, lim);
     } catch (error: any) {
-      console.error('[competitor-analyze]', request_id, 'keywords_your_domain', String(error?.message || error));
+      const excerpt = extractErrorDetails(error, 'keywords_your_domain');
+      console.error('[d4s]', request_id, 'keywords_your_domain', excerpt);
       warnings.push('keywords_your_domain_failed');
     }
     
     try {
       competitorKeywords = await fetchRankedKeywords(competitorHost, user.id, loc, lang, lim);
     } catch (error: any) {
-      console.error('[competitor-analyze]', request_id, 'keywords_competitor', String(error?.message || error));
+      const excerpt = extractErrorDetails(error, 'keywords_competitor');
+      console.error('[d4s]', request_id, 'keywords_competitor', excerpt);
       warnings.push('keywords_competitor_domain_failed');
     }
 
@@ -288,21 +327,23 @@ serve(async (req) => {
     try {
       yourBacklinks = await fetchBacklinkSummary(yourHost, user.id);
     } catch (error: any) {
-      console.error('[competitor-analyze]', request_id, 'backlinks_your_domain', String(error?.message || error));
+      const excerpt = extractErrorDetails(error, 'backlinks_your_domain');
+      console.error('[d4s]', request_id, 'backlinks_your_domain', excerpt);
       warnings.push('backlinks_your_domain_failed');
     }
     
     try {
       competitorBacklinks = await fetchBacklinkSummary(competitorHost, user.id);
     } catch (error: any) {
-      console.error('[competitor-analyze]', request_id, 'backlinks_competitor', String(error?.message || error));
+      const excerpt = extractErrorDetails(error, 'backlinks_competitor');
+      console.error('[d4s]', request_id, 'backlinks_competitor', excerpt);
       warnings.push('backlinks_competitor_domain_failed');
     }
 
     // Create On-Page tasks for both domains
     const auth = btoa(`${Deno.env.get('DATAFORSEO_LOGIN')}:${Deno.env.get('DATAFORSEO_PASSWORD')}`);
-    const yourOnPage = await fetchOnPageSummary(yourHost, auth, warnings);
-    const competitorOnPage = await fetchOnPageSummary(competitorHost, auth, warnings);
+    const yourOnPage = await fetchOnPageSummary(yourHost, auth, warnings, request_id);
+    const competitorOnPage = await fetchOnPageSummary(competitorHost, auth, warnings, request_id);
 
     const result = {
       keyword_gap_list: keywordGaps,
@@ -375,7 +416,8 @@ serve(async (req) => {
     }, 200);
 
   } catch (error: any) {
-    console.error('[competitor-analyze]', request_id, 'handler', String(error?.message || error));
+    const excerpt = extractErrorDetails(error, 'handler');
+    console.error('[d4s]', request_id, 'handler', excerpt);
     
     // Handle DataForSEO specific errors (rate limit, credits)
     if (error instanceof DataForSEOError) {
@@ -386,7 +428,8 @@ serve(async (req) => {
         error: {
           stage: 'dataforseo',
           message: error.message,
-          code: error.isRateLimit ? 'RATE_LIMIT' : error.isCreditsExhausted ? 'CREDITS_EXHAUSTED' : 'API_ERROR'
+          code: error.isRateLimit ? 'RATE_LIMIT' : error.isCreditsExhausted ? 'CREDITS_EXHAUSTED' : 'API_ERROR',
+          details: excerpt
         }
       }, 200);
     }
@@ -397,7 +440,8 @@ serve(async (req) => {
       warnings,
       error: {
         stage: 'unknown',
-        message: String(error?.message || error)
+        message: String(error?.message || error),
+        details: excerpt
       }
     }, 200);
   }
@@ -453,7 +497,7 @@ async function fetchBacklinkSummary(domain: string, userId: string) {
   return { backlinks: 0, referring_domains: 0, referring_ips: 0 };
 }
 
-async function createOnPageTask(domain: string, auth: string): Promise<string> {
+async function createOnPageTask(domain: string, auth: string, request_id: string): Promise<string> {
   const body = [{
     target: `https://${domain}`,
     max_crawl_pages: 50,
@@ -467,22 +511,53 @@ async function createOnPageTask(domain: string, auth: string): Promise<string> {
     },
     body: JSON.stringify(body)
   });
+  
+  if (!res.ok) {
+    const text = await res.text();
+    let excerpt = `status:${res.status}`;
+    try {
+      const json = JSON.parse(text);
+      if (json.status_message) excerpt += ` msg:"${json.status_message.slice(0, 100)}"`;
+      if (json.tasks?.[0]?.status_message) excerpt += ` task:"${json.tasks[0].status_message.slice(0, 100)}"`;
+    } catch {}
+    console.error('[d4s]', request_id, 'onpage_task_post', excerpt);
+    throw new Error(`onpage_task_post_failed: ${excerpt}`);
+  }
+  
   const data = await res.json();
   const id = extractTaskId(data);
-  if (!id) throw new Error('onpage_task_id_missing');
+  if (!id) {
+    console.error('[d4s]', request_id, 'onpage_task_id_missing', JSON.stringify(data).slice(0, 300));
+    throw new Error('onpage_task_id_missing');
+  }
   return id;
 }
 
-async function getOnPageSummary(taskId: string, auth: string) {
+async function getOnPageSummary(taskId: string, auth: string, request_id: string) {
   const url = `https://api.dataforseo.com/v3/on_page/summary/${taskId}`;
   const res = await retryFetch(url, { 
     headers: { 
       'Authorization': `Basic ${auth}`
     } 
   });
+  
+  if (!res.ok) {
+    const text = await res.text();
+    let excerpt = `status:${res.status}`;
+    try {
+      const json = JSON.parse(text);
+      if (json.status_message) excerpt += ` msg:"${json.status_message.slice(0, 100)}"`;
+    } catch {}
+    console.error('[d4s]', request_id, 'onpage_summary', excerpt);
+    throw new Error(`onpage_summary_failed: ${excerpt}`);
+  }
+  
   const data = await res.json();
   const r = data?.tasks?.[0]?.result?.[0];
-  if (!r) throw new Error('onpage_summary_unavailable');
+  if (!r) {
+    console.error('[d4s]', request_id, 'onpage_summary_unavailable', JSON.stringify(data).slice(0, 300));
+    throw new Error('onpage_summary_unavailable');
+  }
   return {
     pages_crawled: r.crawled_pages || 0,
     internal_links: r.links_internal || 0,
@@ -492,12 +567,12 @@ async function getOnPageSummary(taskId: string, auth: string) {
   };
 }
 
-async function fetchOnPageSummary(domain: string, auth: string, warnings: string[]) {
+async function fetchOnPageSummary(domain: string, auth: string, warnings: string[], request_id: string) {
   try {
-    const taskId = await createOnPageTask(domain, auth);
+    const taskId = await createOnPageTask(domain, auth, request_id);
     // poll up to 6 times with 10s delay until summary is present
     for (let i = 0; i < 6; i++) {
-      try { return await getOnPageSummary(taskId, auth); }
+      try { return await getOnPageSummary(taskId, auth, request_id); }
       catch (e) { 
         if (i < 5) await new Promise(r => setTimeout(r, 10000)); 
       }
@@ -505,7 +580,9 @@ async function fetchOnPageSummary(domain: string, auth: string, warnings: string
     throw new Error('onpage_poll_timeout');
   } catch (e: any) {
     const msg = String(e?.message || e) || 'onpage_unknown_error';
-    warnings.push(msg);
+    const excerpt = extractErrorDetails(e, 'onpage');
+    console.error('[d4s]', request_id, 'onpage', excerpt);
+    warnings.push(msg.slice(0, 100));
     return { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
   }
 }
