@@ -280,24 +280,9 @@ serve(async (req) => {
     }
 
     // Create On-Page tasks for both domains
-    let yourOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
-    let competitorOnPage = { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
-    
-    try {
-      const yourTaskId = await createOnPageTask(yourHost, user.id);
-      yourOnPage = await getOnPageSummary(yourTaskId, user.id);
-    } catch (error) {
-      console.warn('On-Page data unavailable for your domain:', error);
-      warnings.push('onpage_your_domain_unavailable');
-    }
-
-    try {
-      const competitorTaskId = await createOnPageTask(competitorHost, user.id);
-      competitorOnPage = await getOnPageSummary(competitorTaskId, user.id);
-    } catch (error) {
-      console.warn('On-Page data unavailable for competitor domain:', error);
-      warnings.push('onpage_competitor_domain_unavailable');
-    }
+    const auth = btoa(`${Deno.env.get('DATAFORSEO_LOGIN')}:${Deno.env.get('DATAFORSEO_PASSWORD')}`);
+    const yourOnPage = await fetchOnPageSummary(yourHost, auth, warnings);
+    const competitorOnPage = await fetchOnPageSummary(competitorHost, auth, warnings);
 
     const result = {
       keyword_gap_list: keywordGaps,
@@ -309,7 +294,7 @@ serve(async (req) => {
         your_domain: yourOnPage,
         competitor_domain: competitorOnPage
       },
-      warnings: warnings.length > 0 ? warnings : undefined
+      warnings
     };
 
     // Store in cache
@@ -383,6 +368,39 @@ serve(async (req) => {
   }
 });
 
+// Retry helper for direct DataForSEO calls
+async function retryFetch(url: string, init: RequestInit, options = { tries: 3, baseDelay: 400 }) {
+  const auth = btoa(`${Deno.env.get('DATAFORSEO_LOGIN')}:${Deno.env.get('DATAFORSEO_PASSWORD')}`);
+  const headers = { ...init.headers, 'Authorization': `Basic ${auth}` };
+  
+  for (let attempt = 1; attempt <= options.tries; attempt++) {
+    try {
+      const res = await fetch(url, { ...init, headers });
+      if (res.ok || (res.status !== 429 && res.status < 500)) {
+        return res;
+      }
+      if (attempt < options.tries) {
+        const delay = options.baseDelay * Math.pow(2, attempt - 1) + Math.random() * 200;
+        await new Promise(r => setTimeout(r, delay));
+      }
+    } catch (err) {
+      if (attempt === options.tries) throw err;
+      const delay = options.baseDelay * Math.pow(2, attempt - 1) + Math.random() * 200;
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
+function extractTaskId(data: any): string | null {
+  try {
+    return data?.tasks?.[0]?.result?.[0]?.id
+        || data?.tasks?.[0]?.id
+        || data?.tasks?.[0]?.result?.[0]?.task_id
+        || null;
+  } catch { return null; }
+}
+
 async function fetchRankedKeywords(domain: string, userId: string, locationCode: number = 2840, languageCode: string = 'en', limit: number = 300) {
   const data = await callDataForSEO({
     endpoint: '/dataforseo_labs/google/ranked_keywords/live',
@@ -424,69 +442,52 @@ async function fetchBacklinkSummary(domain: string, userId: string) {
   return { backlinks: 0, referring_domains: 0, referring_ips: 0 };
 }
 
-async function createOnPageTask(domain: string, userId: string): Promise<string> {
-  const data = await callDataForSEO({
-    endpoint: '/v3/on_page/task_post',
-    payload: [{
-      target: `https://${domain}`,
-      max_crawl_pages: 50,
-      force_sitewide_checks: true
-    }],
-    module: MODULE_NAME,
-    userId,
+async function createOnPageTask(domain: string, auth: string): Promise<string> {
+  const body = [{
+    target: `https://${domain}`,
+    max_crawl_pages: 50,
+    force_sitewide_checks: true
+  }];
+  const res = await retryFetch('https://api.dataforseo.com/v3/on_page/task_post', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
   });
-
-  if (data.tasks?.[0]?.id) {
-    return data.tasks[0].id;
-  }
-  throw new Error('Failed to create On-Page task');
+  const data = await res.json();
+  const id = extractTaskId(data);
+  if (!id) throw new Error('onpage_task_id_missing');
+  return id;
 }
 
-async function getOnPageSummary(taskId: string, userId: string) {
-  const maxPolls = 6;
-  const pollDelay = 10000; // 10 seconds
+async function getOnPageSummary(taskId: string, auth: string) {
+  const url = `https://api.dataforseo.com/v3/on_page/summary/${taskId}`;
+  const res = await retryFetch(url, { headers: {} });
+  const data = await res.json();
+  const r = data?.tasks?.[0]?.result?.[0];
+  if (!r) throw new Error('onpage_summary_unavailable');
+  return {
+    pages_crawled: r.crawled_pages || 0,
+    internal_links: r.links_internal || 0,
+    external_links: r.links_external || 0,
+    images: r.images || 0,
+    tech_score: r.onpage_score ?? Math.round((r.crawled_pages / ((r.crawled_pages + (r.pages_with_errors || 0)) || 1)) * 100)
+  };
+}
 
-  for (let i = 0; i < maxPolls; i++) {
-    try {
-      const data = await callDataForSEO({
-        endpoint: `/v3/on_page/summary/${taskId}`,
-        payload: [],
-        module: MODULE_NAME,
-        userId,
-      });
-
-      if (data.tasks?.[0]?.result?.[0]) {
-        const result = data.tasks[0].result[0];
-        const crawlProgress = result.crawl_progress;
-
-        // Check if crawl is finished
-        if (crawlProgress === 'finished') {
-          return {
-            pages_crawled: result.crawled_pages || 0,
-            internal_links: result.links_internal || 0,
-            external_links: result.links_external || 0,
-            images: result.images || 0,
-            tech_score: result.onpage_score || 0
-          };
-        }
-
-        // If not finished and not last poll, wait before next attempt
-        if (i < maxPolls - 1) {
-          console.log(`On-Page task ${taskId} not finished (${crawlProgress}), polling again in ${pollDelay/1000}s...`);
-          await new Promise(resolve => setTimeout(resolve, pollDelay));
-        }
+async function fetchOnPageSummary(domain: string, auth: string, warnings: string[]) {
+  try {
+    const taskId = await createOnPageTask(domain, auth);
+    // poll up to 6 times with 10s delay until summary is present
+    for (let i = 0; i < 6; i++) {
+      try { return await getOnPageSummary(taskId, auth); }
+      catch (e) { 
+        if (i < 5) await new Promise(r => setTimeout(r, 10000)); 
       }
-    } catch (error) {
-      console.error(`Error polling On-Page task ${taskId}:`, error);
-      if (i === maxPolls - 1) {
-        throw error;
-      }
-      // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, pollDelay));
     }
+    throw new Error('onpage_poll_timeout');
+  } catch (e: any) {
+    const msg = String(e?.message || e) || 'onpage_unknown_error';
+    warnings.push(msg);
+    return { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
   }
-
-  // If we've exhausted all polls without completion, return neutral object
-  console.warn(`On-Page task ${taskId} did not complete after ${maxPolls} polls`);
-  return { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
 }
