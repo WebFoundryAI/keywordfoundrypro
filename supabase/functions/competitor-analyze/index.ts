@@ -40,8 +40,27 @@ serve(async (req) => {
     const { yourDomain, competitorDomain, location_code, language_code } = await req.json();
     const yourHost = normalize(yourDomain);
     const competitorHost = normalize(competitorDomain);
-    const locationCode = location_code || 2840;
-    const languageCode = language_code || 'en';
+    
+    // Validate and apply defaults
+    let locationCode = 2840;
+    if (location_code !== undefined && location_code !== null && location_code !== '') {
+      const parsed = typeof location_code === 'number' ? location_code : parseInt(String(location_code), 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        locationCode = parsed;
+      } else {
+        console.warn('Invalid location_code provided, using default 2840');
+      }
+    }
+    
+    let languageCode = 'en';
+    if (language_code && typeof language_code === 'string') {
+      const trimmed = language_code.trim();
+      if (trimmed.length >= 2 && trimmed.length <= 10 && /^[a-z-]+$/.test(trimmed)) {
+        languageCode = trimmed;
+      } else {
+        console.warn('Invalid language_code provided, using default "en"');
+      }
+    }
     
     if (!yourHost || !competitorHost) {
       return new Response(
