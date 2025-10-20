@@ -136,6 +136,18 @@ export default function CompetitorAnalyzer() {
       return;
     }
 
+    // Check authentication first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setErrorAlert({
+        request_id: 'auth-check',
+        stage: 'auth',
+        message: 'Please sign in to use the Competitor Analyzer. Click here to go to the sign in page.',
+        warnings: []
+      });
+      return;
+    }
+
     // Domain normalization to bare host
     const normalize = (v: string) => {
       try { const u = new URL(v.trim()); return u.hostname.replace(/^www\./, ''); }
@@ -433,9 +445,20 @@ export default function CompetitorAnalyzer() {
               <div>
                 <strong>Message:</strong> {errorAlert.message}
               </div>
-              <div>
-                <strong>Request ID:</strong> <code className="text-xs">{errorAlert.request_id}</code>
-              </div>
+              {errorAlert.stage === 'auth' && (
+                <Button 
+                  onClick={() => navigate('/auth/sign-in')} 
+                  variant="outline"
+                  className="mt-2"
+                >
+                  Go to Sign In
+                </Button>
+              )}
+              {errorAlert.stage !== 'auth' && (
+                <div>
+                  <strong>Request ID:</strong> <code className="text-xs">{errorAlert.request_id}</code>
+                </div>
+              )}
               {errorAlert.warnings.length > 0 && (
                 <div>
                   <strong>Warnings:</strong>
