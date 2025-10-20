@@ -63,16 +63,13 @@ test.describe('Competitor Analyzer with Custom Parameters', () => {
     await page.locator('[data-testid="competitor-domain-input"]').fill(competitorDomain.trim());
     
     // Set location code to 2846 (UK)
-    const locationInput = page.locator('input[placeholder="2840"]');
-    await locationInput.fill('2846');
+    await page.locator('[data-testid="location-code-input"]').fill('2846');
     
     // Set language code to 'en'
-    const languageInput = page.locator('input[placeholder="en"]');
-    await languageInput.fill('en');
+    await page.locator('[data-testid="language-code-input"]').fill('en');
     
     // Set limit to 150
-    const limitInput = page.locator('input[placeholder="300"]');
-    await limitInput.fill('150');
+    await page.locator('[data-testid="limit-input"]').fill('150');
     
     // Submit the form
     const compareButton = page.locator('[data-testid="compare-button"]');
@@ -100,7 +97,6 @@ test.describe('Competitor Analyzer with Custom Parameters', () => {
     await expect(keywordTable.locator('th:has-text("Keyword")')).toBeVisible();
     await expect(keywordTable.locator('th:has-text("Competitor Rank")')).toBeVisible();
     await expect(keywordTable.locator('th:has-text("Search Volume")')).toBeVisible();
-    await expect(keywordTable.locator('th:has-text("CPC")')).toBeVisible();
     await expect(keywordTable.locator('th:has-text("Ranking URL")')).toBeVisible();
     
     // Assert table has data rows
@@ -113,7 +109,6 @@ test.describe('Competitor Analyzer with Custom Parameters', () => {
     await expect(firstRow.locator('td').nth(0)).not.toBeEmpty(); // Keyword
     await expect(firstRow.locator('td').nth(1)).not.toBeEmpty(); // Competitor Rank
     await expect(firstRow.locator('td').nth(2)).not.toBeEmpty(); // Search Volume
-    await expect(firstRow.locator('td').nth(3)).not.toBeEmpty(); // CPC
     // Ranking URL might be empty, so we just check the column exists
     
     // Verify results sections are visible

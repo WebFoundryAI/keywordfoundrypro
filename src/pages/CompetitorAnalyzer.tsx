@@ -433,6 +433,7 @@ export default function CompetitorAnalyzer() {
               <div>
                 <label className="text-sm font-medium mb-2 block">Location Code</label>
                 <Input
+                  data-testid="location-code-input"
                   type="number"
                   placeholder="2840"
                   value={locationCode}
@@ -444,6 +445,7 @@ export default function CompetitorAnalyzer() {
               <div>
                 <label className="text-sm font-medium mb-2 block">Language Code</label>
                 <Input
+                  data-testid="language-code-input"
                   type="text"
                   placeholder="en"
                   value={languageCode}
@@ -457,6 +459,7 @@ export default function CompetitorAnalyzer() {
             <div className="mb-4">
               <label className="text-sm font-medium mb-2 block">Top N Keywords</label>
               <Input
+                data-testid="limit-input"
                 type="number"
                 min="50"
                 max="1000"
