@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-
-const ONBOARDING_STORAGE_KEY = 'kfp_onboarding_completed';
+import { onboardingStorage } from '@/lib/onboardingStorage';
 
 export const useOnboarding = () => {
   const { user } = useAuth();
@@ -9,31 +8,21 @@ export const useOnboarding = () => {
 
   useEffect(() => {
     // Only show tour for authenticated users who haven't seen it
-    if (user) {
-      const hasCompletedOnboarding = localStorage.getItem(
-        `${ONBOARDING_STORAGE_KEY}_${user.id}`
-      );
-      
-      if (!hasCompletedOnboarding) {
-        // Small delay to let the page load
-        const timer = setTimeout(() => setShowTour(true), 500);
-        return () => clearTimeout(timer);
-      }
+    if (user && !onboardingStorage.isCompleted()) {
+      // Small delay to let the page load
+      const timer = setTimeout(() => setShowTour(true), 500);
+      return () => clearTimeout(timer);
     }
   }, [user]);
 
   const completeTour = () => {
-    if (user) {
-      localStorage.setItem(`${ONBOARDING_STORAGE_KEY}_${user.id}`, 'true');
-    }
+    onboardingStorage.markCompleted();
     setShowTour(false);
   };
 
   const resetTour = () => {
-    if (user) {
-      localStorage.removeItem(`${ONBOARDING_STORAGE_KEY}_${user.id}`);
-      setShowTour(true);
-    }
+    onboardingStorage.reset();
+    setShowTour(true);
   };
 
   return {
