@@ -157,13 +157,24 @@ serve(async (req) => {
       }, 200);
     }
 
+    const token = authHeader.replace('Bearer ', '').trim();
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: authErr } = await supabaseClient.auth.getUser(token);
+    if (authErr) {
+      console.error('[competitor-analyze]', request_id, 'authErr', authErr);
+      return json({ 
+        ok: false, 
+        request_id, 
+        warnings, 
+        error: { stage: 'auth', message: 'Unauthorized' } 
+      }, 200);
+    }
     if (!user) {
       console.error('[competitor-analyze]', request_id, 'auth', 'No user found in auth header');
       return json({ 
