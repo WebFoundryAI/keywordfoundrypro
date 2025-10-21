@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.generate-ai-insights-demo]
 verify_jwt = false
+
+[functions.send-trial-reminders]
+verify_jwt = false
