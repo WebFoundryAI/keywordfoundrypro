@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
 import { onboardingStorage } from '@/lib/onboardingStorage';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { analytics } from '@/lib/analytics';
 
 const steps: Step[] = [
   {
@@ -61,6 +62,13 @@ export function OnboardingTour() {
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
       onboardingStorage.markCompleted();
       setRun(false);
+      
+      // Track completion analytics
+      if (status === STATUS.FINISHED) {
+        analytics.event('Onboarding Completed');
+      } else if (status === STATUS.SKIPPED) {
+        analytics.event('Onboarding Skipped');
+      }
     }
   };
 
