@@ -401,7 +401,8 @@ serve(async (req) => {
 
     // Store in cache only if using default parameters
     if (isDefaultParams) {
-      await supabaseClient.from('competitor_analysis').insert({
+      // Store in competitor_analysis table (only stores gaps for backwards compatibility)
+      const { error: insertError } = await supabaseClient.from('competitor_analysis').insert({
         user_id: user.id,
         your_domain: yourHost,
         competitor_domain: competitorHost,
@@ -411,6 +412,11 @@ serve(async (req) => {
         warnings: result.warnings,
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       });
+
+      if (insertError) {
+        // Log but don't fail - cache storage is not critical
+        console.error('Failed to store in competitor_analysis table:', insertError);
+      }
 
       // Store in competitor_cache only if no warnings (full success)
       if (warnings.length === 0 || (warnings.length === 1 && warnings[0] === 'cache_bypass_custom_params')) {
