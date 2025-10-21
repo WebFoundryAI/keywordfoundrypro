@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeFunction, DataForSEOApiError } from "@/lib/invoke";
 import { logger } from '@/lib/logger';
 import { trackKeywordResearch } from '@/lib/analytics';
+import { OnboardingTour } from '@/components/OnboardingTour';
 
 const Research = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -231,6 +232,7 @@ const Research = () => {
 
   return (
     <section className="px-6 py-8">
+      <OnboardingTour />
       <div className="container mx-auto max-w-4xl space-y-6">
         <KeywordResearchForm 
           onSubmit={handleFormSubmit}

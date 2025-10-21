@@ -158,6 +158,7 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
               autoComplete="off"
               autoCorrect="on"
               required
+              data-tour="keyword-input"
             />
             {showSuggestion && spellingSuggestion && (
               <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border border-border/50 text-sm">
@@ -181,7 +182,7 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-tour="language-select">
             <div className="space-y-2">
               <Label htmlFor="language" className="text-sm font-medium flex items-center gap-2">
                 <Globe className="w-4 h-4 text-primary" />
@@ -254,6 +255,7 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
             type="submit" 
             disabled={!formData.keyword.trim() || isLoading}
             className="w-full bg-gradient-primary hover:shadow-button transition-smooth h-12 text-base font-semibold"
+            data-tour="submit-button"
           >
             {isLoading ? (
               <div className="flex items-center gap-2">

@@ -48,8 +48,8 @@ export function OnboardingTour() {
   const location = useLocation();
 
   useEffect(() => {
-    // Only show on /app/keyword-research and if not completed
-    if (location.pathname === '/app/keyword-research' && !onboardingStorage.isCompleted()) {
+    // Only show on /research and if not completed
+    if (location.pathname === '/research' && !onboardingStorage.isCompleted()) {
       // Delay to let page render
       setTimeout(() => setRun(true), 500);
     }
