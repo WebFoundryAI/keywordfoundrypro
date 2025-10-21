@@ -10,7 +10,8 @@ export const Navigation = () => {
       path: "/research",
       label: "Seed Keyword",
       icon: Search,
-      description: "Enter keyword for analysis"
+      description: "Enter keyword for analysis",
+      tourId: "research-tab"
     },
     {
       path: "/keyword-results",
@@ -34,7 +35,8 @@ export const Navigation = () => {
       path: "/competitor-analyzer",
       label: "Competitor Analyzer",
       icon: Users,
-      description: "Analyze competitor domains"
+      description: "Analyze competitor domains",
+      tourId: "competitor-tab"
     },
     {
       path: "/pricing",
@@ -56,6 +58,7 @@ export const Navigation = () => {
               variant={isActive ? "default" : "ghost"}
               size="sm"
               className="flex items-center gap-2"
+              data-tour={item.tourId}
             >
               <Icon className="w-4 h-4" />
               {item.label}

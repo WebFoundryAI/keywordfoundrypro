@@ -2,13 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { Database, Target, TrendingUp, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProductTour } from "@/components/ProductTour";
-import { useOnboarding } from "@/hooks/useOnboarding";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { showTour, completeTour } = useOnboarding();
 
   if (loading) {
     return (
@@ -23,8 +20,6 @@ const Index = () => {
 
   return (
     <>
-      <ProductTour run={showTour} onComplete={completeTour} />
-      
       {/* Hero Section */}
       <section className="py-20 px-6">
         <div className="container mx-auto max-w-4xl text-center">
@@ -37,15 +32,13 @@ const Index = () => {
           <p className="text-base md:text-lg text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
             Unlock SEO potential with real-time, data-driven insights. A professional-grade keyword research platform built for technical SEO experts who demand accuracy and speed.
           </p>
-          <div data-tour="research">
-            <Button
-              size="lg"
-              onClick={() => navigate(user ? '/research' : '/auth/sign-in')}
-              className="px-8 py-6 text-base font-medium hover-lift"
-            >
-              Get Started Now
-            </Button>
-          </div>
+          <Button
+            size="lg"
+            onClick={() => navigate(user ? '/research' : '/auth/sign-in')}
+            className="px-8 py-6 text-base font-medium hover-lift"
+          >
+            Get Started Now
+          </Button>
         </div>
       </section>
 
