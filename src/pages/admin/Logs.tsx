@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { logger } from '@/lib/logger';
 
 interface LogEntry {
   timestamp: string;
@@ -64,7 +65,7 @@ export default function AdminLogs() {
       setLogs(mockLogs);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching logs:', error);
+      logger.error('Error fetching logs:', error);
       toast({
         title: "Error fetching logs",
         description: "Failed to load server logs",

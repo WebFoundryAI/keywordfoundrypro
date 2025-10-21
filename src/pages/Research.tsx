@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeFunction, DataForSEOApiError } from "@/lib/invoke";
+import { logger } from '@/lib/logger';
 
 const Research = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +33,7 @@ const Research = () => {
 
     // Refresh session to ensure token is valid
     const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
-    console.log('Session refresh result:', {
+    logger.log('Session refresh result:', {
       hasSession: !!session,
       sessionError: sessionError,
       userId: session?.user?.id,
@@ -41,7 +42,7 @@ const Research = () => {
     });
     
     if (!session?.access_token) {
-      console.error('No valid session or access token found');
+      logger.error('No valid session or access token found');
       toast({
         title: "Session Expired",
         description: "Your session has expired. Please sign in again.",
@@ -65,18 +66,18 @@ const Research = () => {
     
     try {
       // Detailed pre-invocation logging
-      console.log('=== CLIENT: About to invoke edge function ===');
-      console.log('Function name:', 'keyword-research');
-      console.log('Has session:', !!session);
-      console.log('User ID:', session?.user?.id);
-      console.log('Has access token:', !!session.access_token);
-      console.log('Request body:', {
+      logger.log('=== CLIENT: About to invoke edge function ===');
+      logger.log('Function name:', 'keyword-research');
+      logger.log('Has session:', !!session);
+      logger.log('User ID:', session?.user?.id);
+      logger.log('Has access token:', !!session.access_token);
+      logger.log('Request body:', {
         keyword: formData.keyword.trim(),
         languageCode: formData.languageCode,
         locationCode: formData.locationCode,
         limit: formData.limit
       });
-      console.log('Timestamp:', new Date().toISOString());
+      logger.log('Timestamp:', new Date().toISOString());
       
       const data = await invokeFunction('keyword-research', {
         keyword: formData.keyword.trim(),
@@ -85,10 +86,10 @@ const Research = () => {
         limit: formData.limit
       });
       
-      console.log('=== CLIENT: Function invocation response ===');
-      console.log('Has data:', !!data);
+      logger.log('=== CLIENT: Function invocation response ===');
+      logger.log('Has data:', !!data);
       if (data) {
-        console.log('Data received:', data);
+        logger.log('Data received:', data);
       }
 
       // Check for API response errors
@@ -155,9 +156,9 @@ const Research = () => {
       navigate('/keyword-results');
       
     } catch (err: any) {
-      console.error('Keyword research error:', err);
-      console.error('Error status:', err?.status);
-      console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
+      logger.error('Keyword research error:', err);
+      logger.error('Error status:', err?.status);
+      logger.error('Error response preview:', JSON.stringify(err).slice(0, 300));
       
       // Handle DataForSEO specific errors with helpful messages
       if (err instanceof DataForSEOApiError) {
