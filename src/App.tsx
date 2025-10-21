@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +11,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { analytics } from "@/lib/analytics";
 import Index from "./pages/Index";
 import Research from "./pages/Research";
 import ResearchRedirect from "./pages/ResearchRedirect";
@@ -46,6 +49,17 @@ import TroubleshootingDoc from "./pages/docs/Troubleshooting";
 
 const queryClient = new QueryClient();
 
+// Analytics pageview tracker
+function AnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    analytics.pageview();
+  }, [location.pathname]);
+
+  return null;
+}
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -55,6 +69,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <AnalyticsTracker />
               <Routes>
                 <Route element={<MainLayout />}>
                   <Route path="/" element={<Index />} />

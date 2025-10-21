@@ -14,6 +14,7 @@ import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Downl
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
 import { logger } from '@/lib/logger';
+import { trackCompetitorAnalysis, trackExport } from '@/lib/analytics';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -217,6 +218,9 @@ export default function CompetitorAnalyzer() {
       // Extract data from the new structure if present
       const analysisResult = data?.data || data;
       setAnalysisData(analysisResult);
+      
+      // Track successful competitor analysis
+      trackCompetitorAnalysis();
 
       // Refresh profile badge after a successful run
       const { data: { user } } = await supabase.auth.getUser();
@@ -343,6 +347,9 @@ export default function CompetitorAnalyzer() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
+    // Track CSV export
+    trackExport('csv');
 
     toast({
       title: "CSV Downloaded",
@@ -377,6 +384,9 @@ export default function CompetitorAnalyzer() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
+    // Track JSON export
+    trackExport('json');
 
     toast({
       title: "JSON Downloaded",

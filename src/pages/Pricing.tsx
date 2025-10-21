@@ -15,6 +15,7 @@ import { invokeFunction } from "@/lib/invoke";
 import { toast } from 'sonner';
 import { storePlanSelection } from '@/lib/planStorage';
 import { logger } from '@/lib/logger';
+import { trackSubscriptionUpgrade } from '@/lib/analytics';
 
 const STRIPE_ENABLED = import.meta.env.VITE_STRIPE_ENABLED === 'true';
 
@@ -59,6 +60,10 @@ const Pricing = () => {
         // Paid plan - create Stripe checkout session
         try {
           toast.info('Redirecting to checkout...');
+          
+          // Track subscription upgrade intent
+          trackSubscriptionUpgrade(`${planTier}_${isYearly ? 'yearly' : 'monthly'}`);
+          
           const data = await invokeFunction('create-checkout-session', {
             planTier, 
             billingPeriod: isYearly ? 'yearly' : 'monthly' 

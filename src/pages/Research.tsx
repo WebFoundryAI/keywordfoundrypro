@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeFunction, DataForSEOApiError } from "@/lib/invoke";
 import { logger } from '@/lib/logger';
+import { trackKeywordResearch } from '@/lib/analytics';
 
 const Research = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -151,6 +152,9 @@ const Research = () => {
         title: "Analysis Complete",
         description: description,
       });
+      
+      // Track successful keyword research
+      trackKeywordResearch(data.total_results || convertedResults.length);
       
       // Navigate to results page
       navigate('/keyword-results');

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
 import { logger } from '@/lib/logger';
+import { trackExport } from '@/lib/analytics';
 
 const KeywordResults = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
@@ -244,6 +245,9 @@ const KeywordResults = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
+      // Track export event
+      trackExport(format);
       
       toast({
         title: "Export Complete",
