@@ -18,6 +18,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { getOrCreateUserResearchHome } from '@/lib/researchHome';
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 
 export const UserMenu = () => {
   const { user, signOut } = useAuth();
@@ -38,7 +39,7 @@ export const UserMenu = () => {
       const path = await getOrCreateUserResearchHome(supabase, user.id);
       navigate(path);
     } catch (error) {
-      console.error('Error navigating to research:', error);
+      logger.error('Error navigating to research:', error);
       toast({
         title: "Error loading research space",
         description: "Please try again.",

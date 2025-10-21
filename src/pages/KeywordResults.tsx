@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
+import { logger } from '@/lib/logger';
 
 const KeywordResults = () => {
   const [results, setResults] = useState<KeywordResult[]>([]);
@@ -48,7 +49,7 @@ const KeywordResults = () => {
             .single();
             
           if (researchError) {
-            console.error('Error fetching research data:', researchError);
+            logger.error('Error fetching research data:', researchError);
           } else if (researchData) {
             setLocationCode(researchData.location_code);
           }
@@ -89,7 +90,7 @@ const KeywordResults = () => {
           const { data: keywordResults, error, count } = await query;
             
           if (error) {
-            console.error('Error fetching keyword results:', error);
+            logger.error('Error fetching keyword results:', error);
             toast({
               title: "Error",
               description: "Failed to load keyword results",
@@ -147,7 +148,7 @@ const KeywordResults = () => {
           setKeywordAnalyzed(storedKeywordAnalyzed);
           
         } catch (error) {
-          console.error('Error loading keyword results:', error);
+          logger.error('Error loading keyword results:', error);
           toast({
             title: "Error", 
             description: "Failed to load keyword results",
@@ -161,7 +162,7 @@ const KeywordResults = () => {
 
     // Also log final state
     setTimeout(() => {
-      console.log('KeywordResults - Final component state:', {
+      logger.log('KeywordResults - Final component state:', {
         resultsLength: results.length,
         totalCount,
         seedKeyword,
@@ -249,7 +250,7 @@ const KeywordResults = () => {
         description: `Downloaded ${allResults.length} keywords as ${format.toUpperCase()}`,
       });
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       toast({
         title: "Export Failed",
         description: "Failed to export keyword results",

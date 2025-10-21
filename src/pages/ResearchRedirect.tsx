@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { getOrCreateUserResearchHome } from '@/lib/researchHome';
+import { logger } from '@/lib/logger';
 
 export default function ResearchRedirect() {
   const { user, loading } = useAuth();
@@ -25,7 +26,7 @@ export default function ResearchRedirect() {
         const path = await getOrCreateUserResearchHome(supabase, user.id);
         navigate(path, { replace: true });
       } catch (err) {
-        console.error('Error redirecting to research space:', err);
+        logger.error('Error redirecting to research space:', err);
         setError('Failed to load your research space. Please try again.');
       }
     };

@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { logger } from './logger';
 
 /**
  * Get or create the user's default research space
@@ -18,7 +19,7 @@ export async function getOrCreateUserResearchHome(
     .maybeSingle();
 
   if (selectError) {
-    console.error('Error fetching research space:', selectError);
+    logger.error('Error fetching research space:', selectError);
     throw selectError;
   }
 
@@ -38,7 +39,7 @@ export async function getOrCreateUserResearchHome(
     .single();
 
   if (insertError) {
-    console.error('Error creating research space:', insertError);
+    logger.error('Error creating research space:', insertError);
     throw insertError;
   }
 

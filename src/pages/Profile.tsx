@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/AuthProvider';
 import { useProfile } from '@/hooks/useProfile';
@@ -145,7 +146,7 @@ export default function Profile() {
         description: 'Your profile picture has been updated successfully',
       });
     } catch (error: any) {
-      console.error('Error uploading avatar:', error);
+      logger.error('Error uploading avatar:', error);
       toast({
         title: 'Upload failed',
         description: error.message || 'Failed to upload avatar',

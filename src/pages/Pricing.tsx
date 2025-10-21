@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { invokeFunction } from "@/lib/invoke";
 import { toast } from 'sonner';
 import { storePlanSelection } from '@/lib/planStorage';
+import { logger } from '@/lib/logger';
 
 const STRIPE_ENABLED = import.meta.env.VITE_STRIPE_ENABLED === 'true';
 
@@ -69,9 +70,9 @@ const Pricing = () => {
             throw new Error('No checkout URL returned');
           }
         } catch (err: any) {
-          console.error('Error creating checkout session:', err);
-          console.error('Error status:', err?.status);
-          console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
+          logger.error('Error creating checkout session:', err);
+          logger.error('Error status:', err?.status);
+          logger.error('Error response preview:', JSON.stringify(err).slice(0, 300));
           
           toast.error(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
         }

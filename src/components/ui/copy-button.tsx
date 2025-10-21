@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Copy, CopyCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { logger } from '@/lib/logger';
 
 interface CopyButtonProps {
   content: string;
@@ -49,7 +50,7 @@ export const CopyButton = ({
 
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      logger.error('Failed to copy:', error);
       toast({
         description: "Failed to copy to clipboard",
         variant: "destructive",
@@ -154,7 +155,7 @@ export const CopyAllButton = ({
 
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy all:', error);
+      logger.error('Failed to copy all:', error);
       toast({
         description: "Failed to copy content to clipboard",
         variant: "destructive",

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getStoredPlanSelection, clearStoredPlanSelection } from '@/lib/planStorage';
+import { logger } from '@/lib/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -34,7 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
+        logger.log('Auth state change:', event, session?.user?.id);
         
         // Only handle SIGNED_IN for navigation, ignore TOKEN_REFRESHED and USER_UPDATED
         if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
@@ -52,7 +53,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (event === 'SIGNED_IN' && session?.user) {
           // Prevent double-redirect within one session
           if (didRedirectRef.current) {
-            console.log('Redirect already performed, skipping');
+            logger.log('Redirect already performed, skipping');
             return;
           }
 
@@ -63,7 +64,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
             const storedPlan = getStoredPlanSelection();
             if (storedPlan) {
-              console.log('Applying stored plan selection:', storedPlan);
+              logger.log('Applying stored plan selection:', storedPlan);
               await supabase.auth.updateUser({
                 data: {
                   selected_plan: storedPlan.tier,
@@ -71,9 +72,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 }
               }).then(({ error }) => {
                 if (error) {
-                  console.error('Error applying stored plan:', error);
+                  logger.error('Error applying stored plan:', error);
                 } else {
-                  console.log('Successfully applied stored plan to user metadata');
+                  logger.log('Successfully applied stored plan to user metadata');
                   clearStoredPlanSelection();
                 }
               });
@@ -85,7 +86,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             });
             
             if (rpcErr) {
-              console.error('ensure_user_subscription error', rpcErr);
+              logger.error('ensure_user_subscription error', rpcErr);
             }
 
             // Check if user is admin
@@ -103,10 +104,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             if (shouldRedirect) {
               didRedirectRef.current = true;
               const redirectPath = adminRole ? '/admin' : '/app/keyword-research';
-              console.log('Centralized redirect from', currentPath, '->', redirectPath);
+              logger.log('Centralized redirect from', currentPath, '->', redirectPath);
               window.location.replace(redirectPath);
             } else {
-              console.log('Skipping redirect - not on whitelist path:', currentPath);
+              logger.log('Skipping redirect - not on whitelist path:', currentPath);
             }
           }, 0);
         }
@@ -116,9 +117,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('Error getting session:', error);
+        logger.error('Error getting session:', error);
       } else {
-        console.log('Initial session:', session?.user?.id);
+        logger.log('Initial session:', session?.user?.id);
       }
       setSession(session);
       setUser(session?.user ?? null);
@@ -138,16 +139,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Error signing out:', error);
+        logger.error('Error signing out:', error);
         throw error;
       }
       
-      console.log('Successfully signed out');
+      logger.log('Successfully signed out');
       
       // Reset redirect flag
       didRedirectRef.current = false;
     } catch (error) {
-      console.error('Sign out error:', error);
+      logger.error('Sign out error:', error);
     } finally {
       setLoading(false);
     }

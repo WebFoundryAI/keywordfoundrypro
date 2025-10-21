@@ -13,6 +13,7 @@ import { invokeWithAuth, DataForSEOApiError } from "@/lib/supabaseHelpers";
 import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X, Globe, MapPin } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
+import { logger } from '@/lib/logger';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -286,7 +287,7 @@ export default function CompetitorAnalyzer() {
       });
 
     } catch (error: any) {
-      console.error('AI insights error:', error);
+      logger.error('AI insights error:', error);
       toast({
         title: "AI Insights failed",
         description: error.message || "Failed to generate AI insights",
