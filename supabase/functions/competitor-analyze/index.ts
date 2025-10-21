@@ -344,6 +344,21 @@ serve(async (req) => {
         };
       });
 
+    // Format all keywords for both domains
+    const yourKeywordsList = yourKeywords.map((k: any) => ({
+      keyword: k.keyword,
+      rank: k.rank_absolute || k.rank || 0,
+      search_volume: k.search_volume || 0,
+      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
+    }));
+
+    const competitorKeywordsList = competitorKeywords.map((k: any) => ({
+      keyword: k.keyword,
+      rank: k.rank_absolute || k.rank || 0,
+      search_volume: k.search_volume || 0,
+      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
+    }));
+
     // Fetch backlinks
     let yourBacklinks = { backlinks: 0, referring_domains: 0, referring_ips: 0 };
     let competitorBacklinks = { backlinks: 0, referring_domains: 0, referring_ips: 0 };
@@ -370,6 +385,8 @@ serve(async (req) => {
     const competitorOnPage = await fetchOnPageSummary(competitorHost, auth, warnings, request_id);
 
     const result = {
+      your_keywords: yourKeywordsList,
+      competitor_keywords: competitorKeywordsList,
       keyword_gap_list: keywordGaps,
       backlink_summary: {
         your_domain: yourBacklinks,
