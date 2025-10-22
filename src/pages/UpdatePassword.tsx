@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { logger } from '@/lib/logger';
 import { useToast } from "@/hooks/use-toast";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Eye, EyeOff, Lock } from "lucide-react";
@@ -88,7 +89,7 @@ export default function UpdatePassword() {
       // Redirect to research page
       navigate("/research");
     } catch (err: any) {
-      console.error("Password update error:", err);
+      logger.error("Password update error:", err);
       setError(err.message || "Failed to update password. Please try again.");
     } finally {
       setLoading(false);

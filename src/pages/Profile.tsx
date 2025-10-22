@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/AuthProvider';
 import { useProfile } from '@/hooks/useProfile';
@@ -18,6 +19,8 @@ import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
+import { onboardingStorage } from '@/lib/onboardingStorage';
+import { Separator } from '@/components/ui/separator';
 
 const profileSchema = z.object({
   display_name: z
@@ -145,7 +148,7 @@ export default function Profile() {
         description: 'Your profile picture has been updated successfully',
       });
     } catch (error: any) {
-      console.error('Error uploading avatar:', error);
+      logger.error('Error uploading avatar:', error);
       toast({
         title: 'Upload failed',
         description: error.message || 'Failed to upload avatar',
@@ -293,6 +296,27 @@ export default function Profile() {
                     </Button>
                   </div>
                 </form>
+
+                <Separator className="my-6" />
+
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium">Tour & Onboarding</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Reset the product tour to see it again on your next visit
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      onboardingStorage.reset();
+                      toast({
+                        title: 'Tour reset',
+                        description: 'Visit the research page to see the tour again',
+                      });
+                    }}
+                  >
+                    Reset Product Tour
+                  </Button>
+                </div>
               </>
             )}
           </Card>

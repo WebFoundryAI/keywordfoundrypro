@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar } from "lucide-react";
+import { logger } from '@/lib/logger';
 
 interface ModuleUsage {
   module: string;
@@ -70,7 +71,7 @@ const Usage = () => {
       setUsageData(usageArray);
       setTotalCredits(total);
     } catch (error) {
-      console.error('Error fetching usage data:', error);
+      logger.error('Error fetching usage data:', error);
       toast({
         title: "Error",
         description: "Failed to load usage data. Please try again.",

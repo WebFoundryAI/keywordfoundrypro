@@ -9,7 +9,7 @@ interface EnvConfig {
   appBaseUrl: string;
 }
 
-const isDev = import.meta.env.DEV;
+import { logger } from './logger';
 
 /**
  * Validates a URL string
@@ -17,7 +17,7 @@ const isDev = import.meta.env.DEV;
 function isValidUrl(url: string, requireHttps: boolean = false): boolean {
   try {
     const parsed = new URL(url);
-    if (requireHttps && !isDev && parsed.protocol !== 'https:') {
+    if (requireHttps && !import.meta.env.DEV && parsed.protocol !== 'https:') {
       return false;
     }
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';
@@ -56,8 +56,8 @@ export function validateEnv(): EnvConfig | null {
   }
 
   // Log warnings in development only
-  if (errors.length > 0 && isDev) {
-    console.warn(
+  if (errors.length > 0 && import.meta.env.DEV) {
+    logger.warn(
       '⚠️  Environment Configuration Issues:\n' +
       errors.map(e => `   - ${e}`).join('\n') +
       '\n\nPlease check your .env file. See .env.example for required format.' +

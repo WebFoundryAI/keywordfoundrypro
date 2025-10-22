@@ -157,13 +157,24 @@ serve(async (req) => {
       }, 200);
     }
 
+    const token = authHeader.replace('Bearer ', '').trim();
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: authErr } = await supabaseClient.auth.getUser(token);
+    if (authErr) {
+      console.error('[competitor-analyze]', request_id, 'authErr', authErr);
+      return json({ 
+        ok: false, 
+        request_id, 
+        warnings, 
+        error: { stage: 'auth', message: 'Unauthorized' } 
+      }, 200);
+    }
     if (!user) {
       console.error('[competitor-analyze]', request_id, 'auth', 'No user found in auth header');
       return json({ 
@@ -332,6 +343,21 @@ serve(async (req) => {
           competitor_url: url
         };
       });
+
+    // Format all keywords for both domains
+    const yourKeywordsList = yourKeywords.map((k: any) => ({
+      keyword: k.keyword,
+      rank: k.rank_absolute || k.rank || 0,
+      search_volume: k.search_volume || 0,
+      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
+    }));
+
+    const competitorKeywordsList = competitorKeywords.map((k: any) => ({
+      keyword: k.keyword,
+      rank: k.rank_absolute || k.rank || 0,
+      search_volume: k.search_volume || 0,
+      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
+    }));
 
     // Fetch backlinks
     let yourBacklinks = { backlinks: 0, referring_domains: 0, referring_ips: 0 };

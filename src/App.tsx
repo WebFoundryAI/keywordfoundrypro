@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,10 +10,10 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { analytics } from "@/lib/analytics";
 import Index from "./pages/Index";
 import Research from "./pages/Research";
-import ResearchRedirect from "./pages/ResearchRedirect";
-import AppKeywordResearch from "./pages/AppKeywordResearch";
 import KeywordResults from "./pages/KeywordResults";
 import SerpAnalysis from "./pages/SerpAnalysis";
 import RelatedKeywords from "./pages/RelatedKeywords";
@@ -45,60 +47,73 @@ import TroubleshootingDoc from "./pages/docs/Troubleshooting";
 
 const queryClient = new QueryClient();
 
+// Analytics pageview tracker
+function AnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    analytics.pageview();
+  }, [location.pathname]);
+
+  return null;
+}
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light" storageKey="keyword-foundry-pro-theme">
-      <TooltipProvider>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/research" element={<ResearchRedirect />} />
-                <Route path="/app/keyword-research" element={<ProtectedRoute><AppKeywordResearch /></ProtectedRoute>} />
-                <Route path="/keyword-results" element={<ProtectedRoute><KeywordResults /></ProtectedRoute>} />
-                <Route path="/serp-analysis" element={<ProtectedRoute><SerpAnalysis /></ProtectedRoute>} />
-                <Route path="/related-keywords" element={<ProtectedRoute><RelatedKeywords /></ProtectedRoute>} />
-                <Route path="/competitor-analyzer" element={<ProtectedRoute><CompetitorAnalyzer /></ProtectedRoute>} />
-                <Route path="/demo/competitor" element={<DemoCompetitorAnalyzer />} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/docs/master-prompt" element={<ProtectedRoute><MasterPrompt /></ProtectedRoute>} />
-                <Route path="/docs/runbooks" element={<ProtectedRoute><Runbooks /></ProtectedRoute>} />
-                <Route path="/docs/competitor-analysis" element={<ProtectedRoute><CompetitorAnalysisDoc /></ProtectedRoute>} />
-                <Route path="/docs/troubleshooting" element={<TroubleshootingDoc />} />
-                <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-                <Route path="/payment-cancelled" element={<ProtectedRoute><PaymentCancelled /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="keyword-foundry-pro-theme">
+        <TooltipProvider>
+          <AuthProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AnalyticsTracker />
+              <Routes>
+                <Route element={<MainLayout />}>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/research" element={<ProtectedRoute><Research /></ProtectedRoute>} />
+                  <Route path="/keyword-results" element={<ProtectedRoute><KeywordResults /></ProtectedRoute>} />
+                  <Route path="/serp-analysis" element={<ProtectedRoute><SerpAnalysis /></ProtectedRoute>} />
+                  <Route path="/related-keywords" element={<ProtectedRoute><RelatedKeywords /></ProtectedRoute>} />
+                  <Route path="/competitor-analyzer" element={<ProtectedRoute><CompetitorAnalyzer /></ProtectedRoute>} />
+                  <Route path="/demo/competitor" element={<DemoCompetitorAnalyzer />} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/docs/master-prompt" element={<ProtectedRoute><MasterPrompt /></ProtectedRoute>} />
+                  <Route path="/docs/runbooks" element={<ProtectedRoute><Runbooks /></ProtectedRoute>} />
+                  <Route path="/docs/competitor-analysis" element={<ProtectedRoute><CompetitorAnalysisDoc /></ProtectedRoute>} />
+                  <Route path="/docs/troubleshooting" element={<TroubleshootingDoc />} />
+                  <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+                  <Route path="/payment-cancelled" element={<ProtectedRoute><PaymentCancelled /></ProtectedRoute>} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
 
-              <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="research" element={<AdminResearch />} />
-                <Route path="subscriptions" element={<AdminSubscriptions />} />
-                <Route path="usage" element={<AdminUsage />} />
-                <Route path="clustering" element={<AdminClustering />} />
-                <Route path="env-check" element={<AdminEnvCheck />} />
-                <Route path="logs" element={<AdminLogs />} />
-              </Route>
+                <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="research" element={<AdminResearch />} />
+                  <Route path="subscriptions" element={<AdminSubscriptions />} />
+                  <Route path="usage" element={<AdminUsage />} />
+                  <Route path="clustering" element={<AdminClustering />} />
+                  <Route path="env-check" element={<AdminEnvCheck />} />
+                  <Route path="logs" element={<AdminLogs />} />
+                </Route>
 
-              <Route path="/auth/sign-in" element={<SignIn />} />
-              <Route path="/auth/sign-up" element={<SignUp />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/auth/update-password" element={<UpdatePassword />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+                <Route path="/auth/sign-in" element={<SignIn />} />
+                <Route path="/auth/sign-up" element={<SignUp />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/auth/update-password" element={<UpdatePassword />} />
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

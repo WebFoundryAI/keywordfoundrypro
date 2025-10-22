@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeFunction } from "@/lib/invoke";
 import { Search, ChevronUp, ChevronDown, Globe, MapPin, Zap, Filter, AlertCircle, Download } from "lucide-react";
 import { formatNumber, formatDifficulty, formatCurrency } from "@/lib/utils";
+import { logger } from '@/lib/logger';
 
 interface RelatedKeyword {
   keyword: string;
@@ -278,7 +279,7 @@ const RelatedKeywords = () => {
         throw new Error(data.error || data.message || 'No results found');
       }
     } catch (err: any) {
-      console.error('Related keywords error:', err);
+      logger.error('Related keywords error:', err);
       toast({
         title: "Analysis Failed",
         description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
@@ -332,7 +333,7 @@ const RelatedKeywords = () => {
         });
       }
     } catch (err: any) {
-      console.error('Load more error:', err);
+      logger.error('Load more error:', err);
       toast({
         title: "Load More Failed",
         description: err instanceof Error ? err.message : "Something went wrong. Please try again.",

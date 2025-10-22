@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, Lock } from "lucide-react";
+import { logger } from '@/lib/logger';
 
 interface AnalysisData {
   keyword_gap_list: Array<{
@@ -114,7 +115,7 @@ export default function DemoCompetitorAnalyzer() {
       }
 
     } catch (error: any) {
-      console.error('Analysis error:', error);
+      logger.error('Analysis error:', error);
       toast({
         title: "Analysis failed",
         description: error.message || "Failed to analyze competitors",

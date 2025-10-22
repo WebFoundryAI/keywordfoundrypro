@@ -2,6 +2,7 @@ import { Search, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { UserMenu } from "@/components/UserMenu";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
@@ -47,7 +48,7 @@ export const Header = ({ user }: HeaderProps) => {
             <h1 className="text-xl font-bold tracking-tight">Keyword Foundry Pro</h1>
           </div>
           <div className="flex items-center gap-4">
-            {user && <Navigation />}
+            {user && <div data-tour="navigation"><Navigation /></div>}
             {!user && (
               <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
                 Pricing
@@ -55,7 +56,12 @@ export const Header = ({ user }: HeaderProps) => {
             )}
             {user ? (
               <div className="flex items-center gap-2">
-                <UserMenu />
+                <div data-tour="theme-toggle">
+                  <ThemeToggle />
+                </div>
+                <div data-tour="user-menu">
+                  <UserMenu />
+                </div>
                 <Button 
                   variant="ghost" 
                   size="sm" 

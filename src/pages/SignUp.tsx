@@ -9,6 +9,7 @@ import { OAuthButtons } from '@/components/auth/OAuthButtons'
 import { OrDivider } from '@/components/auth/OrDivider'
 import { storePlanSelection } from '@/lib/planStorage'
 import { getAppBaseUrl } from '@/lib/env'
+import { trackSignUp } from '@/lib/analytics'
 
 export default function SignUp() {
   const navigate = useNavigate()
@@ -71,6 +72,9 @@ export default function SignUp() {
         },
       })
       if (error) throw error
+
+      // Track successful sign up
+      trackSignUp('email');
 
       toast({
         title: 'Account created!',

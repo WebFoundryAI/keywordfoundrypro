@@ -8,6 +8,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 import { OrDivider } from '@/components/auth/OrDivider'
 import { getAppBaseUrl } from '@/lib/env'
+import { trackSignIn } from '@/lib/analytics'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -38,6 +39,9 @@ export default function SignIn() {
         password,
       })
       if (error) throw error
+
+      // Track successful sign in
+      trackSignIn('email');
 
       // AuthProvider handles all redirects - just show success
       toast({ title: 'Signed in', description: 'Welcome back!' })

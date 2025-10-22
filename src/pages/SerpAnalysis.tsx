@@ -11,6 +11,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeFunction } from "@/lib/invoke";
 import { Search, ExternalLink, Globe, MapPin, Zap, AlertCircle } from "lucide-react";
+import { logger } from '@/lib/logger';
+import { trackSerpAnalysis } from '@/lib/analytics';
 
 interface SerpResult {
   position: number;
@@ -150,6 +152,10 @@ const SerpAnalysis = () => {
         setResults(data.results);
         localStorage.setItem('serpAnalysisResults', JSON.stringify(data.results));
         localStorage.setItem('lastKeyword', keyword.trim());
+        
+        // Track successful SERP analysis
+        trackSerpAnalysis();
+        
         toast({
           title: "Analysis Complete",
           description: `Found ${data.total_results} organic results for "${keyword}" (Cost: $${data.estimated_cost})`,
@@ -162,9 +168,9 @@ const SerpAnalysis = () => {
         throw new Error(data.error || 'No results found');
       }
     } catch (err: any) {
-      console.error('SERP analysis error:', err);
-      console.error('Error status:', err?.status);
-      console.error('Error response preview:', JSON.stringify(err).slice(0, 300));
+      logger.error('SERP analysis error:', err);
+      logger.error('Error status:', err?.status);
+      logger.error('Error response preview:', JSON.stringify(err).slice(0, 300));
       
       toast({
         title: "Analysis Failed",
