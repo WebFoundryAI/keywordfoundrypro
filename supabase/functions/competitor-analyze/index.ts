@@ -424,8 +424,8 @@ serve(async (req) => {
     const competitorOnPage = await fetchOnPageSummary(competitorHost, auth, warnings, request_id);
 
     const result = {
-      your_keywords: yourKeywordsList,
-      competitor_keywords: competitorKeywordsList,
+      your_keywords: yourKeywords,
+      competitor_keywords: competitorKeywords,
       keyword_gap_list: keywordGaps,
       backlink_summary: {
         your_domain: yourBacklinks,
