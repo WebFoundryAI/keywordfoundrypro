@@ -165,7 +165,6 @@ const Pricing = () => {
                 )}
                 
                 <CardHeader>
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
                   <CardDescription className="text-3xl font-bold mt-2" aria-label={displayPrice === 0 ? '7-day free trial' : undefined}>
                     {displayPrice === 0 ? (
                       '7-day free trial'
