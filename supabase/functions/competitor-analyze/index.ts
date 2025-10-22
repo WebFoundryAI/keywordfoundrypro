@@ -423,21 +423,6 @@ serve(async (req) => {
     const yourOnPage = await fetchOnPageSummary(yourHost, auth, warnings, request_id);
     const competitorOnPage = await fetchOnPageSummary(competitorHost, auth, warnings, request_id);
 
-    // Format all keywords for both domains
-    const yourKeywordsList = yourKeywords.map((k: any) => ({
-      keyword: k.keyword,
-      rank: k.rank_absolute || k.rank || 0,
-      search_volume: k.search_volume || 0,
-      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
-    }));
-
-    const competitorKeywordsList = competitorKeywords.map((k: any) => ({
-      keyword: k.keyword,
-      rank: k.rank_absolute || k.rank || 0,
-      search_volume: k.search_volume || 0,
-      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
-    }));
-
     const result = {
       your_keywords: yourKeywordsList,
       competitor_keywords: competitorKeywordsList,

@@ -10,12 +10,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeWithAuth, DataForSEOApiError } from "@/lib/supabaseHelpers";
-import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X, Globe, MapPin } from "lucide-react";
+import { invokeFunction } from "@/lib/invoke";
+import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X, Globe, MapPin, FileQuestion } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
 import { logger } from '@/lib/logger';
 import { trackCompetitorAnalysis, trackExport } from '@/lib/analytics';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { parseCompetitorInsights, hasInsightsData } from './CompetitorAnalyzer/insightsAdapter';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,6 +70,56 @@ interface AnalysisData {
 
 const FREE_LIMIT = 3;
 
+/* 
+ * EDGE FUNCTION SELF-TEST GUIDE
+ * 
+ * To test the generate-ai-insights Edge Function error handling, open browser console and run:
+ * 
+ * // Test 1: Valid small payload (should succeed with 200)
+ * fetch(import.meta.env.VITE_SUPABASE_URL + '/functions/v1/generate-ai-insights', {
+ *   method: 'POST',
+ *   headers: {
+ *     'Authorization': 'Bearer ' + (await supabase.auth.getSession()).data.session.access_token,
+ *     'Content-Type': 'application/json',
+ *     'x-kfp-request-id': crypto.randomUUID()
+ *   },
+ *   body: JSON.stringify({
+ *     analysisData: { keyword_gap_list: [{ keyword: 'test', competitor_rank: 1, search_volume: 100 }] },
+ *     competitorDomain: 'example.com'
+ *   })
+ * }).then(r => r.json()).then(console.log);
+ * 
+ * // Test 2: Invalid schema - missing analysisData (should return 422)
+ * fetch(import.meta.env.VITE_SUPABASE_URL + '/functions/v1/generate-ai-insights', {
+ *   method: 'POST',
+ *   headers: {
+ *     'Authorization': 'Bearer ' + (await supabase.auth.getSession()).data.session.access_token,
+ *     'Content-Type': 'application/json'
+ *   },
+ *   body: JSON.stringify({ competitorDomain: 'example.com' })
+ * }).then(r => r.json()).then(console.log);
+ * 
+ * // Test 3: Oversized payload - too many keywords (should return 413)
+ * fetch(import.meta.env.VITE_SUPABASE_URL + '/functions/v1/generate-ai-insights', {
+ *   method: 'POST',
+ *   headers: {
+ *     'Authorization': 'Bearer ' + (await supabase.auth.getSession()).data.session.access_token,
+ *     'Content-Type': 'application/json'
+ *   },
+ *   body: JSON.stringify({
+ *     analysisData: { 
+ *       keyword_gap_list: Array(1001).fill({ keyword: 'test', competitor_rank: 1, search_volume: 100 })
+ *     },
+ *     competitorDomain: 'example.com'
+ *   })
+ * }).then(r => r.json()).then(console.log);
+ * 
+ * Expected results:
+ * - Test 1: {report: "...", meta: {requestId, durationMs, timestamp}}
+ * - Test 2: {error: "Missing or invalid analysisData object", code: "INVALID_INPUT", requestId}
+ * - Test 3: {error: "Too many keywords...", code: "PAYLOAD_TOO_LARGE", limits: {...}, requestId}
+ */
+
 const LANGUAGE_OPTIONS = [
   { code: "en", name: "English" },
   { code: "es", name: "Spanish" },
@@ -114,6 +166,13 @@ export default function CompetitorAnalyzer() {
   const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
   const [errorAlert, setErrorAlert] = useState<{ request_id: string; stage: string; message: string; warnings: string[] } | null>(null);
   const [diagnosticTest, setDiagnosticTest] = useState<{ running: boolean; result: any; error: any } | null>(null);
+  const [aiInsightsError, setAiInsightsError] = useState<{
+    request_id: string;
+    status: number;
+    statusText: string;
+    responseBody: string;
+    timestamp: string;
+  } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin } = useIsAdmin();
@@ -310,19 +369,122 @@ export default function CompetitorAnalyzer() {
     const dataToAnalyze = data || analysisData;
     if (!dataToAnalyze) return;
 
+    // Generate request-id for correlation across client/server logs
+    const requestId = crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+    
+    // Clear previous AI error state
+    setAiInsightsError(null);
     setGeneratingInsights(true);
 
+    // Log diagnostics: request payload size, parameters
+    const payloadSize = JSON.stringify({ analysisData: dataToAnalyze, competitorDomain }).length;
+    console.info('[AI-INSIGHTS-DIAGNOSTICS] Request initiated', {
+      request_id: requestId,
+      timestamp,
+      payload_size_bytes: payloadSize,
+      competitor_domain: competitorDomain,
+      keyword_gaps_count: dataToAnalyze.keyword_gap_list?.length || 0,
+      location_code: locationCode,
+      language_code: languageCode,
+      limit,
+    });
+
     try {
-      const { data: insightsData, error } = await supabase.functions.invoke('generate-ai-insights', {
-        body: { 
-          analysisData: dataToAnalyze,
-          competitorDomain 
-        }
+      console.info('[AI-INSIGHTS-DIAGNOSTICS] Calling edge function', {
+        request_id: requestId,
+        function_name: 'generate-ai-insights',
       });
 
-      if (error) throw error;
+      // Use invokeFunction helper which includes Authorization header
+      const insightsData = await invokeFunction('generate-ai-insights', { 
+        analysisData: dataToAnalyze,
+        competitorDomain,
+        requestId
+      });
+      
+      const error = null; // invokeFunction throws on error
 
-      setAiInsights(insightsData.report);
+      // Log response status
+      console.info('[AI-INSIGHTS-DIAGNOSTICS] Response received', {
+        request_id: requestId,
+        has_error: !!error,
+        has_data: !!insightsData,
+      });
+
+      if (error) {
+        // Capture full error details for non-2xx responses
+        const errorBody = typeof error === 'object' ? JSON.stringify(error, null, 2) : String(error);
+        console.error('[AI-INSIGHTS-DIAGNOSTICS] Edge function error', {
+          request_id: requestId,
+          error_message: error.message || 'Unknown error',
+          error_body: errorBody.substring(0, 512),
+        });
+        
+        // Map error codes to user-friendly messages
+        let userMessage = error.message || 'Failed to generate AI insights';
+        if (insightsData?.code) {
+          switch (insightsData.code) {
+            case 'PAYLOAD_TOO_LARGE':
+              userMessage = `Payload too large. Please reduce the number of keywords below ${insightsData.limits?.maxKeywords || 1000} and try again.`;
+              break;
+            case 'INVALID_INPUT':
+              userMessage = 'Invalid analysis data format. Please run a new competitor analysis.';
+              break;
+            case 'UPSTREAM_TIMEOUT':
+              userMessage = 'AI model request timed out. Please try again in a moment.';
+              break;
+            case 'RATE_LIMIT':
+              userMessage = 'AI service rate limit reached. Please wait a moment and try again.';
+              break;
+            case 'CONFIG_MISSING':
+              userMessage = 'Server configuration error. Please contact support.';
+              break;
+            case 'UPSTREAM_ERROR':
+              userMessage = 'AI service temporarily unavailable. Please try again later.';
+              break;
+          }
+        }
+        
+        // Set inline error state with helpful remediation
+        setAiInsightsError({
+          request_id: requestId,
+          status: (error as any)?.status || insightsData?.code === 'PAYLOAD_TOO_LARGE' ? 413 : insightsData?.code === 'INVALID_INPUT' ? 422 : 500,
+          statusText: insightsData?.code || 'Unknown',
+          responseBody: userMessage,
+          timestamp,
+        });
+        
+        throw new Error(userMessage);
+      }
+
+      // Use adapter to normalize response and handle schema variations
+      const normalized = parseCompetitorInsights(insightsData);
+      
+      console.info('[AI-INSIGHTS-DIAGNOSTICS] Normalized response', {
+        request_id: requestId,
+        has_data: hasInsightsData(normalized),
+        report_length: normalized.report?.length || 0,
+      });
+
+      // Check if normalized response has an error
+      if (!normalized.ok || normalized.error) {
+        const errMsg = normalized.error?.message || 'Failed to generate AI insights';
+        setAiInsightsError({
+          request_id: normalized.meta?.requestId || requestId,
+          status: normalized.error?.code === 'PAYLOAD_TOO_LARGE' ? 413 : 
+                  normalized.error?.code === 'INVALID_INPUT' ? 422 : 500,
+          statusText: normalized.error?.code || 'Unknown',
+          responseBody: errMsg,
+          timestamp,
+        });
+        throw new Error(errMsg);
+      }
+
+      // Set insights from normalized response
+      setAiInsights(normalized.report || null);
+      
+      console.info('[AI-INSIGHTS-DIAGNOSTICS] Success', { request_id: requestId });
       
       toast({
         title: "AI Insights Generated",
@@ -331,11 +493,15 @@ export default function CompetitorAnalyzer() {
 
     } catch (error: any) {
       logger.error('AI insights error:', error);
-      toast({
-        title: "AI Insights failed",
-        description: error.message || "Failed to generate AI insights",
-        variant: "destructive"
-      });
+      
+      // Only show toast if we haven't already set inline error
+      if (!aiInsightsError) {
+        toast({
+          title: "AI Insights failed",
+          description: error.message || "Failed to generate AI insights. Check console for details.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setGeneratingInsights(false);
     }
@@ -811,75 +977,140 @@ export default function CompetitorAnalyzer() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-end gap-2 mb-4">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleExportCSV}
-                    disabled={!sortedKeywords.length}
-                    title="Exports your current result set"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download CSV
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleExportJSON}
-                    disabled={!sortedKeywords.length}
-                    title="Exports your current result set"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download JSON
-                  </Button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full" data-testid="keyword-gap-table">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('keyword')}>
-                          Keyword {sortField === 'keyword' && (sortOrder === 'asc' ? '↑' : '↓')}
-                        </th>
-                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('competitor_rank')}>
-                          Competitor Rank {sortField === 'competitor_rank' && (sortOrder === 'asc' ? '↑' : '↓')}
-                        </th>
-                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('search_volume')}>
-                          Search Volume {sortField === 'search_volume' && (sortOrder === 'asc' ? '↑' : '↓')}
-                        </th>
-                        <th className="text-left py-3 px-2">
-                          Ranking URL
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedKeywords.map((kw, idx) => (
-                        <tr key={idx} className="border-b hover:bg-muted/30">
-                          <td className="py-2 px-2">{kw.keyword}</td>
-                          <td className="text-right py-2 px-2">#{kw.competitor_rank}</td>
-                          <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
-                          <td className="py-2 px-2">
-                            {kw.competitor_url ? (
-                              <a 
-                                href={kw.competitor_url} 
-                                target="_blank" 
-                                rel="nofollow noopener noreferrer"
-                                className="text-primary hover:underline text-xs truncate max-w-xs block"
-                              >
-                                {kw.competitor_url}
-                              </a>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                {sortedKeywords.length > 0 ? (
+                  <>
+                    <div className="flex justify-end gap-2 mb-4">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleExportCSV}
+                        disabled={!sortedKeywords.length}
+                        title="Exports your current result set"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download CSV
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleExportJSON}
+                        disabled={!sortedKeywords.length}
+                        title="Exports your current result set"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download JSON
+                      </Button>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full" data-testid="keyword-gap-table">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('keyword')}>
+                              Keyword {sortField === 'keyword' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('competitor_rank')}>
+                              Competitor Rank {sortField === 'competitor_rank' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('search_volume')}>
+                              Search Volume {sortField === 'search_volume' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-left py-3 px-2">
+                              Ranking URL
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedKeywords.map((kw, idx) => (
+                            <tr key={idx} className="border-b hover:bg-muted/30">
+                              <td className="py-2 px-2">{kw.keyword}</td>
+                              <td className="text-right py-2 px-2">#{kw.competitor_rank}</td>
+                              <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
+                              <td className="py-2 px-2">
+                                {kw.competitor_url ? (
+                                  <a 
+                                    href={kw.competitor_url} 
+                                    target="_blank" 
+                                    rel="nofollow noopener noreferrer"
+                                    className="text-primary hover:underline text-xs truncate max-w-xs block"
+                                  >
+                                    {kw.competitor_url}
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No Keyword Gaps Found</h3>
+                    <p className="text-sm text-muted-foreground max-w-md mb-4">
+                      The competitor analysis returned no keyword gaps. This could mean:
+                    </p>
+                    <ul className="text-sm text-muted-foreground text-left list-disc list-inside space-y-1 mb-4">
+                      <li>Your domain ranks for all keywords the competitor ranks for</li>
+                      <li>The competitor has no ranking keywords in the specified market</li>
+                      <li>Try adjusting the location or language settings</li>
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {aiInsights && (
+            {aiInsightsError && (
+              <Alert variant="destructive" className="relative">
+                <AlertCircle className="h-4 w-4" />
+                <button
+                  onClick={() => setAiInsightsError(null)}
+                  className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+                  aria-label="Dismiss alert"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <AlertTitle>AI Insights Generation Failed</AlertTitle>
+                <AlertDescription className="mt-2 space-y-2">
+                  <div>
+                    <strong>Status Code:</strong> {aiInsightsError.status || 'Unknown'}
+                  </div>
+                  <div>
+                    <strong>Status Text:</strong> {aiInsightsError.statusText || 'Unknown'}
+                  </div>
+                  <div>
+                    <strong>Request ID:</strong> <code className="text-xs bg-background/50 px-1 py-0.5 rounded">{aiInsightsError.request_id}</code>
+                  </div>
+                  <div>
+                    <strong>Timestamp:</strong> {aiInsightsError.timestamp}
+                  </div>
+                  {aiInsightsError.responseBody && (
+                    <div>
+                      <strong>Response (first 256 chars):</strong>
+                      <pre className="text-xs bg-background/50 p-2 rounded mt-1 overflow-x-auto">{aiInsightsError.responseBody}</pre>
+                    </div>
+                  )}
+                  <div className="pt-2">
+                    <Button 
+                      onClick={() => generateAIInsights()} 
+                      variant="outline"
+                      size="sm"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Retry
+                    </Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground pt-2 border-t">
+                    <strong>Debugging:</strong> Check browser console for detailed logs (search for request_id: {aiInsightsError.request_id}). 
+                    Server-side logs available in Supabase Dashboard → Edge Functions → generate-ai-insights → Logs (filter by x-kfp-request-id header).
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {aiInsights && !aiInsightsError && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -890,14 +1121,28 @@ export default function CompetitorAnalyzer() {
                   <CardDescription>Strategic recommendations based on the analysis</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose prose-sm max-w-none">
-                    <pre className="whitespace-pre-wrap text-sm bg-muted/50 p-4 rounded-lg">{aiInsights}</pre>
-                  </div>
+                  {aiInsights.trim() ? (
+                    <div className="prose prose-sm max-w-none">
+                      <pre className="whitespace-pre-wrap text-sm bg-muted/50 p-4 rounded-lg">{aiInsights}</pre>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <FileQuestion className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Insights Generated</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        The AI returned an empty response. Try regenerating the insights.
+                      </p>
+                      <Button onClick={() => generateAIInsights()} variant="outline" size="sm">
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Regenerate Insights
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
 
-            {!aiInsights && !generatingInsights && (
+            {!aiInsights && !generatingInsights && !aiInsightsError && (
               <Card>
                 <CardContent className="pt-6">
                   <Button 
