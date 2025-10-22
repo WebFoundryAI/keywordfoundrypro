@@ -253,16 +253,38 @@ export default function CompetitorAnalyzer() {
       await generateAIInsights(analysisResult);
 
     } catch (error: any) {
-      // Only show toast for network failures (no JSON response body)
+      // Enhanced error handling with better messages
       let errorMessage = error?.message || "Unknown error.";
-      if (errorMessage.toLowerCase().includes('timeout')) {
-        errorMessage = "The request timed out. Please retry in a moment.";
+      let errorTitle = "Network error";
+
+      // Check for specific error patterns
+      if (errorMessage.toLowerCase().includes('failed to send') ||
+          errorMessage.toLowerCase().includes('edge function')) {
+        errorTitle = "Edge Function Error";
+        errorMessage = "Failed to connect to the competitor analyzer service. The Edge Function may not be deployed or is experiencing issues. Please contact support if this persists.";
+      } else if (errorMessage.toLowerCase().includes('timeout')) {
+        errorMessage = "The request timed out. This analysis takes 60-90 seconds. Please retry.";
       } else if (errorMessage.toLowerCase().includes('network')) {
-        errorMessage = "Network error. Please check your connection and try again.";
+        errorMessage = "Network error. Please check your internet connection and try again.";
       } else if (errorMessage.toLowerCase().includes('fetch')) {
         errorMessage = "Failed to connect to the server. Please check your connection and try again.";
+      } else if (errorMessage.toLowerCase().includes('unauthorized') || errorMessage.toLowerCase().includes('auth')) {
+        errorTitle = "Authentication Error";
+        errorMessage = "Your session may have expired. Please sign out and sign in again.";
       }
-      toast({ title: "Network error", description: errorMessage, variant: "destructive" });
+
+      logger.error('Competitor Analysis Error:', {
+        error: error,
+        message: errorMessage,
+        stack: error?.stack
+      });
+
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+        duration: 10000  // Show for 10 seconds
+      });
     } finally {
       setLoading(false);
       setAnalyzing(false);
