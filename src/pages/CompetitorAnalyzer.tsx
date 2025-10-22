@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeWithAuth, DataForSEOApiError } from "@/lib/supabaseHelpers";
+import { invokeFunction } from "@/lib/invoke";
 import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X, Globe, MapPin, FileQuestion } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
@@ -353,27 +354,19 @@ export default function CompetitorAnalyzer() {
     });
 
     try {
-      // Get session for authorization header logging (mask the token)
-      const { data: { session } } = await supabase.auth.getSession();
-      const authHeaderPreview = session?.access_token 
-        ? `Bearer ${session.access_token.substring(0, 20)}...` 
-        : 'none';
-      
       console.info('[AI-INSIGHTS-DIAGNOSTICS] Calling edge function', {
         request_id: requestId,
         function_name: 'generate-ai-insights',
-        auth_header_preview: authHeaderPreview,
       });
 
-      const { data: insightsData, error } = await supabase.functions.invoke('generate-ai-insights', {
-        body: { 
-          analysisData: dataToAnalyze,
-          competitorDomain 
-        },
-        headers: {
-          'x-kfp-request-id': requestId
-        }
+      // Use invokeFunction helper which includes Authorization header
+      const insightsData = await invokeFunction('generate-ai-insights', { 
+        analysisData: dataToAnalyze,
+        competitorDomain,
+        requestId
       });
+      
+      const error = null; // invokeFunction throws on error
 
       // Log response status
       console.info('[AI-INSIGHTS-DIAGNOSTICS] Response received', {
