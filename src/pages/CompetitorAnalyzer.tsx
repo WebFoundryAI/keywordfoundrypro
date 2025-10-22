@@ -165,7 +165,11 @@ export default function CompetitorAnalyzer() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
   const [errorAlert, setErrorAlert] = useState<{ request_id: string; stage: string; message: string; warnings: string[] } | null>(null);
-  const [diagnosticTest, setDiagnosticTest] = useState<{ running: boolean; result: any; error: any } | null>(null);
+  const [diagnosticTest, setDiagnosticTest] = useState<{
+    running: boolean;
+    result: { ok: boolean; request_id: string; data?: { d4s_creds_present: boolean } } | null;
+    error: { message: string } | null
+  } | null>(null);
   const [aiInsightsError, setAiInsightsError] = useState<{
     request_id: string;
     status: number;
@@ -203,8 +207,8 @@ export default function CompetitorAnalyzer() {
       });
 
       setDiagnosticTest({ running: false, result: data, error });
-    } catch (error: any) {
-      setDiagnosticTest({ running: false, result: null, error });
+    } catch (err) {
+      setDiagnosticTest({ running: false, result: null, error: { message: err instanceof Error ? err.message : 'Unknown error' } });
     }
   };
 
