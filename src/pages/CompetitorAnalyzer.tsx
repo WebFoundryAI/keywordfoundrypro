@@ -68,6 +68,56 @@ interface AnalysisData {
 
 const FREE_LIMIT = 3;
 
+/* 
+ * EDGE FUNCTION SELF-TEST GUIDE
+ * 
+ * To test the generate-ai-insights Edge Function error handling, open browser console and run:
+ * 
+ * // Test 1: Valid small payload (should succeed with 200)
+ * fetch(import.meta.env.VITE_SUPABASE_URL + '/functions/v1/generate-ai-insights', {
+ *   method: 'POST',
+ *   headers: {
+ *     'Authorization': 'Bearer ' + (await supabase.auth.getSession()).data.session.access_token,
+ *     'Content-Type': 'application/json',
+ *     'x-kfp-request-id': crypto.randomUUID()
+ *   },
+ *   body: JSON.stringify({
+ *     analysisData: { keyword_gap_list: [{ keyword: 'test', competitor_rank: 1, search_volume: 100 }] },
+ *     competitorDomain: 'example.com'
+ *   })
+ * }).then(r => r.json()).then(console.log);
+ * 
+ * // Test 2: Invalid schema - missing analysisData (should return 422)
+ * fetch(import.meta.env.VITE_SUPABASE_URL + '/functions/v1/generate-ai-insights', {
+ *   method: 'POST',
+ *   headers: {
+ *     'Authorization': 'Bearer ' + (await supabase.auth.getSession()).data.session.access_token,
+ *     'Content-Type': 'application/json'
+ *   },
+ *   body: JSON.stringify({ competitorDomain: 'example.com' })
+ * }).then(r => r.json()).then(console.log);
+ * 
+ * // Test 3: Oversized payload - too many keywords (should return 413)
+ * fetch(import.meta.env.VITE_SUPABASE_URL + '/functions/v1/generate-ai-insights', {
+ *   method: 'POST',
+ *   headers: {
+ *     'Authorization': 'Bearer ' + (await supabase.auth.getSession()).data.session.access_token,
+ *     'Content-Type': 'application/json'
+ *   },
+ *   body: JSON.stringify({
+ *     analysisData: { 
+ *       keyword_gap_list: Array(1001).fill({ keyword: 'test', competitor_rank: 1, search_volume: 100 })
+ *     },
+ *     competitorDomain: 'example.com'
+ *   })
+ * }).then(r => r.json()).then(console.log);
+ * 
+ * Expected results:
+ * - Test 1: {report: "...", meta: {requestId, durationMs, timestamp}}
+ * - Test 2: {error: "Missing or invalid analysisData object", code: "INVALID_INPUT", requestId}
+ * - Test 3: {error: "Too many keywords...", code: "PAYLOAD_TOO_LARGE", limits: {...}, requestId}
+ */
+
 const LANGUAGE_OPTIONS = [
   { code: "en", name: "English" },
   { code: "es", name: "Spanish" },
@@ -340,16 +390,41 @@ export default function CompetitorAnalyzer() {
           error_body: errorBody.substring(0, 512),
         });
         
-        // Set inline error state
+        // Map error codes to user-friendly messages
+        let userMessage = error.message || 'Failed to generate AI insights';
+        if (insightsData?.code) {
+          switch (insightsData.code) {
+            case 'PAYLOAD_TOO_LARGE':
+              userMessage = `Payload too large. Please reduce the number of keywords below ${insightsData.limits?.maxKeywords || 1000} and try again.`;
+              break;
+            case 'INVALID_INPUT':
+              userMessage = 'Invalid analysis data format. Please run a new competitor analysis.';
+              break;
+            case 'UPSTREAM_TIMEOUT':
+              userMessage = 'AI model request timed out. Please try again in a moment.';
+              break;
+            case 'RATE_LIMIT':
+              userMessage = 'AI service rate limit reached. Please wait a moment and try again.';
+              break;
+            case 'CONFIG_MISSING':
+              userMessage = 'Server configuration error. Please contact support.';
+              break;
+            case 'UPSTREAM_ERROR':
+              userMessage = 'AI service temporarily unavailable. Please try again later.';
+              break;
+          }
+        }
+        
+        // Set inline error state with helpful remediation
         setAiInsightsError({
           request_id: requestId,
-          status: (error as any)?.status || 0,
-          statusText: (error as any)?.statusText || 'Unknown',
-          responseBody: errorBody.substring(0, 256),
+          status: (error as any)?.status || insightsData?.code === 'PAYLOAD_TOO_LARGE' ? 413 : insightsData?.code === 'INVALID_INPUT' ? 422 : 500,
+          statusText: insightsData?.code || 'Unknown',
+          responseBody: userMessage,
           timestamp,
         });
         
-        throw error;
+        throw new Error(userMessage);
       }
 
       setAiInsights(insightsData.report);
