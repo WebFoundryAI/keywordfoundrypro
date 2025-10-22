@@ -113,6 +113,13 @@ export default function CompetitorAnalyzer() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
   const [errorAlert, setErrorAlert] = useState<{ request_id: string; stage: string; message: string; warnings: string[] } | null>(null);
+  const [aiInsightsError, setAiInsightsError] = useState<{ 
+    request_id: string; 
+    status: number; 
+    statusText: string; 
+    responseBody: string;
+    timestamp: string;
+  } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin } = useIsAdmin();
@@ -273,19 +280,81 @@ export default function CompetitorAnalyzer() {
     const dataToAnalyze = data || analysisData;
     if (!dataToAnalyze) return;
 
+    // Generate request-id for correlation across client/server logs
+    const requestId = crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+    
+    // Clear previous AI error state
+    setAiInsightsError(null);
     setGeneratingInsights(true);
 
+    // Log diagnostics: request payload size, parameters
+    const payloadSize = JSON.stringify({ analysisData: dataToAnalyze, competitorDomain }).length;
+    console.info('[AI-INSIGHTS-DIAGNOSTICS] Request initiated', {
+      request_id: requestId,
+      timestamp,
+      payload_size_bytes: payloadSize,
+      competitor_domain: competitorDomain,
+      keyword_gaps_count: dataToAnalyze.keyword_gap_list?.length || 0,
+      location_code: locationCode,
+      language_code: languageCode,
+      limit,
+    });
+
     try {
+      // Get session for authorization header logging (mask the token)
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeaderPreview = session?.access_token 
+        ? `Bearer ${session.access_token.substring(0, 20)}...` 
+        : 'none';
+      
+      console.info('[AI-INSIGHTS-DIAGNOSTICS] Calling edge function', {
+        request_id: requestId,
+        function_name: 'generate-ai-insights',
+        auth_header_preview: authHeaderPreview,
+      });
+
       const { data: insightsData, error } = await supabase.functions.invoke('generate-ai-insights', {
         body: { 
           analysisData: dataToAnalyze,
           competitorDomain 
+        },
+        headers: {
+          'x-kfp-request-id': requestId
         }
       });
 
-      if (error) throw error;
+      // Log response status
+      console.info('[AI-INSIGHTS-DIAGNOSTICS] Response received', {
+        request_id: requestId,
+        has_error: !!error,
+        has_data: !!insightsData,
+      });
+
+      if (error) {
+        // Capture full error details for non-2xx responses
+        const errorBody = typeof error === 'object' ? JSON.stringify(error, null, 2) : String(error);
+        console.error('[AI-INSIGHTS-DIAGNOSTICS] Edge function error', {
+          request_id: requestId,
+          error_message: error.message || 'Unknown error',
+          error_body: errorBody.substring(0, 512),
+        });
+        
+        // Set inline error state
+        setAiInsightsError({
+          request_id: requestId,
+          status: (error as any)?.status || 0,
+          statusText: (error as any)?.statusText || 'Unknown',
+          responseBody: errorBody.substring(0, 256),
+          timestamp,
+        });
+        
+        throw error;
+      }
 
       setAiInsights(insightsData.report);
+      
+      console.info('[AI-INSIGHTS-DIAGNOSTICS] Success', { request_id: requestId });
       
       toast({
         title: "AI Insights Generated",
@@ -294,11 +363,15 @@ export default function CompetitorAnalyzer() {
 
     } catch (error: any) {
       logger.error('AI insights error:', error);
-      toast({
-        title: "AI Insights failed",
-        description: error.message || "Failed to generate AI insights",
-        variant: "destructive"
-      });
+      
+      // Only show toast if we haven't already set inline error
+      if (!aiInsightsError) {
+        toast({
+          title: "AI Insights failed",
+          description: error.message || "Failed to generate AI insights. Check console for details.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setGeneratingInsights(false);
     }
@@ -752,7 +825,55 @@ export default function CompetitorAnalyzer() {
               </CardContent>
             </Card>
 
-            {aiInsights && (
+            {aiInsightsError && (
+              <Alert variant="destructive" className="relative">
+                <AlertCircle className="h-4 w-4" />
+                <button
+                  onClick={() => setAiInsightsError(null)}
+                  className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+                  aria-label="Dismiss alert"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <AlertTitle>AI Insights Generation Failed</AlertTitle>
+                <AlertDescription className="mt-2 space-y-2">
+                  <div>
+                    <strong>Status Code:</strong> {aiInsightsError.status || 'Unknown'}
+                  </div>
+                  <div>
+                    <strong>Status Text:</strong> {aiInsightsError.statusText || 'Unknown'}
+                  </div>
+                  <div>
+                    <strong>Request ID:</strong> <code className="text-xs bg-background/50 px-1 py-0.5 rounded">{aiInsightsError.request_id}</code>
+                  </div>
+                  <div>
+                    <strong>Timestamp:</strong> {aiInsightsError.timestamp}
+                  </div>
+                  {aiInsightsError.responseBody && (
+                    <div>
+                      <strong>Response (first 256 chars):</strong>
+                      <pre className="text-xs bg-background/50 p-2 rounded mt-1 overflow-x-auto">{aiInsightsError.responseBody}</pre>
+                    </div>
+                  )}
+                  <div className="pt-2">
+                    <Button 
+                      onClick={() => generateAIInsights()} 
+                      variant="outline"
+                      size="sm"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Retry
+                    </Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground pt-2 border-t">
+                    <strong>Debugging:</strong> Check browser console for detailed logs (search for request_id: {aiInsightsError.request_id}). 
+                    Server-side logs available in Supabase Dashboard → Edge Functions → generate-ai-insights → Logs (filter by x-kfp-request-id header).
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {aiInsights && !aiInsightsError && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -770,7 +891,7 @@ export default function CompetitorAnalyzer() {
               </Card>
             )}
 
-            {!aiInsights && !generatingInsights && (
+            {!aiInsights && !generatingInsights && !aiInsightsError && (
               <Card>
                 <CardContent className="pt-6">
                   <Button 
