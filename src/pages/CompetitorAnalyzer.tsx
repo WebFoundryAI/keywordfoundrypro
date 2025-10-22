@@ -15,6 +15,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
 import { logger } from '@/lib/logger';
 import { trackCompetitorAnalysis, trackExport } from '@/lib/analytics';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -114,6 +115,7 @@ export default function CompetitorAnalyzer() {
   const [errorAlert, setErrorAlert] = useState<{ request_id: string; stage: string; message: string; warnings: string[] } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isAdmin } = useIsAdmin();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -171,8 +173,8 @@ export default function CompetitorAnalyzer() {
       limit: parseInt(limit, 10)
     };
 
-    // Pre-check local badge if available
-    if (profile) {
+    // Pre-check local badge if available (skip for admins)
+    if (!isAdmin && profile) {
       const now = new Date();
       const renewalDate = profile.free_reports_renewal_at ? new Date(profile.free_reports_renewal_at) : null;
       const needsRenewal = !renewalDate || now > renewalDate;
@@ -431,9 +433,14 @@ export default function CompetitorAnalyzer() {
               </a>
             </p>
           </div>
-          {reportsLeft !== null && (
+          {!isAdmin && reportsLeft !== null && (
             <Badge variant="secondary" className="text-sm">
               Free reports left: {reportsLeft}
+            </Badge>
+          )}
+          {isAdmin && (
+            <Badge variant="default" className="text-sm">
+              Admin: Unlimited
             </Badge>
           )}
         </div>

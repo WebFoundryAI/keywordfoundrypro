@@ -3,6 +3,7 @@ import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
 import { onboardingStorage } from '@/lib/onboardingStorage';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { analytics } from '@/lib/analytics';
+import { useAuth } from '@/components/AuthProvider';
 
 const steps: Step[] = [
   {
@@ -11,6 +12,7 @@ const steps: Step[] = [
       <div>
         <h3 className="text-lg font-bold mb-2">Welcome to Keyword Foundry Pro!</h3>
         <p>Let's take a quick 60-second tour to show you how to conduct professional keyword research.</p>
+        <p className="text-sm text-muted-foreground mt-2">You can skip this tour and access it later from your profile menu.</p>
       </div>
     ),
     placement: 'center',
@@ -47,22 +49,25 @@ export function OnboardingTour() {
   const [run, setRun] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Only show on /research and if not completed
-    if (location.pathname === '/research' && !onboardingStorage.isCompleted()) {
+    // Only show on /research and if not completed for this user
+    if (location.pathname === '/research' && user && !onboardingStorage.isCompleted(user.id)) {
       // Delay to let page render
       setTimeout(() => setRun(true), 500);
     }
-  }, [location]);
+  }, [location, user]);
 
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status, index, type } = data;
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
-      onboardingStorage.markCompleted();
+      if (user) {
+        onboardingStorage.markCompleted(user.id);
+      }
       setRun(false);
-      
+
       // Track completion analytics
       if (status === STATUS.FINISHED) {
         analytics.event('Onboarding Completed');
@@ -80,6 +85,12 @@ export function OnboardingTour() {
       showProgress
       showSkipButton
       callback={handleJoyrideCallback}
+      locale={{
+        skip: "Don't show again",
+        next: 'Next',
+        back: 'Back',
+        last: 'Finish',
+      }}
       styles={{
         options: {
           primaryColor: 'hsl(var(--primary))',

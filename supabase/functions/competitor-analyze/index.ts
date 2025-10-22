@@ -187,7 +187,14 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // Freemium quota check
+    // Check if user is admin (admins have unlimited usage)
+    const { data: isAdminData, error: adminError } = await supabaseClient
+      .rpc('is_admin', { _user_id: user.id });
+
+    const isAdmin = isAdminData === true;
+    console.log('Admin check:', { user_id: user.id, isAdmin });
+
+    // Freemium quota check (skip for admins)
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('free_reports_used, free_reports_renewal_at')
@@ -196,37 +203,37 @@ serve(async (req) => {
 
     if (profileError) {
       console.error('[competitor-analyze]', request_id, 'profile', profileError);
-      return json({ 
-        ok: false, 
-        request_id, 
-        warnings, 
-        error: { stage: 'profile', message: 'Failed to fetch profile' } 
+      return json({
+        ok: false,
+        request_id,
+        warnings,
+        error: { stage: 'profile', message: 'Failed to fetch profile' }
       }, 200);
     }
 
     if (!profile) {
       console.error('[competitor-analyze]', request_id, 'profile', 'Profile not found for user:', user.id);
-      return json({ 
-        ok: false, 
-        request_id, 
-        warnings, 
-        error: { stage: 'profile', message: 'Profile not found for this user. Try signing out/in to refresh.' } 
+      return json({
+        ok: false,
+        request_id,
+        warnings,
+        error: { stage: 'profile', message: 'Profile not found for this user. Try signing out/in to refresh.' }
       }, 200);
     }
 
-    console.log('Profile loaded:', { 
-      user_id: user.id, 
+    console.log('Profile loaded:', {
+      user_id: user.id,
       free_reports_used: profile.free_reports_used,
-      free_reports_renewal_at: profile.free_reports_renewal_at 
+      free_reports_renewal_at: profile.free_reports_renewal_at
     });
 
     const now = new Date();
     const renewalDate = profile.free_reports_renewal_at ? new Date(profile.free_reports_renewal_at) : null;
     const needsRenewal = !renewalDate || now > renewalDate;
-    
+
     let effectiveUsed = 0;
     let newRenewalDate = renewalDate;
-    
+
     if (needsRenewal) {
       effectiveUsed = 0;
       newRenewalDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -235,15 +242,16 @@ serve(async (req) => {
       effectiveUsed = profile.free_reports_used || 0;
     }
 
-    console.log('Quota check:', { effectiveUsed, limit: FREE_LIMIT, needsRenewal });
+    console.log('Quota check:', { effectiveUsed, limit: FREE_LIMIT, needsRenewal, isAdmin });
 
-    if (effectiveUsed >= FREE_LIMIT) {
+    // Skip quota check for admins
+    if (!isAdmin && effectiveUsed >= FREE_LIMIT) {
       console.log('[competitor-analyze]', request_id, 'quota', 'Limit exceeded for user:', user.id);
-      return json({ 
-        ok: false, 
-        request_id, 
-        warnings, 
-        error: { stage: 'quota', message: 'Free limit reached. Please upgrade for more analyses.' } 
+      return json({
+        ok: false,
+        request_id,
+        warnings,
+        error: { stage: 'quota', message: 'Free limit reached. Please upgrade for more analyses.' }
       }, 200);
     }
     
@@ -449,20 +457,24 @@ serve(async (req) => {
       console.log('Skipping cache storage due to custom parameters');
     }
 
-    // Update freemium usage
-    const updateData = needsRenewal 
-      ? { free_reports_used: 1, free_reports_renewal_at: newRenewalDate?.toISOString() }
-      : { free_reports_used: effectiveUsed + 1 };
+    // Update freemium usage (skip for admins)
+    if (!isAdmin) {
+      const updateData = needsRenewal
+        ? { free_reports_used: 1, free_reports_renewal_at: newRenewalDate?.toISOString() }
+        : { free_reports_used: effectiveUsed + 1 };
 
-    const { error: updateError } = await supabaseClient
-      .from('profiles')
-      .update(updateData)
-      .eq('user_id', user.id);
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update(updateData)
+        .eq('user_id', user.id);
 
-    if (updateError) {
-      console.error('Failed to update usage:', updateError);
+      if (updateError) {
+        console.error('Failed to update usage:', updateError);
+      } else {
+        console.log('Usage updated successfully:', updateData);
+      }
     } else {
-      console.log('Usage updated successfully:', updateData);
+      console.log('Skipping usage update for admin user');
     }
 
     return json({
