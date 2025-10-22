@@ -10,12 +10,13 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeWithAuth, DataForSEOApiError } from "@/lib/supabaseHelpers";
-import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X, Globe, MapPin } from "lucide-react";
+import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X, Globe, MapPin, FileQuestion } from "lucide-react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
 import { logger } from '@/lib/logger';
 import { trackCompetitorAnalysis, trackExport } from '@/lib/analytics';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { parseCompetitorInsights, hasInsightsData } from './CompetitorAnalyzer/insightsAdapter';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -427,7 +428,31 @@ export default function CompetitorAnalyzer() {
         throw new Error(userMessage);
       }
 
-      setAiInsights(insightsData.report);
+      // Use adapter to normalize response and handle schema variations
+      const normalized = parseCompetitorInsights(insightsData);
+      
+      console.info('[AI-INSIGHTS-DIAGNOSTICS] Normalized response', {
+        request_id: requestId,
+        has_data: hasInsightsData(normalized),
+        report_length: normalized.report?.length || 0,
+      });
+
+      // Check if normalized response has an error
+      if (!normalized.ok || normalized.error) {
+        const errMsg = normalized.error?.message || 'Failed to generate AI insights';
+        setAiInsightsError({
+          request_id: normalized.meta?.requestId || requestId,
+          status: normalized.error?.code === 'PAYLOAD_TOO_LARGE' ? 413 : 
+                  normalized.error?.code === 'INVALID_INPUT' ? 422 : 500,
+          statusText: normalized.error?.code || 'Unknown',
+          responseBody: errMsg,
+          timestamp,
+        });
+        throw new Error(errMsg);
+      }
+
+      // Set insights from normalized response
+      setAiInsights(normalized.report || null);
       
       console.info('[AI-INSIGHTS-DIAGNOSTICS] Success', { request_id: requestId });
       
@@ -832,71 +857,88 @@ export default function CompetitorAnalyzer() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-end gap-2 mb-4">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleExportCSV}
-                    disabled={!sortedKeywords.length}
-                    title="Exports your current result set"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download CSV
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleExportJSON}
-                    disabled={!sortedKeywords.length}
-                    title="Exports your current result set"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download JSON
-                  </Button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full" data-testid="keyword-gap-table">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('keyword')}>
-                          Keyword {sortField === 'keyword' && (sortOrder === 'asc' ? '↑' : '↓')}
-                        </th>
-                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('competitor_rank')}>
-                          Competitor Rank {sortField === 'competitor_rank' && (sortOrder === 'asc' ? '↑' : '↓')}
-                        </th>
-                        <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('search_volume')}>
-                          Search Volume {sortField === 'search_volume' && (sortOrder === 'asc' ? '↑' : '↓')}
-                        </th>
-                        <th className="text-left py-3 px-2">
-                          Ranking URL
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedKeywords.map((kw, idx) => (
-                        <tr key={idx} className="border-b hover:bg-muted/30">
-                          <td className="py-2 px-2">{kw.keyword}</td>
-                          <td className="text-right py-2 px-2">#{kw.competitor_rank}</td>
-                          <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
-                          <td className="py-2 px-2">
-                            {kw.competitor_url ? (
-                              <a 
-                                href={kw.competitor_url} 
-                                target="_blank" 
-                                rel="nofollow noopener noreferrer"
-                                className="text-primary hover:underline text-xs truncate max-w-xs block"
-                              >
-                                {kw.competitor_url}
-                              </a>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                {sortedKeywords.length > 0 ? (
+                  <>
+                    <div className="flex justify-end gap-2 mb-4">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleExportCSV}
+                        disabled={!sortedKeywords.length}
+                        title="Exports your current result set"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download CSV
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleExportJSON}
+                        disabled={!sortedKeywords.length}
+                        title="Exports your current result set"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download JSON
+                      </Button>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full" data-testid="keyword-gap-table">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('keyword')}>
+                              Keyword {sortField === 'keyword' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('competitor_rank')}>
+                              Competitor Rank {sortField === 'competitor_rank' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('search_volume')}>
+                              Search Volume {sortField === 'search_volume' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-left py-3 px-2">
+                              Ranking URL
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedKeywords.map((kw, idx) => (
+                            <tr key={idx} className="border-b hover:bg-muted/30">
+                              <td className="py-2 px-2">{kw.keyword}</td>
+                              <td className="text-right py-2 px-2">#{kw.competitor_rank}</td>
+                              <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
+                              <td className="py-2 px-2">
+                                {kw.competitor_url ? (
+                                  <a 
+                                    href={kw.competitor_url} 
+                                    target="_blank" 
+                                    rel="nofollow noopener noreferrer"
+                                    className="text-primary hover:underline text-xs truncate max-w-xs block"
+                                  >
+                                    {kw.competitor_url}
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No Keyword Gaps Found</h3>
+                    <p className="text-sm text-muted-foreground max-w-md mb-4">
+                      The competitor analysis returned no keyword gaps. This could mean:
+                    </p>
+                    <ul className="text-sm text-muted-foreground text-left list-disc list-inside space-y-1 mb-4">
+                      <li>Your domain ranks for all keywords the competitor ranks for</li>
+                      <li>The competitor has no ranking keywords in the specified market</li>
+                      <li>Try adjusting the location or language settings</li>
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -959,9 +1001,23 @@ export default function CompetitorAnalyzer() {
                   <CardDescription>Strategic recommendations based on the analysis</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose prose-sm max-w-none">
-                    <pre className="whitespace-pre-wrap text-sm bg-muted/50 p-4 rounded-lg">{aiInsights}</pre>
-                  </div>
+                  {aiInsights.trim() ? (
+                    <div className="prose prose-sm max-w-none">
+                      <pre className="whitespace-pre-wrap text-sm bg-muted/50 p-4 rounded-lg">{aiInsights}</pre>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <FileQuestion className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Insights Generated</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        The AI returned an empty response. Try regenerating the insights.
+                      </p>
+                      <Button onClick={() => generateAIInsights()} variant="outline" size="sm">
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Regenerate Insights
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
