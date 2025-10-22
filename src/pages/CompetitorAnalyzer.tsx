@@ -165,10 +165,11 @@ export default function CompetitorAnalyzer() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
   const [errorAlert, setErrorAlert] = useState<{ request_id: string; stage: string; message: string; warnings: string[] } | null>(null);
-  const [aiInsightsError, setAiInsightsError] = useState<{ 
-    request_id: string; 
-    status: number; 
-    statusText: string; 
+  const [diagnosticTest, setDiagnosticTest] = useState<{ running: boolean; result: any; error: any } | null>(null);
+  const [aiInsightsError, setAiInsightsError] = useState<{
+    request_id: string;
+    status: number;
+    statusText: string;
     responseBody: string;
     timestamp: string;
   } | null>(null);
@@ -192,6 +193,20 @@ export default function CompetitorAnalyzer() {
     };
     fetchProfile();
   }, []);
+
+  const runDiagnosticTest = async () => {
+    setDiagnosticTest({ running: true, result: null, error: null });
+
+    try {
+      const { data, error } = await supabase.functions.invoke('competitor-analyze', {
+        body: { op: 'health' }
+      });
+
+      setDiagnosticTest({ running: false, result: data, error });
+    } catch (error: any) {
+      setDiagnosticTest({ running: false, result: null, error });
+    }
+  };
 
   const handleCompare = async () => {
     if (!yourDomain || !competitorDomain) {
@@ -312,16 +327,38 @@ export default function CompetitorAnalyzer() {
       await generateAIInsights(analysisResult);
 
     } catch (error: any) {
-      // Only show toast for network failures (no JSON response body)
+      // Enhanced error handling with better messages
       let errorMessage = error?.message || "Unknown error.";
-      if (errorMessage.toLowerCase().includes('timeout')) {
-        errorMessage = "The request timed out. Please retry in a moment.";
+      let errorTitle = "Network error";
+
+      // Check for specific error patterns
+      if (errorMessage.toLowerCase().includes('failed to send') ||
+          errorMessage.toLowerCase().includes('edge function')) {
+        errorTitle = "Edge Function Error";
+        errorMessage = "Failed to connect to the competitor analyzer service. The Edge Function may not be deployed or is experiencing issues. Please contact support if this persists.";
+      } else if (errorMessage.toLowerCase().includes('timeout')) {
+        errorMessage = "The request timed out. This analysis takes 60-90 seconds. Please retry.";
       } else if (errorMessage.toLowerCase().includes('network')) {
-        errorMessage = "Network error. Please check your connection and try again.";
+        errorMessage = "Network error. Please check your internet connection and try again.";
       } else if (errorMessage.toLowerCase().includes('fetch')) {
         errorMessage = "Failed to connect to the server. Please check your connection and try again.";
+      } else if (errorMessage.toLowerCase().includes('unauthorized') || errorMessage.toLowerCase().includes('auth')) {
+        errorTitle = "Authentication Error";
+        errorMessage = "Your session may have expired. Please sign out and sign in again.";
       }
-      toast({ title: "Network error", description: errorMessage, variant: "destructive" });
+
+      logger.error('Competitor Analysis Error:', {
+        error: error,
+        message: errorMessage,
+        stack: error?.stack
+      });
+
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+        duration: 10000  // Show for 10 seconds
+      });
     } finally {
       setLoading(false);
       setAnalyzing(false);
@@ -610,6 +647,96 @@ export default function CompetitorAnalyzer() {
             </Badge>
           )}
         </div>
+
+        {/* Diagnostic Test Panel */}
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              🔧 Connection Diagnostic Tool
+            </CardTitle>
+            <CardDescription>
+              Test if the Edge Function is deployed and DataForSEO credentials are configured
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={runDiagnosticTest}
+              disabled={diagnosticTest?.running}
+              variant="outline"
+            >
+              {diagnosticTest?.running ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Run Connection Test
+                </>
+              )}
+            </Button>
+
+            {diagnosticTest && !diagnosticTest.running && (
+              <div className="space-y-3 p-4 bg-white rounded-md border">
+                {diagnosticTest.error ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-red-600 font-semibold">
+                      ❌ Edge Function NOT Deployed
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      <strong>Error:</strong> {diagnosticTest.error.message || 'Failed to connect to Edge Function'}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <strong>What this means:</strong> The competitor-analyze Edge Function is not deployed to Supabase.
+                    </p>
+                    <p className="text-sm text-blue-600">
+                      <strong>How to fix:</strong> Deploy the Edge Function via Loveable.dev or Supabase CLI.
+                    </p>
+                  </div>
+                ) : diagnosticTest.result?.ok ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-green-600 font-semibold">
+                      ✅ Edge Function Deployed
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex items-center gap-2">
+                        {diagnosticTest.result.data?.d4s_creds_present ? (
+                          <>
+                            <span className="text-green-600">✅</span>
+                            <span>DataForSEO credentials are configured</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-red-600">❌</span>
+                            <span className="text-red-600">DataForSEO credentials are MISSING</span>
+                          </>
+                        )}
+                      </div>
+                      {!diagnosticTest.result.data?.d4s_creds_present && (
+                        <p className="text-sm text-blue-600 mt-2">
+                          <strong>How to fix:</strong> Add DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD to Supabase Edge Function secrets.
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Request ID: {diagnosticTest.result.request_id}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-yellow-600 font-semibold">
+                      ⚠️ Unexpected Response
+                    </div>
+                    <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">
+                      {JSON.stringify(diagnosticTest.result, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {errorAlert && (
           <Alert variant="destructive" className="relative">

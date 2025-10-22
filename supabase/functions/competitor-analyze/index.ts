@@ -321,21 +321,67 @@ serve(async (req) => {
     // Fetch ranked keywords for both domains
     let yourKeywords: any[] = [];
     let competitorKeywords: any[] = [];
-    
+
     try {
+      console.log(`[d4s] ${request_id} Fetching keywords for YOUR domain: ${yourHost}`);
       yourKeywords = await fetchRankedKeywords(yourHost, user.id, loc, lang, lim);
+      console.log(`[d4s] ${request_id} Found ${yourKeywords.length} keywords for ${yourHost}`);
     } catch (error: any) {
       const excerpt = extractErrorDetails(error, 'keywords_your_domain');
       console.error('[d4s]', request_id, 'keywords_your_domain', excerpt);
       warnings.push('keywords_your_domain_failed');
+
+      // If DataForSEO credentials are missing or exhausted, fail early
+      if (error instanceof DataForSEOError && (error.isCreditsExhausted || error.statusCode === 401)) {
+        return json({
+          ok: false,
+          request_id,
+          warnings,
+          error: {
+            stage: 'dataforseo',
+            message: error.message,
+            code: error.isCreditsExhausted ? 'CREDITS_EXHAUSTED' : 'AUTH_FAILED'
+          }
+        }, 200);
+      }
     }
-    
+
     try {
+      console.log(`[d4s] ${request_id} Fetching keywords for COMPETITOR domain: ${competitorHost}`);
       competitorKeywords = await fetchRankedKeywords(competitorHost, user.id, loc, lang, lim);
+      console.log(`[d4s] ${request_id} Found ${competitorKeywords.length} keywords for ${competitorHost}`);
     } catch (error: any) {
       const excerpt = extractErrorDetails(error, 'keywords_competitor');
       console.error('[d4s]', request_id, 'keywords_competitor', excerpt);
       warnings.push('keywords_competitor_domain_failed');
+
+      // If both keyword fetches fail, return error
+      if (yourKeywords.length === 0) {
+        return json({
+          ok: false,
+          request_id,
+          warnings,
+          error: {
+            stage: 'dataforseo',
+            message: 'Failed to fetch keywords for both domains. Please check your DataForSEO credits and try again.',
+            code: 'KEYWORDS_FAILED'
+          }
+        }, 200);
+      }
+    }
+
+    // If we have no keywords at all, fail
+    if (yourKeywords.length === 0 && competitorKeywords.length === 0) {
+      return json({
+        ok: false,
+        request_id,
+        warnings,
+        error: {
+          stage: 'dataforseo',
+          message: 'No keyword data found for either domain. Please verify the domains have search visibility.',
+          code: 'NO_KEYWORDS_FOUND'
+        }
+      }, 200);
     }
 
     // Find keyword gaps (keywords competitor ranks for but you don't)
@@ -351,21 +397,6 @@ serve(async (req) => {
           competitor_url: url
         };
       });
-
-    // Format all keywords for both domains
-    const yourKeywordsList = yourKeywords.map((k: any) => ({
-      keyword: k.keyword,
-      rank: k.rank_absolute || k.rank || 0,
-      search_volume: k.search_volume || 0,
-      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
-    }));
-
-    const competitorKeywordsList = competitorKeywords.map((k: any) => ({
-      keyword: k.keyword,
-      rank: k.rank_absolute || k.rank || 0,
-      search_volume: k.search_volume || 0,
-      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
-    }));
 
     // Fetch backlinks
     let yourBacklinks = { backlinks: 0, referring_domains: 0, referring_ips: 0 };
@@ -627,19 +658,26 @@ async function getOnPageSummary(taskId: string, auth: string, request_id: string
 async function fetchOnPageSummary(domain: string, auth: string, warnings: string[], request_id: string) {
   try {
     const taskId = await createOnPageTask(domain, auth, request_id);
-    // poll up to 6 times with 10s delay until summary is present
-    for (let i = 0; i < 6; i++) {
-      try { return await getOnPageSummary(taskId, auth, request_id); }
-      catch (e) { 
-        if (i < 5) await new Promise(r => setTimeout(r, 10000)); 
+    // poll up to 8 times with 8s delay (64 seconds max) until summary is present
+    for (let i = 0; i < 8; i++) {
+      try {
+        console.log(`[d4s] ${request_id} onpage_poll attempt ${i + 1}/8 for ${domain}`);
+        return await getOnPageSummary(taskId, auth, request_id);
+      }
+      catch (e) {
+        if (i < 7) {
+          console.log(`[d4s] ${request_id} onpage_poll retry ${i + 1} after 8s delay`);
+          await new Promise(r => setTimeout(r, 8000));  // 8s delay (increased from 10s)
+        }
       }
     }
+    console.error(`[d4s] ${request_id} onpage_poll_timeout after 8 attempts for ${domain}`);
     throw new Error('onpage_poll_timeout');
   } catch (e: any) {
     const msg = String(e?.message || e) || 'onpage_unknown_error';
     const excerpt = extractErrorDetails(e, 'onpage');
     console.error('[d4s]', request_id, 'onpage', excerpt);
-    warnings.push(msg.slice(0, 100));
+    warnings.push(`onpage_${domain.substring(0, 20)}_failed`);
     return { pages_crawled: 0, internal_links: 0, external_links: 0, images: 0, tech_score: 0 };
   }
 }
