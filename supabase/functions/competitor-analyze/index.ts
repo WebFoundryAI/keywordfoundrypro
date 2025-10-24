@@ -394,19 +394,23 @@ serve(async (req) => {
     const competitorOnPage = await fetchOnPageSummary(competitorHost, auth, warnings, request_id);
 
     // Transform keyword data to match frontend expectations
+    console.log(`[debug] ${request_id} Sample your keyword before transform:`, yourKeywords[0]);
     const transformedYourKeywords = yourKeywords.map((k: any) => ({
       keyword: k.keyword,
       rank_absolute: k.rank_absolute || k.rank,
       search_volume: k.search_volume || 0,
       url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
     }));
+    console.log(`[debug] ${request_id} Sample your keyword after transform:`, transformedYourKeywords[0]);
 
+    console.log(`[debug] ${request_id} Sample competitor keyword before transform:`, competitorKeywords[0]);
     const transformedCompetitorKeywords = competitorKeywords.map((k: any) => ({
       keyword: k.keyword,
       rank_absolute: k.rank_absolute || k.rank,
       search_volume: k.search_volume || 0,
       url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
     }));
+    console.log(`[debug] ${request_id} Sample competitor keyword after transform:`, transformedCompetitorKeywords[0]);
 
     const result = {
       your_keywords: transformedYourKeywords,
