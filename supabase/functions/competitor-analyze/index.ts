@@ -10,6 +10,7 @@ const corsHeaders = {
 };
 
 const MODULE_NAME = 'competitor-analyze';
+const CACHE_VERSION = 'v2'; // Increment this to invalidate all old cache entries
 
 const FREE_LIMIT = 3;
 
@@ -70,7 +71,7 @@ const normalize = (v: string) => {
   }
 };
 
-// Compute checksum for cache deduplication
+// Compute checksum for cache deduplication (includes cache version for invalidation)
 const computeChecksum = async (
   yourDomain: string,
   competitorDomain: string,
@@ -78,7 +79,7 @@ const computeChecksum = async (
   languageCode: string,
   limit: number
 ): Promise<string> => {
-  const payload = `${yourDomain.toLowerCase()}|${competitorDomain.toLowerCase()}|${locationCode}|${languageCode}|${limit}`;
+  const payload = `${CACHE_VERSION}|${yourDomain.toLowerCase()}|${competitorDomain.toLowerCase()}|${locationCode}|${languageCode}|${limit}`;
   const msgUint8 = new TextEncoder().encode(payload);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -294,7 +295,7 @@ serve(async (req) => {
     try {
       console.log(`[d4s] ${request_id} Fetching keywords for YOUR domain: ${yourHost}`);
       yourKeywords = await fetchRankedKeywords(yourHost, user.id, loc, lang, lim);
-      console.log(`[d4s] ${request_id} Found ${yourKeywords.length} keywords for ${yourHost}`);
+      console.log(`[d4s] ${request_id} ✅ Found ${yourKeywords.length} keywords for YOUR domain (${yourHost})`);
     } catch (error: any) {
       const excerpt = extractErrorDetails(error, 'keywords_your_domain');
       console.error('[d4s]', request_id, 'keywords_your_domain', excerpt);
@@ -318,7 +319,7 @@ serve(async (req) => {
     try {
       console.log(`[d4s] ${request_id} Fetching keywords for COMPETITOR domain: ${competitorHost}`);
       competitorKeywords = await fetchRankedKeywords(competitorHost, user.id, loc, lang, lim);
-      console.log(`[d4s] ${request_id} Found ${competitorKeywords.length} keywords for ${competitorHost}`);
+      console.log(`[d4s] ${request_id} ✅ Found ${competitorKeywords.length} keywords for COMPETITOR domain (${competitorHost})`);
     } catch (error: any) {
       const excerpt = extractErrorDetails(error, 'keywords_competitor');
       console.error('[d4s]', request_id, 'keywords_competitor', excerpt);
@@ -426,20 +427,21 @@ serve(async (req) => {
         console.error('Failed to store in competitor_analysis table:', err);
       }
 
-      // Store in competitor_cache only if no warnings (full success)
-      if (warnings.length === 0 || (warnings.length === 1 && warnings[0] === 'cache_bypass_custom_params')) {
-        const checksum = await computeChecksum(yourHost, competitorHost, loc, lang, lim);
-        console.log('Storing result in competitor_cache with checksum:', checksum);
-        await supabaseClient.from('competitor_cache').upsert({
-          user_id: user.id,
-          checksum: checksum,
-          payload: result
-        }, {
-          onConflict: 'checksum'
-        });
-      } else {
-        console.log('Skipping cache storage due to warnings:', warnings);
-      }
+      // Store in competitor_cache (store even with non-critical warnings to preserve keyword data)
+      const checksum = await computeChecksum(yourHost, competitorHost, loc, lang, lim);
+      console.log(`[cache] ${request_id} Storing in competitor_cache (version: ${CACHE_VERSION})`);
+      console.log(`[cache] ${request_id} - your_keywords: ${yourKeywords.length} items`);
+      console.log(`[cache] ${request_id} - competitor_keywords: ${competitorKeywords.length} items`);
+      console.log(`[cache] ${request_id} - keyword_gaps: ${keywordGaps.length} items`);
+      console.log(`[cache] ${request_id} - warnings: ${warnings.length > 0 ? warnings.join(', ') : 'none'}`);
+      
+      await supabaseClient.from('competitor_cache').upsert({
+        user_id: user.id,
+        checksum: checksum,
+        payload: result
+      }, {
+        onConflict: 'checksum'
+      });
     } else {
       console.log('Skipping cache storage due to custom parameters');
     }
