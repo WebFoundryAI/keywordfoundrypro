@@ -256,9 +256,6 @@ serve(async (req) => {
     }
     
     // Only use cache for default parameters to avoid mixing results
-    let cachedData = null;
-    let cachedEntry = null;
-    
     if (isDefaultParams) {
       // Compute checksum for cache deduplication
       const checksum = await computeChecksum(yourHost, competitorHost, loc, lang, lim);

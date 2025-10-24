@@ -238,7 +238,7 @@ serve(async (req) => {
     console.log(`Fetching intent for ${keywordsToClassify.length} keywords`);
 
     // Call DataForSEO Search Intent API
-    let intentMap: Record<string, string> = {};
+    const intentMap: Record<string, string> = {};
     if (keywordsToClassify.length > 0) {
       try {
         const intentData = await callDataForSEO({
