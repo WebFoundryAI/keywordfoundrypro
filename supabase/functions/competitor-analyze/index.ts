@@ -282,36 +282,6 @@ serve(async (req) => {
           }
         }, 200);
       }
-
-      // Check cache first (24-hour cache)
-      const expiryTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data } = await supabaseClient
-        .from('competitor_analysis')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('your_domain', yourHost)
-        .eq('competitor_domain', competitorHost)
-        .gt('created_at', expiryTime)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (data) {
-        console.log('[competitor-analyze]', request_id, 'Returning cached data');
-        return json({
-          ok: true,
-          request_id,
-          warnings: data.warnings || [],
-          data: {
-            your_keywords: data.your_keywords || [],
-            competitor_keywords: data.competitor_keywords || [],
-            keyword_gap_list: data.keyword_gap_list,
-            backlink_summary: data.backlink_summary,
-            onpage_summary: data.onpage_summary,
-            cached: true
-          }
-        }, 200);
-      }
     } else {
       console.log('Cache bypassed due to custom parameters');
       warnings.push('cache_bypass_custom_params');
@@ -440,19 +410,21 @@ serve(async (req) => {
     // Store in cache only if using default parameters
     if (isDefaultParams) {
       // Store in competitor_analysis table (only stores gaps for backwards compatibility)
-      await supabaseClient.from('competitor_analysis').insert({
-        user_id: user.id,
-        your_domain: yourHost,
-        competitor_domain: competitorHost,
-        keyword_gap_list: result.keyword_gap_list,
-        backlink_summary: result.backlink_summary,
-        onpage_summary: result.onpage_summary,
-        warnings: result.warnings,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-      }).catch(err => {
+      try {
+        await supabaseClient.from('competitor_analysis').insert({
+          user_id: user.id,
+          your_domain: yourHost,
+          competitor_domain: competitorHost,
+          keyword_gap_list: result.keyword_gap_list,
+          backlink_summary: result.backlink_summary,
+          onpage_summary: result.onpage_summary,
+          warnings: result.warnings,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        });
+      } catch (err) {
         // Log but don't fail - cache storage is not critical
         console.error('Failed to store in competitor_analysis table:', err);
-      });
+      }
 
       // Store in competitor_cache only if no warnings (full success)
       if (warnings.length === 0 || (warnings.length === 1 && warnings[0] === 'cache_bypass_custom_params')) {

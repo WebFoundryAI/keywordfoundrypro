@@ -133,8 +133,8 @@ serve(async (req) => {
     }
 
     const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
+      supabaseUrl!,
+      supabaseAnonKey!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
