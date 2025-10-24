@@ -47,6 +47,30 @@ async function fetchWithTimeout(url: string, options: any, timeoutMs: number) {
   }
 }
 
+// Helper to log to database (non-blocking)
+async function logToDatabase(
+  supabaseClient: any,
+  level: 'info' | 'warn' | 'error' | 'debug',
+  message: string,
+  metadata?: any,
+  userId?: string,
+  requestId?: string
+) {
+  try {
+    await supabaseClient.from('system_logs').insert({
+      level,
+      function_name: 'generate-ai-insights',
+      message,
+      metadata,
+      user_id: userId,
+      request_id: requestId
+    });
+  } catch (err) {
+    // Don't fail the request if logging fails
+    console.error('[generate-ai-insights] Failed to write to system_logs:', err);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -69,6 +93,22 @@ serve(async (req) => {
     
     if (missingVars.length > 0) {
       console.error('[generate-ai-insights]', requestId, 'Missing configuration:', missingVars);
+
+      // Try to log to database (may fail if SUPABASE vars are missing)
+      try {
+        const supabaseClient = createClient(supabaseUrl || '', supabaseAnonKey || '');
+        await logToDatabase(
+          supabaseClient,
+          'error',
+          'Missing required environment variables',
+          { missing: missingVars, error_code: 'CONFIG_MISSING' },
+          undefined,
+          requestId
+        );
+      } catch (e) {
+        // Ignore - can't log if supabase vars are missing
+      }
+
       return jsonError(
         'Server configuration error - missing required environment variables',
         'CONFIG_MISSING',
@@ -83,13 +123,29 @@ serve(async (req) => {
     
     if (bodySizeKB > MAX_BODY_SIZE_KB) {
       console.error('[generate-ai-insights]', requestId, `Payload too large: ${bodySizeKB.toFixed(2)}KB`);
+
+      // Create supabase client for logging
+      const supabaseClient = createClient(supabaseUrl!, supabaseAnonKey!);
+      await logToDatabase(
+        supabaseClient,
+        'error',
+        `Payload too large: ${bodySizeKB.toFixed(2)}KB exceeds ${MAX_BODY_SIZE_KB}KB`,
+        {
+          error_code: 'PAYLOAD_TOO_LARGE',
+          payload_size_kb: bodySizeKB.toFixed(2),
+          max_size_kb: MAX_BODY_SIZE_KB
+        },
+        undefined,
+        requestId
+      );
+
       return jsonError(
         `Payload size ${bodySizeKB.toFixed(0)}KB exceeds maximum ${MAX_BODY_SIZE_KB}KB`,
         'PAYLOAD_TOO_LARGE',
         413,
-        { 
+        {
           limits: { maxBodyKB: MAX_BODY_SIZE_KB, maxCompetitors: MAX_COMPETITORS, maxKeywords: MAX_KEYWORDS },
-          requestId 
+          requestId
         }
       );
     }
@@ -140,6 +196,14 @@ serve(async (req) => {
 
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
+      await logToDatabase(
+        supabaseClient,
+        'error',
+        'Invalid or expired authorization token',
+        { error_code: 'UNAUTHORIZED' },
+        undefined,
+        requestId
+      );
       return jsonError('Invalid or expired authorization token', 'UNAUTHORIZED', 401, { requestId });
     }
 
@@ -205,6 +269,19 @@ Keep the tone professional but conversational. Focus on actionable insights.`;
     } catch (error: any) {
       if (error.message === 'UPSTREAM_TIMEOUT') {
         console.error('[generate-ai-insights]', requestId, 'OpenAI API timeout after', UPSTREAM_TIMEOUT_MS, 'ms');
+
+        await logToDatabase(
+          supabaseClient,
+          'error',
+          `OpenAI API timeout after ${UPSTREAM_TIMEOUT_MS / 1000}s`,
+          {
+            error_code: 'UPSTREAM_TIMEOUT',
+            timeout_ms: UPSTREAM_TIMEOUT_MS
+          },
+          user.id,
+          requestId
+        );
+
         return jsonError(
           `AI model request timed out after ${UPSTREAM_TIMEOUT_MS / 1000}s`,
           'UPSTREAM_TIMEOUT',
@@ -221,12 +298,49 @@ Keep the tone professional but conversational. Focus on actionable insights.`;
       
       // Map OpenAI errors to appropriate status codes
       if (response.status === 429) {
+        await logToDatabase(
+          supabaseClient,
+          'error',
+          'OpenAI API rate limit exceeded',
+          {
+            error_code: 'RATE_LIMIT',
+            status: response.status,
+            response_preview: errorText.substring(0, 200)
+          },
+          user.id,
+          requestId
+        );
         return jsonError('AI model rate limit exceeded. Please try again in a moment.', 'RATE_LIMIT', 429, { requestId });
       }
       if (response.status === 401 || response.status === 403) {
+        await logToDatabase(
+          supabaseClient,
+          'error',
+          'OpenAI API authentication failed - invalid or missing API key',
+          {
+            error_code: 'CONFIG_MISSING',
+            status: response.status,
+            response_preview: errorText.substring(0, 200)
+          },
+          user.id,
+          requestId
+        );
         return jsonError('AI model authentication failed', 'CONFIG_MISSING', 500, { missing: ['Valid OPENAI_API_KEY'], requestId });
       }
-      
+
+      await logToDatabase(
+        supabaseClient,
+        'error',
+        `OpenAI API error: ${response.status}`,
+        {
+          error_code: 'UPSTREAM_ERROR',
+          status: response.status,
+          response_preview: errorText.substring(0, 200)
+        },
+        user.id,
+        requestId
+      );
+
       return jsonError(`AI model returned error: ${response.status}`, 'UPSTREAM_ERROR', 502, { requestId });
     }
 
@@ -255,9 +369,24 @@ Keep the tone professional but conversational. Focus on actionable insights.`;
     const durationMs = Date.now() - startTime;
     console.log('[generate-ai-insights]', requestId, 'Success in', durationMs, 'ms');
 
+    // Log successful completion
+    await logToDatabase(
+      supabaseClient,
+      'info',
+      `AI insights generated successfully in ${durationMs}ms`,
+      {
+        duration_ms: durationMs,
+        keyword_gaps_count: summary.keyword_gaps_count,
+        competitor_domain: competitorDomain,
+        report_length: reportText.length
+      },
+      user.id,
+      requestId
+    );
+
     // Step 8: Return success response with meta
     return jsonSuccess(
-      { 
+      {
         report: reportText,
         summary: {
           keyword_gaps_count: summary.keyword_gaps_count,
@@ -274,7 +403,32 @@ Keep the tone professional but conversational. Focus on actionable insights.`;
   } catch (error: any) {
     const durationMs = Date.now() - startTime;
     console.error('[generate-ai-insights]', requestId, 'Error:', error.message || error);
-    
+
+    // Try to log the unexpected error
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+      if (supabaseUrl && supabaseAnonKey) {
+        const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+        await logToDatabase(
+          supabaseClient,
+          'error',
+          `Unexpected error: ${error.message || 'Unknown error'}`,
+          {
+            error_code: 'INTERNAL_ERROR',
+            error_message: error.message,
+            error_stack: error.stack?.substring(0, 500),
+            duration_ms: durationMs
+          },
+          undefined,
+          requestId
+        );
+      }
+    } catch (logErr) {
+      // Ignore logging errors
+      console.error('[generate-ai-insights]', requestId, 'Failed to log error:', logErr);
+    }
+
     // Handle unexpected errors
     return jsonError(
       error.message || 'An unexpected error occurred',
