@@ -343,8 +343,8 @@ export default function CompetitorAnalyzer() {
         }
       }
 
-      // Auto-generate AI insights
-      await generateAIInsights(analysisResult);
+      // AI insights disabled - payload too large for current implementation
+      // await generateAIInsights(analysisResult);
 
     } catch (error: any) {
       // Enhanced error handling with better messages
