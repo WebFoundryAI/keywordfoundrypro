@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logger } from '@/lib/logger';
+import { supabase } from "@/integrations/supabase/client";
 
 interface LogEntry {
   timestamp: string;
@@ -31,46 +32,53 @@ export default function AdminLogs() {
 
   const fetchLogs = async () => {
     try {
-      // In a real implementation, this would fetch from an edge function
-      // For now, we'll generate mock logs to demonstrate the UI
-      const mockLogs: LogEntry[] = Array.from({ length: 50 }, (_, i) => {
-        const levels: LogEntry['level'][] = ['info', 'warn', 'error', 'debug'];
-        const functions = ['keyword-research', 'competitor-analyze', 'stripe-webhook', 'cluster-keywords', 'env-check'];
-        const messages = [
-          'API request completed successfully',
-          'DataForSEO rate limit approaching',
-          'User authentication successful',
-          'Database query executed in 45ms',
-          'Cache hit for keyword research',
-          'Payment processing initiated',
-          'Subscription renewal failed',
-          'Edge function cold start',
-          'RLS policy check passed',
-          'Webhook signature verified'
-        ];
+      setLoading(true);
 
-        const level = levels[Math.floor(Math.random() * levels.length)];
-        const funcName = functions[Math.floor(Math.random() * functions.length)];
-        const message = messages[Math.floor(Math.random() * messages.length)];
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to view logs",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
 
-        return {
-          timestamp: new Date(Date.now() - i * 60000).toISOString(),
-          level,
-          message,
-          function: funcName,
-          metadata: level === 'error' ? { error: 'Sample error details' } : undefined
-        };
+      // Build query params
+      const params = new URLSearchParams({
+        limit: '1000',
       });
 
-      setLogs(mockLogs);
+      if (levelFilter && levelFilter !== 'all') {
+        params.append('level', levelFilter);
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-logs?${params}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch logs: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setLogs(data.logs || []);
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error fetching logs:', error);
       toast({
         title: "Error fetching logs",
-        description: "Failed to load server logs",
+        description: error.message || "Failed to load server logs. Make sure the fetch-logs Edge Function is deployed.",
         variant: "destructive"
       });
+      setLogs([]);
       setLoading(false);
     }
   };
@@ -306,15 +314,34 @@ export default function AdminLogs() {
         </CardHeader>
         <CardContent className="text-sm space-y-2 text-muted-foreground">
           <p>
-            Server logs display the most recent ~1,000 entries from all edge functions and system operations.
+            Server logs display real-time entries from Edge Functions and system operations stored in the database.
           </p>
-          <p className="font-medium text-foreground">Security Notes:</p>
+          <p className="font-medium text-foreground">Important Notes:</p>
           <ul className="list-disc list-inside space-y-1 ml-2">
-            <li>Sensitive data (API keys, tokens) is automatically masked</li>
-            <li>Only admins can access this page</li>
-            <li>Logs are retained for 7 days</li>
-            <li>Use export for offline analysis</li>
+            <li><strong>Only custom logs are shown:</strong> Logs must be explicitly written by Edge Functions to the system_logs table</li>
+            <li><strong>For full Edge Function logs:</strong> Use Supabase Dashboard → Edge Functions → [function name] → Logs</li>
+            <li><strong>Retention:</strong> Logs are automatically deleted after 7 days</li>
+            <li><strong>Security:</strong> Only admins can access logs; sensitive data should be masked by Edge Functions</li>
+            <li><strong>Performance:</strong> Limit to 1,000 most recent entries</li>
           </ul>
+          <p className="font-medium text-foreground mt-4">To Add Logging to Edge Functions:</p>
+          <p className="text-xs font-mono bg-muted p-2 rounded mt-2">
+            await supabaseClient.from('system_logs').insert({'{'}
+            <br />
+            &nbsp;&nbsp;level: 'error',
+            <br />
+            &nbsp;&nbsp;function_name: 'my-function',
+            <br />
+            &nbsp;&nbsp;message: 'Something went wrong',
+            <br />
+            &nbsp;&nbsp;metadata: {'{'} error: error.message {'}'},
+            <br />
+            &nbsp;&nbsp;user_id: user?.id,
+            <br />
+            &nbsp;&nbsp;request_id: requestId
+            <br />
+            {'}'});
+          </p>
         </CardContent>
       </Card>
     </div>
