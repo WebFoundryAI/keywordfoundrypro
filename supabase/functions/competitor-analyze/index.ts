@@ -303,6 +303,8 @@ serve(async (req) => {
           request_id,
           warnings: data.warnings || [],
           data: {
+            your_keywords: data.your_keywords || [],
+            competitor_keywords: data.competitor_keywords || [],
             keyword_gap_list: data.keyword_gap_list,
             backlink_summary: data.backlink_summary,
             onpage_summary: data.onpage_summary,

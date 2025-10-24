@@ -540,8 +540,8 @@ export default function CompetitorAnalyzer() {
     if (sortField === 'keyword') {
       return sortOrder === 'asc' ? a.keyword.localeCompare(b.keyword) : b.keyword.localeCompare(a.keyword);
     }
-    const aVal = a[sortField] as number;
-    const bVal = b[sortField] as number;
+    const aVal = (a[sortField] as number) ?? 0;
+    const bVal = (b[sortField] as number) ?? 0;
     return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   }) || [];
 
@@ -558,8 +558,8 @@ export default function CompetitorAnalyzer() {
     if (yourKeywordsSortField === 'keyword') {
       return yourKeywordsSortOrder === 'asc' ? a.keyword.localeCompare(b.keyword) : b.keyword.localeCompare(a.keyword);
     }
-    const aVal = a[yourKeywordsSortField] as number;
-    const bVal = b[yourKeywordsSortField] as number;
+    const aVal = (a[yourKeywordsSortField] as number) ?? 0;
+    const bVal = (b[yourKeywordsSortField] as number) ?? 0;
     return yourKeywordsSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   }) || [];
 
@@ -576,8 +576,8 @@ export default function CompetitorAnalyzer() {
     if (competitorKeywordsSortField === 'keyword') {
       return competitorKeywordsSortOrder === 'asc' ? a.keyword.localeCompare(b.keyword) : b.keyword.localeCompare(a.keyword);
     }
-    const aVal = a[competitorKeywordsSortField] as number;
-    const bVal = b[competitorKeywordsSortField] as number;
+    const aVal = (a[competitorKeywordsSortField] as number) ?? 0;
+    const bVal = (b[competitorKeywordsSortField] as number) ?? 0;
     return competitorKeywordsSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   }) || [];
 
