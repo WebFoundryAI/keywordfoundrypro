@@ -343,8 +343,8 @@ export default function CompetitorAnalyzer() {
         }
       }
 
-      // AI insights disabled - payload too large for current implementation
-      // await generateAIInsights(analysisResult);
+      // Auto-generate AI insights with reduced payload
+      await generateAIInsights(analysisResult);
 
     } catch (error: any) {
       // Enhanced error handling with better messages
@@ -392,19 +392,61 @@ export default function CompetitorAnalyzer() {
     // Generate request-id for correlation across client/server logs
     const requestId = crypto.randomUUID();
     const timestamp = new Date().toISOString();
-    
+
     // Clear previous AI error state
     setAiInsightsError(null);
     setGeneratingInsights(true);
 
+    // Reduce payload size by sending only top keywords by search volume
+    const topYourKeywords = (dataToAnalyze.your_keywords || [])
+      .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
+      .slice(0, 20)
+      .map(k => ({
+        keyword: k.keyword,
+        rank_absolute: k.rank_absolute,
+        search_volume: k.search_volume
+      }));
+
+    const topCompetitorKeywords = (dataToAnalyze.competitor_keywords || [])
+      .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
+      .slice(0, 20)
+      .map(k => ({
+        keyword: k.keyword,
+        rank_absolute: k.rank_absolute,
+        search_volume: k.search_volume
+      }));
+
+    const topKeywordGaps = (dataToAnalyze.keyword_gap_list || [])
+      .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
+      .slice(0, 20)
+      .map(k => ({
+        keyword: k.keyword,
+        competitor_rank: k.competitor_rank,
+        search_volume: k.search_volume
+      }));
+
+    // Create reduced payload
+    const reducedData = {
+      your_keywords: topYourKeywords,
+      competitor_keywords: topCompetitorKeywords,
+      keyword_gap_list: topKeywordGaps,
+      backlink_summary: dataToAnalyze.backlink_summary,
+      onpage_summary: dataToAnalyze.onpage_summary,
+      warnings: dataToAnalyze.warnings
+    };
+
     // Log diagnostics: request payload size, parameters
-    const payloadSize = JSON.stringify({ analysisData: dataToAnalyze, competitorDomain }).length;
+    const payloadSize = JSON.stringify({ analysisData: reducedData, competitorDomain }).length;
     console.info('[AI-INSIGHTS-DIAGNOSTICS] Request initiated', {
       request_id: requestId,
       timestamp,
       payload_size_bytes: payloadSize,
+      payload_size_kb: (payloadSize / 1024).toFixed(2),
       competitor_domain: competitorDomain,
-      keyword_gaps_count: dataToAnalyze.keyword_gap_list?.length || 0,
+      keyword_gaps_count: topKeywordGaps.length,
+      your_keywords_count: topYourKeywords.length,
+      competitor_keywords_count: topCompetitorKeywords.length,
+      total_gaps_available: dataToAnalyze.keyword_gap_list?.length || 0,
       location_code: locationCode,
       language_code: languageCode,
       limit,
@@ -417,8 +459,8 @@ export default function CompetitorAnalyzer() {
       });
 
       // Use invokeFunction helper which includes Authorization header
-      const insightsData = await invokeFunction('generate-ai-insights', { 
-        analysisData: dataToAnalyze,
+      const insightsData = await invokeFunction('generate-ai-insights', {
+        analysisData: reducedData,
         competitorDomain,
         requestId
       });
