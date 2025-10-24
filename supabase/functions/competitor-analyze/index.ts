@@ -130,7 +130,7 @@ serve(async (req) => {
     }
     
     const lim = Number.isFinite(+body.limit)
-      ? Math.min(Math.max(Math.floor(+body.limit), 50), 1000)
+      ? Math.min(Math.max(Math.floor(+body.limit), 10), 1000)
       : 300;
     if (body.limit !== undefined && lim !== +body.limit) {
       warnings.push('param_limit_fallback');

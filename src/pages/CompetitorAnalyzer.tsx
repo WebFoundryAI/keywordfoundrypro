@@ -1044,15 +1044,15 @@ export default function CompetitorAnalyzer() {
                 <Input
                   data-testid="limit-input"
                   type="number"
-                  min="50"
+                  min="10"
                   max="1000"
-                  step="50"
+                  step="10"
                   placeholder="300"
                   value={limit}
                   onChange={(e) => setLimit(e.target.value)}
                   disabled={loading}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Keywords per domain; higher N uses more credits.</p>
+                <p className="text-xs text-muted-foreground mt-1">Keywords per domain (min: 10, max: 1000); higher N uses more credits.</p>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block flex items-center gap-2">
@@ -1135,7 +1135,7 @@ export default function CompetitorAnalyzer() {
                 <CardContent>
                   <div className="text-3xl font-bold">{analysisData.keyword_gap_list.length}</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Keywords where competitor ranks
+                    Keywords where competitor ranks but you don't
                   </p>
                 </CardContent>
               </Card>
@@ -1190,13 +1190,13 @@ export default function CompetitorAnalyzer() {
             <Card data-testid="keyword-gap-card">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Keyword Gap Analysis</span>
+                  <span>Keyword Gap Analysis - Opportunities</span>
                   <Badge variant="secondary">{sortedKeywords.length} keywords</Badge>
                 </CardTitle>
                 <CardDescription className="flex items-center gap-2">
-                  Keywords where your competitor ranks but you don't
-                  <a 
-                    href="/docs/competitor-analysis" 
+                  Keywords your competitor ranks for that you DON'T rank for (potential opportunities)
+                  <a
+                    href="/docs/competitor-analysis"
                     target="_blank"
                     className="text-xs text-primary hover:underline inline-flex items-center gap-1"
                   >
