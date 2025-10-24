@@ -36,6 +36,18 @@ interface AnalysisData {
     search_volume: number;
     competitor_url?: string | null;
   }>;
+  your_keywords?: Array<{
+    keyword: string;
+    rank_absolute: number;
+    search_volume: number;
+    url?: string | null;
+  }>;
+  competitor_keywords?: Array<{
+    keyword: string;
+    rank_absolute: number;
+    search_volume: number;
+    url?: string | null;
+  }>;
   backlink_summary: {
     your_domain: {
       backlinks: number;
@@ -162,6 +174,10 @@ export default function CompetitorAnalyzer() {
   const [aiInsights, setAiInsights] = useState<string | null>(null);
   const [sortField, setSortField] = useState<'keyword' | 'competitor_rank' | 'search_volume'>('search_volume');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [yourKeywordsSortField, setYourKeywordsSortField] = useState<'keyword' | 'rank_absolute' | 'search_volume'>('search_volume');
+  const [yourKeywordsSortOrder, setYourKeywordsSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [competitorKeywordsSortField, setCompetitorKeywordsSortField] = useState<'keyword' | 'rank_absolute' | 'search_volume'>('search_volume');
+  const [competitorKeywordsSortOrder, setCompetitorKeywordsSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
   const [errorAlert, setErrorAlert] = useState<{ request_id: string; stage: string; message: string; warnings: string[] } | null>(null);
@@ -529,6 +545,42 @@ export default function CompetitorAnalyzer() {
     return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   }) || [];
 
+  const handleYourKeywordsSort = (field: typeof yourKeywordsSortField) => {
+    if (yourKeywordsSortField === field) {
+      setYourKeywordsSortOrder(yourKeywordsSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setYourKeywordsSortField(field);
+      setYourKeywordsSortOrder('desc');
+    }
+  };
+
+  const sortedYourKeywords = analysisData?.your_keywords?.slice().sort((a, b) => {
+    if (yourKeywordsSortField === 'keyword') {
+      return yourKeywordsSortOrder === 'asc' ? a.keyword.localeCompare(b.keyword) : b.keyword.localeCompare(a.keyword);
+    }
+    const aVal = a[yourKeywordsSortField] as number;
+    const bVal = b[yourKeywordsSortField] as number;
+    return yourKeywordsSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+  }) || [];
+
+  const handleCompetitorKeywordsSort = (field: typeof competitorKeywordsSortField) => {
+    if (competitorKeywordsSortField === field) {
+      setCompetitorKeywordsSortOrder(competitorKeywordsSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setCompetitorKeywordsSortField(field);
+      setCompetitorKeywordsSortOrder('desc');
+    }
+  };
+
+  const sortedCompetitorKeywords = analysisData?.competitor_keywords?.slice().sort((a, b) => {
+    if (competitorKeywordsSortField === 'keyword') {
+      return competitorKeywordsSortOrder === 'asc' ? a.keyword.localeCompare(b.keyword) : b.keyword.localeCompare(a.keyword);
+    }
+    const aVal = a[competitorKeywordsSortField] as number;
+    const bVal = b[competitorKeywordsSortField] as number;
+    return competitorKeywordsSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+  }) || [];
+
   const handleExportCSV = () => {
     if (!sortedKeywords.length) return;
 
@@ -601,6 +653,70 @@ export default function CompetitorAnalyzer() {
       title: "JSON Downloaded",
       description: `Exported ${rows.length} keywords`,
     });
+  };
+
+  const handleExportYourKeywordsCSV = () => {
+    if (!sortedYourKeywords.length) return;
+
+    const rows = sortedYourKeywords.map(kw => ({
+      keyword: kw.keyword,
+      rank: kw.rank_absolute,
+      search_volume: kw.search_volume,
+      url: kw.url || '',
+    }));
+
+    const csvContent = [
+      `# Your Domain: ${yourDomain}`,
+      `# Total Keywords: ${rows.length}`,
+      `# Generated: ${new Date().toISOString()}`,
+      'keyword,rank,search_volume,url',
+      ...rows.map(r => `"${r.keyword}",${r.rank},${r.search_volume},"${r.url}"`)
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kfp_your_keywords_${yourDomain.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    trackExport('csv');
+    toast({ title: "CSV Downloaded", description: `Exported ${rows.length} your domain keywords` });
+  };
+
+  const handleExportCompetitorKeywordsCSV = () => {
+    if (!sortedCompetitorKeywords.length) return;
+
+    const rows = sortedCompetitorKeywords.map(kw => ({
+      keyword: kw.keyword,
+      rank: kw.rank_absolute,
+      search_volume: kw.search_volume,
+      url: kw.url || '',
+    }));
+
+    const csvContent = [
+      `# Competitor Domain: ${competitorDomain}`,
+      `# Total Keywords: ${rows.length}`,
+      `# Generated: ${new Date().toISOString()}`,
+      'keyword,rank,search_volume,url',
+      ...rows.map(r => `"${r.keyword}",${r.rank},${r.search_volume},"${r.url}"`)
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kfp_competitor_keywords_${competitorDomain.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    trackExport('csv');
+    toast({ title: "CSV Downloaded", description: `Exported ${rows.length} competitor keywords` });
   };
 
   const backlinksChartData = analysisData ? [
@@ -900,7 +1016,37 @@ export default function CompetitorAnalyzer() {
 
         {analysisData && (
           <>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Your Keywords
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{analysisData.your_keywords?.length || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Total ranking keywords
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Competitor Keywords
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{analysisData.competitor_keywords?.length || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Total ranking keywords
+                  </p>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -1061,6 +1207,166 @@ export default function CompetitorAnalyzer() {
                       <li>The competitor has no ranking keywords in the specified market</li>
                       <li>Try adjusting the location or language settings</li>
                     </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Keywords Your Domain Ranks For</span>
+                  <Badge variant="secondary">{sortedYourKeywords.length} keywords</Badge>
+                </CardTitle>
+                <CardDescription>
+                  All ranking keywords for {yourDomain}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {sortedYourKeywords.length > 0 ? (
+                  <>
+                    <div className="flex justify-end gap-2 mb-4">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleExportYourKeywordsCSV}
+                        disabled={!sortedYourKeywords.length}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download CSV
+                      </Button>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleYourKeywordsSort('keyword')}>
+                              Keyword {yourKeywordsSortField === 'keyword' && (yourKeywordsSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleYourKeywordsSort('rank_absolute')}>
+                              Your Rank {yourKeywordsSortField === 'rank_absolute' && (yourKeywordsSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleYourKeywordsSort('search_volume')}>
+                              Search Volume {yourKeywordsSortField === 'search_volume' && (yourKeywordsSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-left py-3 px-2">
+                              Ranking URL
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedYourKeywords.map((kw, idx) => (
+                            <tr key={idx} className="border-b hover:bg-muted/30">
+                              <td className="py-2 px-2">{kw.keyword}</td>
+                              <td className="text-right py-2 px-2">#{kw.rank_absolute}</td>
+                              <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
+                              <td className="py-2 px-2">
+                                {kw.url ? (
+                                  <a 
+                                    href={kw.url} 
+                                    target="_blank" 
+                                    rel="nofollow noopener noreferrer"
+                                    className="text-primary hover:underline text-xs truncate max-w-xs block"
+                                  >
+                                    {kw.url}
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No Keywords Found</h3>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      No ranking keywords found for your domain in the specified location and language.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Keywords Competitor Domain Ranks For</span>
+                  <Badge variant="secondary">{sortedCompetitorKeywords.length} keywords</Badge>
+                </CardTitle>
+                <CardDescription>
+                  All ranking keywords for {competitorDomain}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {sortedCompetitorKeywords.length > 0 ? (
+                  <>
+                    <div className="flex justify-end gap-2 mb-4">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleExportCompetitorKeywordsCSV}
+                        disabled={!sortedCompetitorKeywords.length}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download CSV
+                      </Button>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleCompetitorKeywordsSort('keyword')}>
+                              Keyword {competitorKeywordsSortField === 'keyword' && (competitorKeywordsSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleCompetitorKeywordsSort('rank_absolute')}>
+                              Competitor Rank {competitorKeywordsSortField === 'rank_absolute' && (competitorKeywordsSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleCompetitorKeywordsSort('search_volume')}>
+                              Search Volume {competitorKeywordsSortField === 'search_volume' && (competitorKeywordsSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-left py-3 px-2">
+                              Ranking URL
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedCompetitorKeywords.map((kw, idx) => (
+                            <tr key={idx} className="border-b hover:bg-muted/30">
+                              <td className="py-2 px-2">{kw.keyword}</td>
+                              <td className="text-right py-2 px-2">#{kw.rank_absolute}</td>
+                              <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
+                              <td className="py-2 px-2">
+                                {kw.url ? (
+                                  <a 
+                                    href={kw.url} 
+                                    target="_blank" 
+                                    rel="nofollow noopener noreferrer"
+                                    className="text-primary hover:underline text-xs truncate max-w-xs block"
+                                  >
+                                    {kw.url}
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No Keywords Found</h3>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      No ranking keywords found for the competitor domain in the specified location and language.
+                    </p>
                   </div>
                 )}
               </CardContent>
