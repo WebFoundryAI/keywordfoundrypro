@@ -393,9 +393,24 @@ serve(async (req) => {
     const yourOnPage = await fetchOnPageSummary(yourHost, auth, warnings, request_id);
     const competitorOnPage = await fetchOnPageSummary(competitorHost, auth, warnings, request_id);
 
+    // Transform keyword data to match frontend expectations
+    const transformedYourKeywords = yourKeywords.map((k: any) => ({
+      keyword: k.keyword,
+      rank_absolute: k.rank_absolute || k.rank,
+      search_volume: k.search_volume || 0,
+      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
+    }));
+
+    const transformedCompetitorKeywords = competitorKeywords.map((k: any) => ({
+      keyword: k.keyword,
+      rank_absolute: k.rank_absolute || k.rank,
+      search_volume: k.search_volume || 0,
+      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
+    }));
+
     const result = {
-      your_keywords: yourKeywords,
-      competitor_keywords: competitorKeywords,
+      your_keywords: transformedYourKeywords,
+      competitor_keywords: transformedCompetitorKeywords,
       keyword_gap_list: keywordGaps,
       backlink_summary: {
         your_domain: yourBacklinks,
@@ -430,8 +445,8 @@ serve(async (req) => {
       // Store in competitor_cache (store even with non-critical warnings to preserve keyword data)
       const checksum = await computeChecksum(yourHost, competitorHost, loc, lang, lim);
       console.log(`[cache] ${request_id} Storing in competitor_cache (version: ${CACHE_VERSION})`);
-      console.log(`[cache] ${request_id} - your_keywords: ${yourKeywords.length} items`);
-      console.log(`[cache] ${request_id} - competitor_keywords: ${competitorKeywords.length} items`);
+      console.log(`[cache] ${request_id} - your_keywords: ${transformedYourKeywords.length} items`);
+      console.log(`[cache] ${request_id} - competitor_keywords: ${transformedCompetitorKeywords.length} items`);
       console.log(`[cache] ${request_id} - keyword_gaps: ${keywordGaps.length} items`);
       console.log(`[cache] ${request_id} - warnings: ${warnings.length > 0 ? warnings.join(', ') : 'none'}`);
       
