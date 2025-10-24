@@ -256,9 +256,6 @@ serve(async (req) => {
     }
     
     // Only use cache for default parameters to avoid mixing results
-    let cachedData = null;
-    let cachedEntry = null;
-    
     if (isDefaultParams) {
       // Compute checksum for cache deduplication
       const checksum = await computeChecksum(yourHost, competitorHost, loc, lang, lim);
@@ -424,8 +421,8 @@ serve(async (req) => {
     const competitorOnPage = await fetchOnPageSummary(competitorHost, auth, warnings, request_id);
 
     const result = {
-      your_keywords: yourKeywordsList,
-      competitor_keywords: competitorKeywordsList,
+      your_keywords: yourKeywords,
+      competitor_keywords: competitorKeywords,
       keyword_gap_list: keywordGaps,
       backlink_summary: {
         your_domain: yourBacklinks,
@@ -607,7 +604,9 @@ async function createOnPageTask(domain: string, auth: string, request_id: string
       const json = JSON.parse(text);
       if (json.status_message) excerpt += ` msg:"${json.status_message.slice(0, 100)}"`;
       if (json.tasks?.[0]?.status_message) excerpt += ` task:"${json.tasks[0].status_message.slice(0, 100)}"`;
-    } catch {}
+    } catch {
+      // Ignore JSON parse errors - excerpt will use status code only
+    }
     console.error('[d4s]', request_id, 'onpage_task_post', excerpt);
     throw new Error(`onpage_task_post_failed: ${excerpt}`);
   }
@@ -635,7 +634,9 @@ async function getOnPageSummary(taskId: string, auth: string, request_id: string
     try {
       const json = JSON.parse(text);
       if (json.status_message) excerpt += ` msg:"${json.status_message.slice(0, 100)}"`;
-    } catch {}
+    } catch {
+      // Ignore JSON parse errors - excerpt will use status code only
+    }
     console.error('[d4s]', request_id, 'onpage_summary', excerpt);
     throw new Error(`onpage_summary_failed: ${excerpt}`);
   }

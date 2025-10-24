@@ -406,18 +406,34 @@ const KeywordResults = () => {
                   
                   // Volume filters
                   if (filters.volumeMin !== undefined) {
-                    filters.volumeMin ? params.set('volumeMin', String(filters.volumeMin)) : params.delete('volumeMin');
+                    if (filters.volumeMin) {
+                      params.set('volumeMin', String(filters.volumeMin));
+                    } else {
+                      params.delete('volumeMin');
+                    }
                   }
                   if (filters.volumeMax !== undefined) {
-                    filters.volumeMax ? params.set('volumeMax', String(filters.volumeMax)) : params.delete('volumeMax');
+                    if (filters.volumeMax) {
+                      params.set('volumeMax', String(filters.volumeMax));
+                    } else {
+                      params.delete('volumeMax');
+                    }
                   }
-                  
+
                   // Difficulty filters
                   if (filters.difficultyMin !== undefined) {
-                    filters.difficultyMin ? params.set('difficultyMin', String(filters.difficultyMin)) : params.delete('difficultyMin');
+                    if (filters.difficultyMin) {
+                      params.set('difficultyMin', String(filters.difficultyMin));
+                    } else {
+                      params.delete('difficultyMin');
+                    }
                   }
                   if (filters.difficultyMax !== undefined) {
-                    filters.difficultyMax ? params.set('difficultyMax', String(filters.difficultyMax)) : params.delete('difficultyMax');
+                    if (filters.difficultyMax) {
+                      params.set('difficultyMax', String(filters.difficultyMax));
+                    } else {
+                      params.delete('difficultyMax');
+                    }
                   }
                   
                   params.set('page', '1'); // Reset to first page

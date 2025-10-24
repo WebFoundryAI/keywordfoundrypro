@@ -8,6 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test:e2e": "playwright test",
     "preview": "vite preview"
   },
   "dependencies": {
