@@ -355,15 +355,15 @@ serve(async (req) => {
     }
 
     // Find keyword gaps (keywords competitor ranks for but you don't)
-    const yourKeywordSet = new Set(yourKeywords.map((k: any) => k.keyword));
+    const yourKeywordSet = new Set(yourKeywords.map((k: any) => k.keyword_data?.keyword || k.keyword));
     const keywordGaps = competitorKeywords
-      .filter((k: any) => !yourKeywordSet.has(k.keyword))
+      .filter((k: any) => !yourKeywordSet.has(k.keyword_data?.keyword || k.keyword))
       .map((k: any) => {
         const url = k?.ranked_serp_element?.serp_item?.url || k?.url || null;
         return {
-          keyword: k.keyword,
-          competitor_rank: k.rank_absolute || k.rank,
-          search_volume: k.search_volume || 0,
+          keyword: k.keyword_data?.keyword || k.keyword,
+          competitor_rank: k.ranked_serp_element?.serp_item?.rank_absolute || k.rank_absolute || k.rank,
+          search_volume: k.keyword_data?.keyword_info?.search_volume || k.search_volume || 0,
           competitor_url: url
         };
       });
@@ -396,19 +396,19 @@ serve(async (req) => {
     // Transform keyword data to match frontend expectations
     console.log(`[debug] ${request_id} Sample your keyword before transform:`, yourKeywords[0]);
     const transformedYourKeywords = yourKeywords.map((k: any) => ({
-      keyword: k.keyword,
-      rank_absolute: k.rank_absolute || k.rank,
-      search_volume: k.search_volume || 0,
-      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
+      keyword: k.keyword_data?.keyword || k.keyword,
+      rank_absolute: k.ranked_serp_element?.serp_item?.rank_absolute || k.rank_absolute || k.rank,
+      search_volume: k.keyword_data?.keyword_info?.search_volume || k.search_volume || 0,
+      url: k.ranked_serp_element?.serp_item?.url || k?.url || null
     }));
     console.log(`[debug] ${request_id} Sample your keyword after transform:`, transformedYourKeywords[0]);
 
     console.log(`[debug] ${request_id} Sample competitor keyword before transform:`, competitorKeywords[0]);
     const transformedCompetitorKeywords = competitorKeywords.map((k: any) => ({
-      keyword: k.keyword,
-      rank_absolute: k.rank_absolute || k.rank,
-      search_volume: k.search_volume || 0,
-      url: k?.ranked_serp_element?.serp_item?.url || k?.url || null
+      keyword: k.keyword_data?.keyword || k.keyword,
+      rank_absolute: k.ranked_serp_element?.serp_item?.rank_absolute || k.rank_absolute || k.rank,
+      search_volume: k.keyword_data?.keyword_info?.search_volume || k.search_volume || 0,
+      url: k.ranked_serp_element?.serp_item?.url || k?.url || null
     }));
     console.log(`[debug] ${request_id} Sample competitor keyword after transform:`, transformedCompetitorKeywords[0]);
 
