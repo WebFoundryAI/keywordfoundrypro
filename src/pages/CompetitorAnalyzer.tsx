@@ -536,7 +536,7 @@ export default function CompetitorAnalyzer() {
     }
   };
 
-  const sortedKeywords = analysisData?.keyword_gap_list.slice().sort((a, b) => {
+  const sortedKeywords = analysisData?.keyword_gap_list?.slice().sort((a, b) => {
     if (sortField === 'keyword') {
       return sortOrder === 'asc' ? a.keyword.localeCompare(b.keyword) : b.keyword.localeCompare(a.keyword);
     }
