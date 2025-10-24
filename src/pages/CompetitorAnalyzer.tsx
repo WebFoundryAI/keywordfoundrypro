@@ -167,6 +167,7 @@ export default function CompetitorAnalyzer() {
   });
   const [languageCode, setLanguageCode] = useState(() => localStorage.getItem("kfp_lang_code") || "en");
   const [limit, setLimit] = useState(() => localStorage.getItem("kfp_limit") || "300");
+  const [aiInsightsLimit, setAiInsightsLimit] = useState(() => localStorage.getItem("kfp_ai_insights_limit") || "30");
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [generatingInsights, setGeneratingInsights] = useState(false);
@@ -254,10 +255,11 @@ export default function CompetitorAnalyzer() {
       }
     };
     
-    // Save location/language/limit to localStorage
+    // Save location/language/limit/aiInsightsLimit to localStorage
     localStorage.setItem("kfp_loc_code", locationCode.toString());
     localStorage.setItem("kfp_lang_code", languageCode);
     localStorage.setItem("kfp_limit", limit);
+    localStorage.setItem("kfp_ai_insights_limit", aiInsightsLimit);
     
     const payload: any = { 
       yourDomain: normalize(yourDomain), 
@@ -397,10 +399,20 @@ export default function CompetitorAnalyzer() {
     setAiInsightsError(null);
     setGeneratingInsights(true);
 
+    // Calculate safe limit for AI insights (min 10, max 100)
+    const parsedLimit = parseInt(aiInsightsLimit, 10);
+    const safeLimit = Math.min(Math.max(parsedLimit, 10), 100);
+
+    console.info('[AI-INSIGHTS-DIAGNOSTICS] Using keyword limit', {
+      user_specified: aiInsightsLimit,
+      parsed: parsedLimit,
+      safe_limit: safeLimit,
+    });
+
     // Reduce payload size by sending only top keywords by search volume
     const topYourKeywords = (dataToAnalyze.your_keywords || [])
       .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
-      .slice(0, 20)
+      .slice(0, safeLimit)
       .map(k => ({
         keyword: k.keyword,
         rank_absolute: k.rank_absolute,
@@ -409,7 +421,7 @@ export default function CompetitorAnalyzer() {
 
     const topCompetitorKeywords = (dataToAnalyze.competitor_keywords || [])
       .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
-      .slice(0, 20)
+      .slice(0, safeLimit)
       .map(k => ({
         keyword: k.keyword,
         rank_absolute: k.rank_absolute,
@@ -418,7 +430,7 @@ export default function CompetitorAnalyzer() {
 
     const topKeywordGaps = (dataToAnalyze.keyword_gap_list || [])
       .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
-      .slice(0, 20)
+      .slice(0, safeLimit)
       .map(k => ({
         keyword: k.keyword,
         competitor_rank: k.competitor_rank,
@@ -447,9 +459,13 @@ export default function CompetitorAnalyzer() {
       your_keywords_count: topYourKeywords.length,
       competitor_keywords_count: topCompetitorKeywords.length,
       total_gaps_available: dataToAnalyze.keyword_gap_list?.length || 0,
+      total_your_keywords_available: dataToAnalyze.your_keywords?.length || 0,
+      total_competitor_keywords_available: dataToAnalyze.competitor_keywords?.length || 0,
       location_code: locationCode,
       language_code: languageCode,
-      limit,
+      dataforseo_limit: limit,
+      ai_insights_limit_setting: aiInsightsLimit,
+      ai_insights_limit_used: safeLimit,
     });
 
     try {
@@ -1022,20 +1038,40 @@ export default function CompetitorAnalyzer() {
               </div>
             </div>
             
-            <div className="mb-4">
-              <label className="text-sm font-medium mb-2 block">Top N Keywords</label>
-              <Input
-                data-testid="limit-input"
-                type="number"
-                min="50"
-                max="1000"
-                step="50"
-                placeholder="300"
-                value={limit}
-                onChange={(e) => setLimit(e.target.value)}
-                disabled={loading}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Limits per domain; higher N uses more credits.</p>
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Top N Keywords (DataForSEO API)</label>
+                <Input
+                  data-testid="limit-input"
+                  type="number"
+                  min="50"
+                  max="1000"
+                  step="50"
+                  placeholder="300"
+                  value={limit}
+                  onChange={(e) => setLimit(e.target.value)}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Keywords per domain; higher N uses more credits.</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  AI Insights Keyword Limit
+                </label>
+                <Input
+                  data-testid="ai-insights-limit-input"
+                  type="number"
+                  min="10"
+                  max="100"
+                  step="10"
+                  placeholder="30"
+                  value={aiInsightsLimit}
+                  onChange={(e) => setAiInsightsLimit(e.target.value)}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Top keywords sent to AI (max 100 for speed).</p>
+              </div>
             </div>
             
             <Button 
