@@ -1,0 +1,162 @@
+{
+  "project": {
+    "name": "Demo Project - Coffee Shop SEO",
+    "description": "Sample project demonstrating keyword research for a local coffee shop"
+  },
+  "keywords": [
+    {
+      "keyword": "best coffee near me",
+      "search_volume": 12000,
+      "keyword_difficulty": 35,
+      "cpc": 2.50,
+      "competition": "medium",
+      "intent": "commercial",
+      "serp_features": ["local_pack", "paa"],
+      "trend": "stable"
+    },
+    {
+      "keyword": "specialty coffee beans",
+      "search_volume": 8500,
+      "keyword_difficulty": 42,
+      "cpc": 3.20,
+      "competition": "medium",
+      "intent": "commercial",
+      "serp_features": ["shopping", "paa"],
+      "trend": "rising"
+    },
+    {
+      "keyword": "how to brew cold brew coffee",
+      "search_volume": 15000,
+      "keyword_difficulty": 28,
+      "cpc": 1.80,
+      "competition": "low",
+      "intent": "informational",
+      "serp_features": ["paa", "video", "featured_snippet"],
+      "trend": "seasonal"
+    },
+    {
+      "keyword": "coffee shop open now",
+      "search_volume": 9500,
+      "keyword_difficulty": 22,
+      "cpc": 2.10,
+      "competition": "low",
+      "intent": "navigational",
+      "serp_features": ["local_pack", "map"],
+      "trend": "stable"
+    },
+    {
+      "keyword": "buy espresso machine",
+      "search_volume": 18000,
+      "keyword_difficulty": 55,
+      "cpc": 4.50,
+      "competition": "high",
+      "intent": "transactional",
+      "serp_features": ["shopping", "reviews"],
+      "trend": "rising"
+    },
+    {
+      "keyword": "what is a macchiato",
+      "search_volume": 6200,
+      "keyword_difficulty": 18,
+      "cpc": 0.90,
+      "competition": "low",
+      "intent": "informational",
+      "serp_features": ["featured_snippet", "paa"],
+      "trend": "stable"
+    },
+    {
+      "keyword": "organic fair trade coffee",
+      "search_volume": 4800,
+      "keyword_difficulty": 38,
+      "cpc": 2.80,
+      "competition": "medium",
+      "intent": "commercial",
+      "serp_features": ["shopping", "paa"],
+      "trend": "rising"
+    },
+    {
+      "keyword": "coffee subscription service",
+      "search_volume": 11000,
+      "keyword_difficulty": 48,
+      "cpc": 5.20,
+      "competition": "high",
+      "intent": "transactional",
+      "serp_features": ["reviews", "paa"],
+      "trend": "rising"
+    },
+    {
+      "keyword": "latte vs cappuccino",
+      "search_volume": 7300,
+      "keyword_difficulty": 15,
+      "cpc": 0.75,
+      "competition": "low",
+      "intent": "informational",
+      "serp_features": ["featured_snippet", "paa", "video"],
+      "trend": "stable"
+    },
+    {
+      "keyword": "coffee roasting process",
+      "search_volume": 5500,
+      "keyword_difficulty": 32,
+      "cpc": 1.50,
+      "competition": "medium",
+      "intent": "informational",
+      "serp_features": ["paa", "video"],
+      "trend": "stable"
+    }
+  ],
+  "snapshots": [
+    {
+      "keyword": "best coffee near me",
+      "results": [
+        {
+          "position": 1,
+          "title": "Top 10 Coffee Shops in Your Area - Local Guide",
+          "url": "https://example.com/best-coffee-shops",
+          "domain": "example.com",
+          "type": "blog"
+        },
+        {
+          "position": 2,
+          "title": "Best Coffee Near Me - Find Local Cafes",
+          "url": "https://coffeefinder.com/near-me",
+          "domain": "coffeefinder.com",
+          "type": "directory"
+        },
+        {
+          "position": 3,
+          "title": "Artisan Coffee Roasters - Premium Beans",
+          "url": "https://artisancoffee.com",
+          "domain": "artisancoffee.com",
+          "type": "product"
+        }
+      ]
+    },
+    {
+      "keyword": "how to brew cold brew coffee",
+      "results": [
+        {
+          "position": 1,
+          "title": "Complete Guide to Cold Brew Coffee at Home",
+          "url": "https://coffeeexpert.com/cold-brew-guide",
+          "domain": "coffeeexpert.com",
+          "type": "blog"
+        },
+        {
+          "position": 2,
+          "title": "Cold Brew Coffee Recipe (Easy 3 Steps)",
+          "url": "https://recipes.com/cold-brew",
+          "domain": "recipes.com",
+          "type": "blog"
+        },
+        {
+          "position": 3,
+          "title": "Cold Brew vs Iced Coffee: What's the Difference?",
+          "url": "https://coffeescience.com/cold-brew-vs-iced",
+          "domain": "coffeescience.com",
+          "type": "blog"
+        }
+      ]
+    }
+  ]
+}
