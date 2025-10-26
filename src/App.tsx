@@ -46,6 +46,12 @@ import MasterPrompt from "./pages/docs/MasterPrompt";
 import Runbooks from "./pages/docs/Runbooks";
 import CompetitorAnalysisDoc from "./pages/docs/CompetitorAnalysisDoc";
 import TroubleshootingDoc from "./pages/docs/Troubleshooting";
+import Billing from "./pages/Billing";
+import Account from "./pages/Account";
+import LegalTerms from "./pages/legal/Terms";
+import LegalPrivacy from "./pages/legal/PrivacyPolicy";
+import LegalContact from "./pages/legal/ContactPage";
+import { CookieBanner } from "./components/legal/CookieBanner";
 
 const queryClient = new QueryClient();
 
@@ -80,11 +86,16 @@ const App = () => (
                   <Route path="/competitor-analyzer" element={<ProtectedRoute><CompetitorAnalyzer /></ProtectedRoute>} />
                   <Route path="/demo/competitor" element={<DemoCompetitorAnalyzer />} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+                  <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/legal/terms" element={<LegalTerms />} />
+                  <Route path="/legal/privacy" element={<LegalPrivacy />} />
+                  <Route path="/legal/contact" element={<LegalContact />} />
                   <Route path="/docs/master-prompt" element={<ProtectedRoute><MasterPrompt /></ProtectedRoute>} />
                   <Route path="/docs/runbooks" element={<ProtectedRoute><Runbooks /></ProtectedRoute>} />
                   <Route path="/docs/competitor-analysis" element={<ProtectedRoute><CompetitorAnalysisDoc /></ProtectedRoute>} />
@@ -112,6 +123,7 @@ const App = () => (
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/auth/update-password" element={<UpdatePassword />} />
               </Routes>
+              <CookieBanner />
             </BrowserRouter>
           </AuthProvider>
         </TooltipProvider>
