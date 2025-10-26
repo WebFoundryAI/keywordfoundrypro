@@ -31,6 +31,8 @@ import AdminResearch from "./pages/admin/Research";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
 import AdminUsage from "./pages/admin/Usage";
 import AdminClustering from "./pages/admin/Clustering";
+import AdminClusteringWorkspace from "./pages/admin/ClusteringWorkspace";
+import AdminObservability from "./pages/admin/Observability";
 import AdminEnvCheck from "./pages/admin/EnvCheck";
 import AdminLogs from "./pages/admin/Logs";
 import NotFound from "./pages/NotFound";
@@ -99,6 +101,8 @@ const App = () => (
                   <Route path="subscriptions" element={<AdminSubscriptions />} />
                   <Route path="usage" element={<AdminUsage />} />
                   <Route path="clustering" element={<AdminClustering />} />
+                  <Route path="clustering-workspace" element={<AdminClusteringWorkspace />} />
+                  <Route path="observability" element={<AdminObservability />} />
                   <Route path="env-check" element={<AdminEnvCheck />} />
                   <Route path="logs" element={<AdminLogs />} />
                 </Route>
