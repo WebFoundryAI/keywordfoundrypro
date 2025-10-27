@@ -2,7 +2,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { callDataForSEO, DataForSEOError } from "../_shared/dataforseo/client.ts";
+import { callDataForSEO } from "../_shared/dataforseo/client.ts";
+import { DataForSEOError } from "../_shared/dataforseo/types.ts";
 
 // CORS - Allowed origins
 const allowedOrigins = [
