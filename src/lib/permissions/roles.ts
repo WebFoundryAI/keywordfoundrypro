@@ -13,6 +13,8 @@ export interface ProjectMember {
 
 /**
  * Get user's role in a project
+ * Note: Uses project_members table as the single source of truth.
+ * Project creators are automatically added as owners via database trigger.
  */
 export async function getUserRole(
   projectId: string,
@@ -22,18 +24,7 @@ export async function getUserRole(
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Check if user is owner of the project
-  const { data: project } = await supabase
-    .from('projects')
-    .select('user_id')
-    .eq('id', projectId)
-    .single();
-
-  if (project && project.user_id === userId) {
-    return 'owner';
-  }
-
-  // Check project_members table
+  // Check project_members table (single source of truth)
   const { data: member } = await supabase
     .from('project_members')
     .select('role')
@@ -186,6 +177,29 @@ export async function removeMember(
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // Check if user being removed is an owner
+  const userRole = await getUserRole(projectId, userId);
+  if (userRole === 'owner') {
+    // Count total owners
+    const { data: owners, error: countError } = await supabase
+      .from('project_members')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('role', 'owner');
+
+    if (countError) {
+      return { success: false, error: countError.message };
+    }
+
+    // Prevent removing the last owner
+    if (owners && owners.length <= 1) {
+      return {
+        success: false,
+        error: 'Cannot remove the last owner. Transfer ownership first or add another owner.',
+      };
+    }
+  }
 
   const { error } = await supabase
     .from('project_members')

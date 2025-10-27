@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getAuthenticatedUser, isAdmin } from '@/lib/api/auth';
 
 /**
  * GET /api/roadmap
@@ -50,6 +51,25 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const { userId, error: authError } = await getAuthenticatedUser(request);
+
+    if (authError || !userId) {
+      return NextResponse.json(
+        { error: authError || 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify user is admin
+    const userIsAdmin = await isAdmin(userId);
+    if (!userIsAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { title, body: itemBody, state } = body;
 
@@ -59,8 +79,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // TODO: Verify user is admin
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
