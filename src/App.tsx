@@ -44,6 +44,10 @@ import MasterPrompt from "./pages/docs/MasterPrompt";
 import Runbooks from "./pages/docs/Runbooks";
 import CompetitorAnalysisDoc from "./pages/docs/CompetitorAnalysisDoc";
 import TroubleshootingDoc from "./pages/docs/Troubleshooting";
+import Roadmap from "./pages/Roadmap";
+import PrivacySettings from "./pages/PrivacySettings";
+import ProjectMembers from "./pages/ProjectMembers";
+import AdminRoadmap from "./pages/admin/RoadmapAdmin";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +83,9 @@ const App = () => (
                   <Route path="/demo/competitor" element={<DemoCompetitorAnalyzer />} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/roadmap" element={<Roadmap />} />
+                  <Route path="/privacy-settings" element={<ProtectedRoute><PrivacySettings /></ProtectedRoute>} />
+                  <Route path="/project-members" element={<ProtectedRoute><ProjectMembers /></ProtectedRoute>} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/terms" element={<Terms />} />
@@ -101,6 +108,7 @@ const App = () => (
                   <Route path="clustering" element={<AdminClustering />} />
                   <Route path="env-check" element={<AdminEnvCheck />} />
                   <Route path="logs" element={<AdminLogs />} />
+                  <Route path="roadmap" element={<AdminRoadmap />} />
                 </Route>
 
                 <Route path="/auth/sign-in" element={<SignIn />} />
