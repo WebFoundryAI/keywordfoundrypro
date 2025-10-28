@@ -277,18 +277,19 @@ serve(async (req) => {
       .map((item: any) => {
         const keywordData = item.keyword_data
         const keywordInfo = keywordData.keyword_info || {}
+        const keywordProps = keywordData.keyword_properties || {}
         const keyword = keywordData.keyword;
-        
+
         // Use DataForSEO intent if available, otherwise use fallback
         const intent = intentMap[keyword.toLowerCase()] || determineIntentFallback(keyword);
-        
+
         return {
           keyword: keyword,
           searchVolume: keywordInfo.search_volume || 0,
           cpc: keywordInfo.cpc || 0,
           competition: keywordInfo.competition || 0,
           competition_level: keywordInfo.competition_level || null,
-          difficulty: convertCompetitionToDifficulty(keywordInfo.competition_level, keywordInfo.competition_index),
+          difficulty: keywordProps.keyword_difficulty || convertCompetitionToDifficulty(keywordInfo.competition_level, keywordInfo.competition_index),
           intent: intent,
           relevance: Math.round((item.relevance || 0) * 100), // Use API relevance score
           trend: keywordInfo.monthly_searches || null,
