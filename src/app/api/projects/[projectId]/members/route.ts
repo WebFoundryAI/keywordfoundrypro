@@ -5,8 +5,10 @@ import {
   addProjectMember,
   updateMemberRole,
   removeMember,
+  canView,
   type ProjectRole,
 } from '@/lib/permissions/roles';
+import { getAuthenticatedUser } from '@/lib/api/auth';
 
 /**
  * GET /api/projects/[projectId]/members
@@ -19,18 +21,24 @@ export async function GET(
   try {
     const projectId = params.projectId;
 
-    // Get user from session
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Get authenticated user
+    const { userId, error: authError } = await getAuthenticatedUser(request);
 
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !userId) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    // For simplicity, assume authenticated user
-    // In production, verify session token
+    // Verify user has access to this project
+    const hasAccess = await canView(projectId, userId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'You do not have access to this project' },
+        { status: 403 }
+      );
+    }
 
     const members = await getProjectMembers(projectId);
 
@@ -51,13 +59,23 @@ export async function POST(
 ) {
   try {
     const projectId = params.projectId;
-    const body = await request.json();
 
-    const { user_id, role, added_by } = body;
+    // Get authenticated user
+    const { userId, error: authError } = await getAuthenticatedUser(request);
 
-    if (!user_id || !role || !added_by) {
+    if (authError || !userId) {
       return NextResponse.json(
-        { error: 'Missing required fields: user_id, role, added_by' },
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { user_id, role } = body;
+
+    if (!user_id || !role) {
+      return NextResponse.json(
+        { error: 'Missing required fields: user_id, role' },
         { status: 400 }
       );
     }
@@ -66,11 +84,12 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
+    // Use authenticated user as the one adding the member
     const result = await addProjectMember(
       projectId,
       user_id,
       role as ProjectRole,
-      added_by
+      userId
     );
 
     if (!result.success) {
@@ -94,13 +113,23 @@ export async function PATCH(
 ) {
   try {
     const projectId = params.projectId;
-    const body = await request.json();
 
-    const { user_id, role, updated_by } = body;
+    // Get authenticated user
+    const { userId, error: authError } = await getAuthenticatedUser(request);
 
-    if (!user_id || !role || !updated_by) {
+    if (authError || !userId) {
       return NextResponse.json(
-        { error: 'Missing required fields: user_id, role, updated_by' },
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { user_id, role } = body;
+
+    if (!user_id || !role) {
+      return NextResponse.json(
+        { error: 'Missing required fields: user_id, role' },
         { status: 400 }
       );
     }
@@ -109,11 +138,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
+    // Use authenticated user as the one updating the role
     const result = await updateMemberRole(
       projectId,
       user_id,
       role as ProjectRole,
-      updated_by
+      userId
     );
 
     if (!result.success) {
@@ -137,18 +167,29 @@ export async function DELETE(
 ) {
   try {
     const projectId = params.projectId;
-    const body = await request.json();
 
-    const { user_id, removed_by } = body;
+    // Get authenticated user
+    const { userId, error: authError } = await getAuthenticatedUser(request);
 
-    if (!user_id || !removed_by) {
+    if (authError || !userId) {
       return NextResponse.json(
-        { error: 'Missing required fields: user_id, removed_by' },
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { user_id } = body;
+
+    if (!user_id) {
+      return NextResponse.json(
+        { error: 'Missing required field: user_id' },
         { status: 400 }
       );
     }
 
-    const result = await removeMember(projectId, user_id, removed_by);
+    // Use authenticated user as the one removing the member
+    const result = await removeMember(projectId, user_id, userId);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 403 });
