@@ -1,0 +1,35 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Basic secret scanning patterns
+echo "🔍 Scanning for secrets..."
+
+# Patterns to check for
+PATTERNS=(
+  "AKIA[0-9A-Z]{16}" # AWS access key
+  "AIza[0-9A-Za-z-_]{35}" # Google API key
+  "sk_live_[0-9a-zA-Z]{24}" # Stripe secret key
+  "pk_live_[0-9a-zA-Z]{24}" # Stripe publishable key
+  "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" # Generic UUID/API keys
+  "-----BEGIN PRIVATE KEY-----" # Private keys
+  "-----BEGIN RSA PRIVATE KEY-----" # RSA private keys
+)
+
+# Check staged files
+FILES=$(git diff --cached --name-only)
+
+for PATTERN in "${PATTERNS[@]}"; do
+  for FILE in $FILES; do
+    if [ -f "$FILE" ]; then
+      if grep -qE "$PATTERN" "$FILE"; then
+        echo "❌ Potential secret found in $FILE"
+        echo "   Pattern: $PATTERN"
+        echo "   Please remove secrets before committing"
+        exit 1
+      fi
+    fi
+  done
+done
+
+echo "✅ No secrets detected"
+exit 0

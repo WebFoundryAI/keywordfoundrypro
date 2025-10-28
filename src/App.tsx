@@ -31,6 +31,8 @@ import AdminResearch from "./pages/admin/Research";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
 import AdminUsage from "./pages/admin/Usage";
 import AdminClustering from "./pages/admin/Clustering";
+import AdminClusteringWorkspace from "./pages/admin/ClusteringWorkspace";
+import AdminObservability from "./pages/admin/Observability";
 import AdminEnvCheck from "./pages/admin/EnvCheck";
 import AdminLogs from "./pages/admin/Logs";
 import NotFound from "./pages/NotFound";
@@ -48,6 +50,12 @@ import Roadmap from "./pages/Roadmap";
 import PrivacySettings from "./pages/PrivacySettings";
 import ProjectMembers from "./pages/ProjectMembers";
 import AdminRoadmap from "./pages/admin/RoadmapAdmin";
+import Billing from "./pages/Billing";
+import Account from "./pages/Account";
+import LegalTerms from "./pages/legal/Terms";
+import LegalPrivacy from "./pages/legal/PrivacyPolicy";
+import LegalContact from "./pages/legal/ContactPage";
+import { CookieBanner } from "./components/legal/CookieBanner";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +90,8 @@ const App = () => (
                   <Route path="/competitor-analyzer" element={<ProtectedRoute><CompetitorAnalyzer /></ProtectedRoute>} />
                   <Route path="/demo/competitor" element={<DemoCompetitorAnalyzer />} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+                  <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/roadmap" element={<Roadmap />} />
                   <Route path="/privacy-settings" element={<ProtectedRoute><PrivacySettings /></ProtectedRoute>} />
@@ -90,6 +100,9 @@ const App = () => (
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/legal/terms" element={<LegalTerms />} />
+                  <Route path="/legal/privacy" element={<LegalPrivacy />} />
+                  <Route path="/legal/contact" element={<LegalContact />} />
                   <Route path="/docs/master-prompt" element={<ProtectedRoute><MasterPrompt /></ProtectedRoute>} />
                   <Route path="/docs/runbooks" element={<ProtectedRoute><Runbooks /></ProtectedRoute>} />
                   <Route path="/docs/competitor-analysis" element={<ProtectedRoute><CompetitorAnalysisDoc /></ProtectedRoute>} />
@@ -106,6 +119,8 @@ const App = () => (
                   <Route path="subscriptions" element={<AdminSubscriptions />} />
                   <Route path="usage" element={<AdminUsage />} />
                   <Route path="clustering" element={<AdminClustering />} />
+                  <Route path="clustering-workspace" element={<AdminClusteringWorkspace />} />
+                  <Route path="observability" element={<AdminObservability />} />
                   <Route path="env-check" element={<AdminEnvCheck />} />
                   <Route path="logs" element={<AdminLogs />} />
                   <Route path="roadmap" element={<AdminRoadmap />} />
@@ -116,6 +131,7 @@ const App = () => (
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/auth/update-password" element={<UpdatePassword />} />
               </Routes>
+              <CookieBanner />
             </BrowserRouter>
           </AuthProvider>
         </TooltipProvider>
