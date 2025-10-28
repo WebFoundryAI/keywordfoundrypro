@@ -24,7 +24,7 @@ export const UserMenu = () => {
   const navigate = useNavigate();
 
   const handleMyResearchClick = () => {
-    navigate('/research');
+    navigate('/my-research');
   };
 
   const handleSignOut = async () => {
