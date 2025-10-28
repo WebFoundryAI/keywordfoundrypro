@@ -1,9 +1,10 @@
 import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileSearch, ArrowLeft, CreditCard, Activity, Layers, Settings, FileText, Map } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/components/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
+import { adminNav } from "@/lib/nav/config";
 
 export const AdminLayout = () => {
   const location = useLocation();
@@ -24,54 +25,6 @@ export const AdminLayout = () => {
     return <Navigate to="/" replace />;
   }
 
-  const navItems = [
-    {
-      path: "/admin",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      path: "/admin/users",
-      label: "Users",
-      icon: Users,
-    },
-    {
-      path: "/admin/research",
-      label: "Research",
-      icon: FileSearch,
-    },
-    {
-      path: "/admin/subscriptions",
-      label: "Subscriptions",
-      icon: CreditCard,
-    },
-    {
-      path: "/admin/usage",
-      label: "API Usage",
-      icon: Activity,
-    },
-    {
-      path: "/admin/clustering",
-      label: "Clustering",
-      icon: Layers,
-    },
-    {
-      path: "/admin/roadmap",
-      label: "Roadmap",
-      icon: Map,
-    },
-    {
-      path: "/admin/env-check",
-      label: "Environment",
-      icon: Settings,
-    },
-    {
-      path: "/admin/logs",
-      label: "Server Logs",
-      icon: FileText,
-    },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header user={user} />
@@ -88,10 +41,10 @@ export const AdminLayout = () => {
               </Link>
             </div>
             <nav className="space-y-1">
-              {navItems.map((item) => {
+              {adminNav.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
-                
+
                 return (
                   <Link key={item.path} to={item.path}>
                     <Button
