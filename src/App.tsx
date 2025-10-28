@@ -53,6 +53,10 @@ import AdminRoadmap from "./pages/admin/RoadmapAdmin";
 import Billing from "./pages/Billing";
 import Account from "./pages/Account";
 import MyResearch from "./pages/MyResearch";
+import Status from "./pages/Status";
+import Changelog from "./pages/Changelog";
+import AdminStatus from "./pages/admin/StatusAdmin";
+import AdminChangelog from "./pages/admin/ChangelogAdmin";
 import LegalTerms from "./pages/legal/Terms";
 import LegalPrivacy from "./pages/legal/PrivacyPolicy";
 import LegalContact from "./pages/legal/ContactPage";
@@ -96,6 +100,8 @@ const App = () => (
                   <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/roadmap" element={<Roadmap />} />
+                  <Route path="/status" element={<Status />} />
+                  <Route path="/changelog" element={<Changelog />} />
                   <Route path="/privacy-settings" element={<ProtectedRoute><PrivacySettings /></ProtectedRoute>} />
                   <Route path="/project-members" element={<ProtectedRoute><ProjectMembers /></ProtectedRoute>} />
                   <Route path="/about" element={<About />} />
@@ -126,6 +132,8 @@ const App = () => (
                   <Route path="env-check" element={<AdminEnvCheck />} />
                   <Route path="logs" element={<AdminLogs />} />
                   <Route path="roadmap" element={<AdminRoadmap />} />
+                  <Route path="status" element={<AdminStatus />} />
+                  <Route path="changelog" element={<AdminChangelog />} />
                 </Route>
 
                 <Route path="/auth/sign-in" element={<SignIn />} />
