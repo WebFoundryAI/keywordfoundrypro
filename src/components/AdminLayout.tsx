@@ -5,11 +5,15 @@ import { Header } from "@/components/Header";
 import { useAuth } from "@/components/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
 import { adminNav } from "@/lib/nav/config";
+import { useEnsureAdminPro } from "@/lib/billing/ensure-admin-pro";
 
 export const AdminLayout = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { isAdmin, isLoading } = useAdmin();
+
+  // Ensure admin has Pro subscription record (idempotent)
+  useEnsureAdminPro(user?.id, isAdmin);
 
   // Show loading state while checking admin status
   if (isLoading) {

@@ -33,7 +33,7 @@ export interface NavItem {
   tourId?: string;
 }
 
-// Main header navigation (for authenticated users)
+// Main header navigation (for ALL authenticated users - admin and non-admin see the same)
 export const headerNav: NavItem[] = [
   {
     path: "/research",
@@ -71,39 +71,8 @@ export const headerNav: NavItem[] = [
     description: "Competitor analysis",
     requiresAuth: true,
     tourId: "competitor-tab"
-  },
-  {
-    path: "/docs",
-    label: "Docs",
-    icon: BookOpen,
-    description: "Documentation",
-    requiresAuth: false,
-    requiresAdmin: true
-  },
-  {
-    path: "/status",
-    label: "Status",
-    icon: Activity,
-    description: "System status",
-    requiresAuth: false,
-    requiresAdmin: true
-  },
-  {
-    path: "/changelog",
-    label: "Changelog",
-    icon: ClipboardList,
-    description: "Product updates",
-    requiresAuth: false,
-    requiresAdmin: true
-  },
-  {
-    path: "/roadmap",
-    label: "Roadmap",
-    icon: Map,
-    description: "Product roadmap",
-    requiresAuth: false,
-    requiresAdmin: true
   }
+  // Removed: Docs, Status, Changelog, Roadmap (admins see same nav as regular users)
 ];
 
 // Account menu navigation
