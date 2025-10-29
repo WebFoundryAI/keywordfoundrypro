@@ -57,10 +57,11 @@ import Status from "./pages/Status";
 import Changelog from "./pages/Changelog";
 import AdminStatus from "./pages/admin/StatusAdmin";
 import AdminChangelog from "./pages/admin/ChangelogAdmin";
+import AdminCookieSettings from "./pages/admin/CookieSettings";
 import LegalTerms from "./pages/legal/Terms";
 import LegalPrivacy from "./pages/legal/PrivacyPolicy";
 import LegalContact from "./pages/legal/ContactPage";
-import { CookieBanner } from "./components/legal/CookieBanner";
+import { CookieBannerGate } from "./components/CookieBannerGate";
 
 const queryClient = new QueryClient();
 
@@ -134,6 +135,7 @@ const App = () => (
                   <Route path="roadmap" element={<AdminRoadmap />} />
                   <Route path="status" element={<AdminStatus />} />
                   <Route path="changelog" element={<AdminChangelog />} />
+                  <Route path="cookie-settings" element={<AdminCookieSettings />} />
                 </Route>
 
                 <Route path="/auth/sign-in" element={<SignIn />} />
@@ -141,7 +143,7 @@ const App = () => (
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/auth/update-password" element={<UpdatePassword />} />
               </Routes>
-              <CookieBanner />
+              <CookieBannerGate />
             </BrowserRouter>
           </AuthProvider>
         </TooltipProvider>
