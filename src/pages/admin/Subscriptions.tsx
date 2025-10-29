@@ -15,6 +15,7 @@ interface Subscription {
   trial_ends_at: string | null;
   current_period_end: string;
   created_at: string;
+  stripe_customer_id: string | null;
   profiles: {
     email: string | null;
     display_name: string | null;
@@ -37,6 +38,7 @@ const AdminSubscriptions = () => {
             display_name
           )
         `)
+        .not('stripe_customer_id', 'is', null)  // Include real Stripe customers and internal-admin subscriptions
         .order('created_at', { ascending: false });
 
       if (tierFilter !== 'all') {
@@ -148,6 +150,7 @@ const AdminSubscriptions = () => {
                 <TableHead>User</TableHead>
                 <TableHead>Tier</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Provider</TableHead>
                 <TableHead>Trial Ends</TableHead>
                 <TableHead>Period Ends</TableHead>
                 <TableHead>Created</TableHead>
@@ -174,6 +177,11 @@ const AdminSubscriptions = () => {
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(sub.status)}>
                       {sub.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={sub.stripe_customer_id === 'internal-admin' ? 'outline' : 'secondary'}>
+                      {sub.stripe_customer_id === 'internal-admin' ? 'Internal' : 'Stripe'}
                     </Badge>
                   </TableCell>
                   <TableCell>

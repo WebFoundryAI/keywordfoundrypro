@@ -1,4 +1,4 @@
-import { LogOut, Shield, BookOpen, Activity, ClipboardList, Map } from 'lucide-react';
+import { LogOut, Shield } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -92,37 +92,10 @@ export const UserMenu = () => {
         {isAdmin && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-              Admin
-            </DropdownMenuLabel>
             <DropdownMenuItem asChild>
               <Link to="/admin" className="cursor-pointer">
                 <Shield className="mr-2 h-4 w-4" />
                 <span>Admin Panel</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/docs" className="cursor-pointer">
-                <BookOpen className="mr-2 h-4 w-4" />
-                <span>Docs</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/status" className="cursor-pointer">
-                <Activity className="mr-2 h-4 w-4" />
-                <span>Status</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/changelog" className="cursor-pointer">
-                <ClipboardList className="mr-2 h-4 w-4" />
-                <span>Changelog</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/roadmap" className="cursor-pointer">
-                <Map className="mr-2 h-4 w-4" />
-                <span>Roadmap</span>
               </Link>
             </DropdownMenuItem>
           </>

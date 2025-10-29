@@ -123,10 +123,10 @@ describe('nav/config', () => {
   describe('navigation paths', () => {
     it('should include required pages in header nav', () => {
       const paths = headerNav.map(item => item.path);
-      expect(paths).toContain('/status');
-      expect(paths).toContain('/changelog');
-      expect(paths).toContain('/roadmap');
-      expect(paths).toContain('/docs');
+      // Marketing pages (Docs, Status, Changelog, Roadmap) removed from header
+      // per admin header unification - these now only appear in footer and admin profile menu
+      expect(paths).toContain('/research');
+      expect(paths).toContain('/keyword-results');
     });
 
     it('should include required pages in account nav', () => {
