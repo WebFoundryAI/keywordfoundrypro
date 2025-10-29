@@ -64,7 +64,8 @@ export const FiltersPanel: FC<FiltersPanelProps> = ({ projectId, onApply, classN
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filters
+            {/* ISSUE FIX #5: Clarify vague "Filters" label */}
+            Filter Keywords by Criteria
           </CardTitle>
           {isDirty && (
             <Badge variant="secondary" className="animate-pulse">

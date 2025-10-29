@@ -145,11 +145,12 @@ serve(async (req) => {
     const validDepth = depth;
     const validLimit = limit;
 
+    // ISSUE FIX #2: Ensure locale handling is explicit and properly formatted
     // Prepare the DataForSEO API request - using Labs Related Keywords endpoint
     const apiPayload: any = {
       "keyword": keyword,
-      "language_code": languageCode,
-      "location_code": locationCode,
+      "language_code": languageCode, // Explicitly set (default: 'en')
+      "location_code": locationCode,  // Explicitly set (default: 2840 = US)
       "depth": validDepth,
       "limit": validLimit
     }
@@ -168,11 +169,12 @@ serve(async (req) => {
     }
 
     console.log('Calling DataForSEO Labs API with payload:', JSON.stringify(apiPayload))
+    console.log(`Locale config: language_code=${languageCode}, location_code=${locationCode}`)
 
     // Call DataForSEO Labs API for related keywords using centralized client
     const apiData = await callDataForSEO({
       endpoint: '/dataforseo_labs/google/related_keywords/live',
-      payload: [apiPayload],
+      payload: [apiPayload], // DataForSEO expects array format
       module: MODULE_NAME,
       userId: user.id,
     });

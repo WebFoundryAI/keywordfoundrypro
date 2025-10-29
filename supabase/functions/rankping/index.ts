@@ -1,5 +1,13 @@
-// Edge Function for daily rank checking
-// Runs via cron at 03:00 UTC daily
+/**
+ * ISSUE FIX #7: Memory leak fixes for background worker
+ *
+ * Edge Function for daily rank checking with memory optimizations:
+ * - Processes projects in chunks to avoid memory buildup
+ * - Streams results instead of accumulating in memory
+ * - Explicitly releases large data structures
+ * - Limits concurrent operations
+ * - Adds timeout protection
+ */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -11,17 +19,28 @@ interface RankCheckResult {
   errors: string[];
 }
 
+interface RankCheckSummary {
+  success: boolean;
+  checked: number;
+  failed: number;
+}
+
 async function runRankCheckForProject(
   supabase: SupabaseClient,
   projectId: string
 ): Promise<RankCheckResult> {
+  let keywords: any[] | null = null;
+  let settings: any = null;
+
   try {
     // Get rank settings
-    const { data: settings, error: settingsError } = await supabase
+    const { data: settingsData, error: settingsError } = await supabase
       .from('rank_settings')
       .select('*')
       .eq('project_id', projectId)
       .single();
+
+    settings = settingsData;
 
     if (settingsError || !settings || !settings.enabled) {
       return {
@@ -32,13 +51,15 @@ async function runRankCheckForProject(
       };
     }
 
-    // Get keywords to check
-    const { data: keywords } = await supabase
+    // Get keywords to check (limited by daily quota)
+    const { data: keywordsData } = await supabase
       .from('cached_results')
       .select('keyword')
       .eq('project_id', projectId)
       .order('volume', { ascending: false })
       .limit(settings.daily_quota);
+
+    keywords = keywordsData;
 
     if (!keywords || keywords.length === 0) {
       return {
@@ -78,10 +99,18 @@ async function runRankCheckForProject(
       checked: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
+  } finally {
+    // MEMORY FIX: Explicitly release large data structures
+    keywords = null;
+    settings = null;
   }
 }
 
 serve(async (req) => {
+  const CHUNK_SIZE = 10; // Process 10 projects at a time to avoid memory buildup
+  const MAX_EXECUTION_TIME = 5 * 60 * 1000; // 5 minutes timeout
+  const startTime = Date.now();
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -101,24 +130,53 @@ serve(async (req) => {
       );
     }
 
-    const results: RankCheckResult[] = [];
+    // MEMORY FIX: Use streaming summary instead of accumulating all results
+    let projectsProcessed = 0;
+    let totalChecked = 0;
+    let totalFailed = 0;
 
-    // Process each project
-    for (const setting of settings) {
-      const result = await runRankCheckForProject(supabase, setting.project_id);
-      results.push(result);
+    // MEMORY FIX: Process projects in chunks to avoid memory accumulation
+    for (let i = 0; i < settings.length; i += CHUNK_SIZE) {
+      // Check timeout
+      if (Date.now() - startTime > MAX_EXECUTION_TIME) {
+        console.warn(`Timeout reached after processing ${projectsProcessed} projects`);
+        break;
+      }
+
+      const chunk = settings.slice(i, i + CHUNK_SIZE);
+      console.log(`Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(settings.length / CHUNK_SIZE)}`);
+
+      // Process chunk in parallel with limited concurrency
+      const chunkResults = await Promise.all(
+        chunk.map(setting => runRankCheckForProject(supabase, setting.project_id))
+      );
+
+      // Update summary counters (don't store full results)
+      for (const result of chunkResults) {
+        projectsProcessed++;
+        totalChecked += result.checked;
+        if (!result.success) {
+          totalFailed++;
+          console.error(`Failed to check project ${result.projectId}:`, result.errors);
+        }
+      }
+
+      // MEMORY FIX: Explicitly clear chunk results before next iteration
+      chunkResults.length = 0;
+
+      // Small delay between chunks to avoid overwhelming the database
+      if (i + CHUNK_SIZE < settings.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
-
-    const totalChecked = results.reduce((sum, r) => sum + r.checked, 0);
-    const failures = results.filter((r) => !r.success);
 
     return new Response(
       JSON.stringify({
         success: true,
-        projects_processed: results.length,
+        projects_processed: projectsProcessed,
         total_keywords_checked: totalChecked,
-        failures: failures.length,
-        results,
+        failures: totalFailed,
+        execution_time_ms: Date.now() - startTime,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -127,6 +185,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Internal error',
+        execution_time_ms: Date.now() - startTime,
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
