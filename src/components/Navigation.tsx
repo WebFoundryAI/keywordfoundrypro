@@ -1,57 +1,20 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, BarChart, Target, Users } from "lucide-react";
+import { headerNav, getVisibleNavItems } from "@/lib/nav/config";
+import { useAuth } from "@/components/AuthProvider";
 
 export const Navigation = () => {
   const location = useLocation();
-  
-  const navItems = [
-    {
-      path: "/research",
-      label: "Seed Keyword",
-      icon: Search,
-      description: "Enter keyword for analysis",
-      tourId: "research-tab"
-    },
-    {
-      path: "/keyword-results",
-      label: "Keyword Results",
-      icon: Search,
-      description: "View keyword analysis results"
-    },
-    {
-      path: "/serp-analysis", 
-      label: "SERP Analysis",
-      icon: BarChart,
-      description: "Analyze top 10 organic results"
-    },
-    {
-      path: "/related-keywords",
-      label: "Related Keywords", 
-      icon: Target,
-      description: "Find content pillars and opportunities"
-    },
-    {
-      path: "/competitor-analyzer",
-      label: "Competitor Analyzer",
-      icon: Users,
-      description: "Analyze competitor domains",
-      tourId: "competitor-tab"
-    },
-    {
-      path: "/pricing",
-      label: "Pricing",
-      icon: Target,
-      description: "View pricing plans"
-    }
-  ];
+  const { user } = useAuth();
+
+  const visibleItems = getVisibleNavItems(headerNav, !!user, false);
 
   return (
     <nav className="flex gap-2">
-      {navItems.map((item) => {
+      {visibleItems.map((item) => {
         const Icon = item.icon;
         const isActive = location.pathname === item.path;
-        
+
         return (
           <Link key={item.path} to={item.path}>
             <Button

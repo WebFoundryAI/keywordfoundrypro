@@ -1,4 +1,4 @@
-import { User, LogOut, Database, Shield } from 'lucide-react';
+import { LogOut, Shield } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
+import { accountNav } from '@/lib/nav/config';
 
 export const UserMenu = () => {
   const { user, signOut } = useAuth();
@@ -22,10 +23,6 @@ export const UserMenu = () => {
   const { isAdmin } = useAdmin();
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  const handleMyResearchClick = () => {
-    navigate('/my-research');
-  };
 
   const handleSignOut = async () => {
     try {
@@ -81,19 +78,17 @@ export const UserMenu = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/profile" className="cursor-pointer">
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          className="cursor-pointer" 
-          onClick={handleMyResearchClick}
-        >
-          <Database className="mr-2 h-4 w-4" />
-          <span>My Research</span>
-        </DropdownMenuItem>
+        {accountNav.map((item) => {
+          const Icon = item.icon;
+          return (
+            <DropdownMenuItem key={item.path} asChild>
+              <Link to={item.path} className="cursor-pointer">
+                <Icon className="mr-2 h-4 w-4" />
+                <span>{item.label}</span>
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
         {isAdmin && (
           <>
             <DropdownMenuSeparator />
