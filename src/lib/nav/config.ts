@@ -77,28 +77,32 @@ export const headerNav: NavItem[] = [
     label: "Docs",
     icon: BookOpen,
     description: "Documentation",
-    requiresAuth: false
+    requiresAuth: false,
+    requiresAdmin: true
   },
   {
     path: "/status",
     label: "Status",
     icon: Activity,
     description: "System status",
-    requiresAuth: false
+    requiresAuth: false,
+    requiresAdmin: true
   },
   {
     path: "/changelog",
     label: "Changelog",
     icon: ClipboardList,
     description: "Product updates",
-    requiresAuth: false
+    requiresAuth: false,
+    requiresAdmin: true
   },
   {
     path: "/roadmap",
     label: "Roadmap",
     icon: Map,
     description: "Product roadmap",
-    requiresAuth: false
+    requiresAuth: false,
+    requiresAdmin: true
   }
 ];
 
