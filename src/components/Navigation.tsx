@@ -2,12 +2,14 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { headerNav, getVisibleNavItems } from "@/lib/nav/config";
 import { useAuth } from "@/components/AuthProvider";
+import { useAdmin } from "@/hooks/useAdmin";
 
 export const Navigation = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
 
-  const visibleItems = getVisibleNavItems(headerNav, !!user, false);
+  const visibleItems = getVisibleNavItems(headerNav, !!user, isAdmin);
 
   return (
     <nav className="flex gap-2">
