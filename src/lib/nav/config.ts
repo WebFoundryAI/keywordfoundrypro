@@ -18,7 +18,8 @@ import {
   MessageSquare,
   ClipboardList,
   TrendingUp,
-  Lock
+  Lock,
+  Cookie
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -217,6 +218,13 @@ export const adminNav: NavItem[] = [
     label: "Server Logs",
     icon: FileText,
     description: "View server logs",
+    requiresAdmin: true
+  },
+  {
+    path: "/admin/cookie-settings",
+    label: "Cookie Banner",
+    icon: Cookie,
+    description: "Cookie consent settings",
     requiresAdmin: true
   }
 ];
