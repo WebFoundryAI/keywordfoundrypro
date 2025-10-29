@@ -281,33 +281,40 @@ export const KeywordResultsTable = ({
                 {results.length} keywords found with comprehensive metrics
               </CardDescription>
             </div>
+            {/* ISSUE FIX #5: More descriptive export button labels with tooltips */}
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onExport?.('csv')}
                 className="bg-background/50"
+                aria-label="Export keywords to CSV format"
+                title="Export to CSV (spreadsheet format)"
               >
                 <Download className="w-4 h-4 mr-2" />
-                CSV
+                Export CSV
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onExport?.('json')}
                 className="bg-background/50"
+                aria-label="Export keywords to JSON format"
+                title="Export to JSON (developer format)"
               >
                 <Download className="w-4 h-4 mr-2" />
-                JSON
+                Export JSON
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onExport?.('txt')}
                 className="bg-background/50"
+                aria-label="Export keywords to plain text format"
+                title="Export to TXT (plain text list)"
               >
                 <Download className="w-4 h-4 mr-2" />
-                TXT
+                Export TXT
               </Button>
             </div>
           </div>

@@ -187,8 +187,25 @@ serve(async (req) => {
     // DataForSEO Labs returns results nested in items array
     const rawResults = keywordIdeasData.tasks[0].result || [];
     let keywordResults = rawResults[0]?.items || [];
-    
+
     console.log(`Received ${keywordResults.length} keyword results from initial request`);
+
+    // ISSUE FIX #1: Deduplicate keywords before scoring
+    // Use case-insensitive and whitespace-normalized deduplication
+    const seenKeywords = new Set<string>();
+    const normalizeForDedup = (kw: string) => kw.toLowerCase().replace(/\s+/g, ' ').trim();
+
+    keywordResults = keywordResults.filter((item: any) => {
+      const normalized = normalizeForDedup(item.keyword || '');
+      if (seenKeywords.has(normalized)) {
+        console.log(`Deduplicated duplicate keyword: "${item.keyword}"`);
+        return false;
+      }
+      seenKeywords.add(normalized);
+      return true;
+    });
+
+    console.log(`After deduplication: ${keywordResults.length} unique keywords`);
     console.log('Initial endpoint used: /v3/dataforseo_labs/google/keyword_ideas/live');
     
     // Normalize whitespace for comparison (handles multi-word phrases correctly)

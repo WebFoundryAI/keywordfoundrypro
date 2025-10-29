@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { KeywordResearchForm, KeywordFormData } from "@/components/KeywordResearchForm";
 import { KeywordResult } from "@/components/KeywordResultsTable";
+import { LoadingIndicator } from "@/components/LoadingIndicator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -234,10 +235,19 @@ const Research = () => {
     <section className="px-6 py-8">
       <OnboardingTour />
       <div className="container mx-auto max-w-4xl space-y-6">
-        <KeywordResearchForm 
+        <KeywordResearchForm
           onSubmit={handleFormSubmit}
           isLoading={isLoading}
         />
+        {/* ISSUE FIX #4: Enhanced loading indicator for long-running queries */}
+        {isLoading && (
+          <LoadingIndicator
+            isLoading={isLoading}
+            message="Analyzing keywords with DataForSEO..."
+            showProgress={true}
+            estimatedDuration={10}
+          />
+        )}
       </div>
     </section>
   );
