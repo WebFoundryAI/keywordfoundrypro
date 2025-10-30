@@ -44,6 +44,7 @@ interface KeywordResultsTableProps {
     difficultyMin?: number | null;
     difficultyMax?: number | null;
     cpcMin?: number | null;
+    intent?: string | null;
   }) => void;
   // UI customization (optional - for page-specific styling)
   hideResultsCount?: boolean;
@@ -163,6 +164,7 @@ export const KeywordResultsTable = ({
   const [volumeGte, setVolumeGte] = useState<string>('');
   const [difficultyLte, setDifficultyLte] = useState<string>('');
   const [cpcGte, setCpcGte] = useState<string>('');
+  const [intentFilter, setIntentFilter] = useState<string>('');
 
   // Sync local search with external
   useEffect(() => {
@@ -189,11 +191,12 @@ export const KeywordResultsTable = ({
           difficultyMin: null,
           difficultyMax: difficultyLte ? parseInt(difficultyLte) : null,
           cpcMin: cpcGte ? parseFloat(cpcGte) : null,
+          intent: intentFilter || null,
         });
       }
     }, 350); // Slightly longer debounce for filters to reduce server load
     return () => clearTimeout(timer);
-  }, [volumeGte, difficultyLte, cpcGte, onFiltersChange]);
+  }, [volumeGte, difficultyLte, cpcGte, intentFilter, onFiltersChange]);
 
   // Client-side sorting only (filtering happens server-side)
   const sortedResults = [...results].sort((a, b) => {
@@ -332,62 +335,70 @@ export const KeywordResultsTable = ({
               )}
             </div>
 
-            {/* Always-visible realtime filters with simplified single-value inputs */}
-            <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+            {/* Always-visible realtime filters - compact single row at sm+ */}
+            <div className="bg-muted/30 rounded-lg p-4">
               {!hideFilteringCaption && (
                 <div className="flex items-center justify-end mb-2">
                   <span className="text-xs text-muted-foreground">Server-side filtering</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                 {/* Volume Filter - ≥ semantics */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Search Volume (≥)</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Volume ≥</Label>
                   <Input
                     type="number"
                     inputMode="numeric"
-                    placeholder="Value"
+                    placeholder="Min"
                     value={volumeGte}
                     onChange={(e) => setVolumeGte(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="bg-background"
+                    className="bg-background text-sm h-9 px-2 w-full max-w-[140px]"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Only show keywords with volume at least this value.
-                  </p>
                 </div>
 
                 {/* Difficulty Filter - ≤ semantics */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Difficulty (≤ 100)</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Diff ≤</Label>
                   <Input
                     type="number"
                     inputMode="numeric"
-                    placeholder="Value"
+                    placeholder="Max"
                     value={difficultyLte}
                     onChange={(e) => setDifficultyLte(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="bg-background"
+                    className="bg-background text-sm h-9 px-2 w-full max-w-[140px]"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Only show keywords with difficulty at most this value.
-                  </p>
                 </div>
 
                 {/* CPC Filter - ≥ semantics */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">CPC (≥ USD)</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">CPC ≥ (USD)</Label>
                   <Input
                     type="number"
                     inputMode="decimal"
                     step="0.01"
-                    placeholder="Value"
+                    placeholder="Min"
                     value={cpcGte}
                     onChange={(e) => setCpcGte(e.target.value.replace(/[^0-9.]/g, ''))}
-                    className="bg-background"
+                    className="bg-background text-sm h-9 px-2 w-full max-w-[140px]"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Only show keywords with CPC at least this value.
-                  </p>
+                </div>
+
+                {/* Intent Filter - dropdown */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Intent</Label>
+                  <Select value={intentFilter} onValueChange={setIntentFilter}>
+                    <SelectTrigger className="bg-background text-sm h-9 px-2 w-full max-w-[140px]">
+                      <SelectValue placeholder="Any" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any</SelectItem>
+                      <SelectItem value="Commercial">Commercial</SelectItem>
+                      <SelectItem value="Informational">Informational</SelectItem>
+                      <SelectItem value="Navigational">Navigational</SelectItem>
+                      <SelectItem value="Transactional">Transactional</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -397,8 +408,8 @@ export const KeywordResultsTable = ({
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none min-w-[300px]"
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none flex-[2] min-w-[280px]"
                     onClick={() => handleSort("keyword")}
                   >
                     <div className="flex items-center">
@@ -406,7 +417,7 @@ export const KeywordResultsTable = ({
                       {getSortIcon("keyword")}
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[90px]"
                     onClick={() => handleSort("searchVolume")}
                   >
@@ -415,16 +426,16 @@ export const KeywordResultsTable = ({
                       {getSortIcon("searchVolume")}
                     </div>
                   </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[90px]"
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none w-16 min-w-[60px]"
                     onClick={() => handleSort("difficulty")}
                   >
                     <div className="flex items-center justify-end">
-                      Difficulty
+                      Diff
                       {getSortIcon("difficulty")}
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[80px]"
                     onClick={() => handleSort("cpc")}
                   >

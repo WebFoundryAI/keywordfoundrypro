@@ -28,6 +28,7 @@ const KeywordResults = () => {
   const difficultyMin = searchParams.get('difficultyMin');
   const difficultyMax = searchParams.get('difficultyMax');
   const cpcMin = searchParams.get('cpcMin');
+  const intent = searchParams.get('intent');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -84,6 +85,11 @@ const KeywordResults = () => {
           // Apply CPC filter
           if (cpcMin) {
             query = query.gte('cpc', parseFloat(cpcMin));
+          }
+
+          // Apply Intent filter
+          if (intent && intent !== '') {
+            query = query.eq('intent', intent.toLowerCase());
           }
 
           // No pagination - fetch all filtered results
@@ -170,18 +176,52 @@ const KeywordResults = () => {
         keywordAnalyzed
       });
     }, 100);
-  }, [user, loading, navigate, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax, cpcMin]);
+  }, [user, loading, navigate, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax, cpcMin, intent]);
 
   const handleExport = async (format: 'csv' | 'json' | 'txt') => {
     const researchId = localStorage.getItem('currentResearchId');
     if (!researchId) return;
 
     try {
-      // Fetch ALL results for export (not just current page)
-      const { data: allResults, error } = await supabase
+      // Build query with same filters as current view
+      let query = supabase
         .from('keyword_results')
         .select('*')
         .eq('research_id', researchId);
+
+      // Apply search filter
+      if (searchTerm) {
+        query = query.ilike('keyword', `%${searchTerm}%`);
+      }
+
+      // Apply volume filters
+      if (volumeMin) {
+        query = query.gte('search_volume', parseInt(volumeMin));
+      }
+      if (volumeMax) {
+        query = query.lte('search_volume', parseInt(volumeMax));
+      }
+
+      // Apply difficulty filters
+      if (difficultyMin) {
+        query = query.gte('difficulty', parseInt(difficultyMin));
+      }
+      if (difficultyMax) {
+        query = query.lte('difficulty', parseInt(difficultyMax));
+      }
+
+      // Apply CPC filter
+      if (cpcMin) {
+        query = query.gte('cpc', parseFloat(cpcMin));
+      }
+
+      // Apply Intent filter
+      if (intent && intent !== '') {
+        query = query.eq('intent', intent.toLowerCase());
+      }
+
+      // Fetch filtered results for export
+      const { data: allResults, error } = await query;
 
       if (error) throw error;
       if (!allResults || allResults.length === 0) return;
@@ -420,6 +460,15 @@ const KeywordResults = () => {
                       params.set('cpcMin', String(filters.cpcMin));
                     } else {
                       params.delete('cpcMin');
+                    }
+                  }
+
+                  // Intent filter
+                  if (filters.intent !== undefined) {
+                    if (filters.intent) {
+                      params.set('intent', filters.intent);
+                    } else {
+                      params.delete('intent');
                     }
                   }
 
