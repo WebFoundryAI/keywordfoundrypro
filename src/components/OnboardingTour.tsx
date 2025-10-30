@@ -53,18 +53,25 @@ export function OnboardingTour() {
 
   useEffect(() => {
     // Only show on /research and if not completed for this user
-    if (location.pathname === '/research' && user && !onboardingStorage.isCompleted(user.id)) {
-      // Delay to let page render
-      setTimeout(() => setRun(true), 500);
-    }
+    const checkOnboarding = async () => {
+      if (location.pathname === '/research' && user) {
+        const shouldShow = await onboardingStorage.isCompleted(user.id);
+        if (shouldShow) {
+          // Delay to let page render
+          setTimeout(() => setRun(true), 500);
+        }
+      }
+    };
+
+    checkOnboarding();
   }, [location, user]);
 
-  const handleJoyrideCallback = (data: CallBackProps) => {
+  const handleJoyrideCallback = async (data: CallBackProps) => {
     const { status, index, type } = data;
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
       if (user) {
-        onboardingStorage.markCompleted(user.id);
+        await onboardingStorage.markCompleted(user.id);
       }
       setRun(false);
 

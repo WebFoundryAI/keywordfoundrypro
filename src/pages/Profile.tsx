@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { onboardingStorage } from '@/lib/onboardingStorage';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 
 const profileSchema = z.object({
   display_name: z
@@ -39,6 +40,8 @@ export default function Profile() {
   const { profile, isLoading: profileLoading, updateProfile } = useProfile();
   const { toast } = useToast();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [loadingOnboarding, setLoadingOnboarding] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: researchHistory, isLoading: researchLoading } = useQuery({
@@ -72,6 +75,25 @@ export default function Profile() {
       navigate('/auth/sign-in');
     }
   }, [user, navigate]);
+
+  // Load onboarding preference
+  useEffect(() => {
+    const loadOnboardingPreference = async () => {
+      if (user) {
+        setLoadingOnboarding(true);
+        try {
+          const shouldShow = await onboardingStorage.isCompleted(user.id);
+          setShowOnboarding(shouldShow);
+        } catch (error) {
+          console.error('Error loading onboarding preference:', error);
+        } finally {
+          setLoadingOnboarding(false);
+        }
+      }
+    };
+
+    loadOnboardingPreference();
+  }, [user]);
 
   useEffect(() => {
     if (profile) {
@@ -299,23 +321,50 @@ export default function Profile() {
 
                 <Separator className="my-6" />
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <h3 className="text-sm font-medium">Tour & Onboarding</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Reset the product tour to see it again on your next visit
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      onboardingStorage.reset();
-                      toast({
-                        title: 'Tour reset',
-                        description: 'Visit the research page to see the tour again',
-                      });
-                    }}
-                  >
-                    Reset Product Tour
-                  </Button>
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="flex-1">
+                      <Label htmlFor="show-onboarding" className="text-sm font-normal">
+                        Show onboarding tour on next visit
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enable this to see the product tour again when you visit the research page
+                      </p>
+                    </div>
+                    <Switch
+                      id="show-onboarding"
+                      checked={showOnboarding}
+                      disabled={loadingOnboarding}
+                      onCheckedChange={async (checked) => {
+                        setShowOnboarding(checked);
+                        if (user) {
+                          try {
+                            if (checked) {
+                              await onboardingStorage.reset(user.id);
+                            } else {
+                              await onboardingStorage.markCompleted(user.id);
+                            }
+                            toast({
+                              title: checked ? 'Onboarding enabled' : 'Onboarding disabled',
+                              description: checked
+                                ? 'You will see the tour on your next visit to the research page'
+                                : 'The onboarding tour has been disabled',
+                            });
+                          } catch (error) {
+                            console.error('Error updating onboarding preference:', error);
+                            // Revert on error
+                            setShowOnboarding(!checked);
+                            toast({
+                              title: 'Update failed',
+                              description: 'Failed to update onboarding preference',
+                              variant: 'destructive',
+                            });
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               </>
             )}
