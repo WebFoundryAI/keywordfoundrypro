@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,11 +16,14 @@ import { toast } from 'sonner';
 import { storePlanSelection } from '@/lib/planStorage';
 import { logger } from '@/lib/logger';
 import { trackSubscriptionUpgrade } from '@/lib/analytics';
+import { resolveUserPlan } from '@/lib/billing/plan';
+import type { PlanId } from '@/lib/billing/entitlements';
 
 const STRIPE_ENABLED = import.meta.env.VITE_STRIPE_ENABLED === 'true';
 
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
+  const [effectivePlan, setEffectivePlan] = useState<PlanId | null>(null);
   const { plans, isLoading, calculateYearlySavings } = usePricing();
   const { subscription } = useSubscription();
   const { user } = useAuth();
@@ -34,6 +37,25 @@ const Pricing = () => {
     if (num === -1) return 'Unlimited';
     return num.toLocaleString();
   };
+
+  // Resolve effective plan (with admin override) to prevent flicker
+  useEffect(() => {
+    const loadEffectivePlan = async () => {
+      if (user) {
+        try {
+          // resolveUserPlan checks admin status and returns 'pro' for admins
+          const plan = await resolveUserPlan(user.id, user.user_metadata);
+          setEffectivePlan(plan);
+        } catch (error) {
+          logger.error('Error resolving user plan:', error);
+          // Fallback to subscription tier if resolution fails
+          setEffectivePlan((subscription?.tier as PlanId) || null);
+        }
+      }
+    };
+
+    loadEffectivePlan();
+  }, [user, subscription?.tier]);
 
   const handleGetStarted = async (planTier: string, planId: string) => {
     // Store plan selection in localStorage before any auth flow
@@ -146,7 +168,9 @@ const Pricing = () => {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan) => {
-            const isCurrentPlan = subscription?.tier === plan.tier;
+            // Use effectivePlan (with admin override) to determine current plan
+            // This prevents flicker for admin users who should always see "Pro"
+            const isCurrentPlan = effectivePlan === plan.tier;
             const savings = plan.price_yearly ? calculateYearlySavings(plan.price_monthly, plan.price_yearly) : null;
             const price = isYearly && plan.price_yearly ? plan.price_yearly : plan.price_monthly;
             const displayPrice = isYearly && plan.price_yearly 

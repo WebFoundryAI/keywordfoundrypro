@@ -55,8 +55,9 @@ export function OnboardingTour() {
     // Only show on /research and if not completed for this user
     const checkOnboarding = async () => {
       if (location.pathname === '/research' && user) {
-        const shouldShow = await onboardingStorage.isCompleted(user.id);
-        if (shouldShow) {
+        const isCompleted = await onboardingStorage.isCompleted(user.id);
+        // Show tour only if NOT completed (isCompleted returns false)
+        if (!isCompleted) {
           // Delay to let page render
           setTimeout(() => setRun(true), 500);
         }

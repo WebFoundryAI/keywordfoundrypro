@@ -39,7 +39,19 @@ const KeywordResults = () => {
     const loadKeywordResults = async () => {
       const researchId = localStorage.getItem('currentResearchId');
       const storedKeywordAnalyzed = localStorage.getItem('keywordAnalyzed');
-      
+
+      // Guard: If no seed keyword context, redirect to research page
+      if (!researchId || !storedKeywordAnalyzed) {
+        logger.warn('No seed keyword context found, redirecting to research page');
+        toast({
+          title: 'No keyword research found',
+          description: 'Please start with a seed keyword to view results.',
+          variant: 'default',
+        });
+        navigate('/research');
+        return;
+      }
+
       if (researchId && storedKeywordAnalyzed) {
         try {
           // Fetch location code from keyword_research table
@@ -48,46 +60,46 @@ const KeywordResults = () => {
             .select('location_code')
             .eq('id', researchId)
             .single();
-            
+
           if (researchError) {
             logger.error('Error fetching research data:', researchError);
           } else if (researchData) {
             setLocationCode(researchData.location_code);
           }
-          
+
           // Build query with filters
           let query = supabase
             .from('keyword_results')
             .select('*', { count: 'exact' })
             .eq('research_id', researchId);
 
-          // Apply search filter
+          // Apply search filter (null-safe)
           if (searchTerm) {
             query = query.ilike('keyword', `%${searchTerm}%`);
           }
 
-          // Apply volume filters
-          if (volumeMin) {
+          // Apply volume filters (null-safe with parseInt validation)
+          if (volumeMin && !isNaN(parseInt(volumeMin))) {
             query = query.gte('search_volume', parseInt(volumeMin));
           }
-          if (volumeMax) {
+          if (volumeMax && !isNaN(parseInt(volumeMax))) {
             query = query.lte('search_volume', parseInt(volumeMax));
           }
 
-          // Apply difficulty filters
-          if (difficultyMin) {
+          // Apply difficulty filters (null-safe with parseInt validation)
+          if (difficultyMin && !isNaN(parseInt(difficultyMin))) {
             query = query.gte('difficulty', parseInt(difficultyMin));
           }
-          if (difficultyMax) {
+          if (difficultyMax && !isNaN(parseInt(difficultyMax))) {
             query = query.lte('difficulty', parseInt(difficultyMax));
           }
 
-          // Apply CPC filter
-          if (cpcMin) {
+          // Apply CPC filter (null-safe with parseFloat validation)
+          if (cpcMin && !isNaN(parseFloat(cpcMin))) {
             query = query.gte('cpc', parseFloat(cpcMin));
           }
 
-          // Apply Intent filter
+          // Apply Intent filter (null-safe)
           if (intent && intent !== '') {
             query = query.eq('intent', intent.toLowerCase());
           }
