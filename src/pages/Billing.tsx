@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,32 +7,52 @@ import { supabase } from '@/integrations/supabase/client';
 import { getEntitlements, type PlanId, getUsagePercentage } from '@/lib/billing/entitlements';
 import { Loader2, Check, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { resolveUserPlan } from '@/lib/billing/plan';
 
 export default function Billing() {
   const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<PlanId>('free');
   const [usage, setUsage] = useState({ queries: 0, credits: 0 });
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
   useEffect(() => {
     loadBillingInfo();
   }, []);
 
+  useEffect(() => {
+    // Show success toast if redirected from successful checkout
+    if (searchParams.get('success')) {
+      toast({
+        title: 'Success!',
+        description: 'Your subscription has been activated. Welcome to Pro!',
+      });
+      // Clean up URL
+      searchParams.delete('success');
+      setSearchParams(searchParams);
+      // Reload billing info
+      loadBillingInfo();
+    }
+    if (searchParams.get('canceled')) {
+      toast({
+        title: 'Canceled',
+        description: 'Checkout was canceled. No charges were made.',
+        variant: 'destructive',
+      });
+      searchParams.delete('canceled');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams, toast]);
+
   const loadBillingInfo = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Load user limits
-      const { data: limits } = await supabase
-        .from('user_limits')
-        .select('plan_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (limits) {
-        setCurrentPlan(limits.plan_id as PlanId);
-      }
+      // Use plan resolution logic (includes admin override)
+      const plan = await resolveUserPlan(user.id, user.user_metadata);
+      setCurrentPlan(plan);
 
       // Load usage stats (simplified)
       setUsage({ queries: 0, credits: 0 });
@@ -43,17 +64,99 @@ export default function Billing() {
   };
 
   const handleUpgrade = async (planId: PlanId) => {
-    toast({
-      title: 'Upgrade',
-      description: 'Stripe checkout integration coming soon',
-    });
+    setUpgrading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: 'Error',
+          description: 'Please sign in to upgrade your plan',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Call create-checkout-session Edge Function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            planTier: planId,
+            billingPeriod: 'monthly', // Default to monthly
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create checkout session');
+      }
+
+      const { url } = await response.json();
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Upgrade error:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to start checkout',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpgrading(false);
+    }
   };
 
-  const handleManageBilling = () => {
-    toast({
-      title: 'Customer Portal',
-      description: 'Stripe customer portal integration coming soon',
-    });
+  const handleManageBilling = async () => {
+    setUpgrading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: 'Error',
+          description: 'Please sign in to manage your billing',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Call create-portal-session Edge Function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create portal session');
+      }
+
+      const { url } = await response.json();
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Portal error:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to open billing portal',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpgrading(false);
+    }
   };
 
   if (loading) {
@@ -114,9 +217,18 @@ export default function Billing() {
             </div>
           </div>
 
-          {currentPlan !== 'free' && (
-            <Button onClick={handleManageBilling} variant="outline">
-              Manage Billing <ArrowRight className="ml-2 h-4 w-4" />
+          {currentPlan !== 'free' && currentPlan !== 'trial' && (
+            <Button onClick={handleManageBilling} variant="outline" disabled={upgrading}>
+              {upgrading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  Manage Billing <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
             </Button>
           )}
         </CardContent>
@@ -181,8 +293,16 @@ export default function Billing() {
                     onClick={() => handleUpgrade(planId)}
                     className="w-full"
                     variant={planId === 'pro' ? 'default' : 'outline'}
+                    disabled={upgrading || planId === 'enterprise'}
                   >
-                    {planId === 'enterprise' ? 'Contact Sales' : 'Upgrade'}
+                    {upgrading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      planId === 'enterprise' ? 'Contact Sales' : 'Upgrade'
+                    )}
                   </Button>
                 )}
               </CardContent>

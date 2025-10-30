@@ -120,8 +120,9 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('origin')}/payment-cancelled`,
+      success_url: `${req.headers.get('origin')}/billing?success=true`,
+      cancel_url: `${req.headers.get('origin')}/billing?canceled=true`,
+      allow_promotion_codes: true,
       metadata: {
         user_id: user.id,
         plan_tier: planTier,
