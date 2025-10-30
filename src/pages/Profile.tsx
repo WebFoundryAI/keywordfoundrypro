@@ -82,8 +82,10 @@ export default function Profile() {
       if (user) {
         setLoadingOnboarding(true);
         try {
-          const shouldShow = await onboardingStorage.isCompleted(user.id);
-          setShowOnboarding(shouldShow);
+          const isCompleted = await onboardingStorage.isCompleted(user.id);
+          // Switch should be ON if tour is NOT completed (should show)
+          // Switch should be OFF if tour IS completed (dismissed)
+          setShowOnboarding(!isCompleted);
         } catch (error) {
           console.error('Error loading onboarding preference:', error);
         } finally {

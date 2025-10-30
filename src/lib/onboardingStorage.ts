@@ -12,12 +12,15 @@ const getOnboardingKey = (userId?: string): string => {
 
 export const onboardingStorage = {
   /**
-   * Check if onboarding has been completed for a user
+   * Check if onboarding has been completed (dismissed) for a user
+   * Returns TRUE if the user has completed/dismissed the onboarding tour
+   * Returns FALSE if the user has NOT completed it (should see the tour)
    * Uses Supabase profiles table if userId provided, otherwise localStorage
    */
   isCompleted: async (userId?: string): Promise<boolean> => {
     if (!userId) {
       // Fallback to localStorage for anonymous/old behavior
+      // If key is 'true', onboarding was completed/dismissed
       const key = getOnboardingKey();
       return localStorage.getItem(key) === 'true';
     }
@@ -44,18 +47,19 @@ export const onboardingStorage = {
       );
 
       if (!response.ok) {
-        console.warn('Failed to fetch onboarding preference, defaulting to true');
-        return true; // Default to showing onboarding on error
+        console.warn('Failed to fetch onboarding preference, defaulting to not completed');
+        return false; // Default to not completed (should show tour) on error
       }
 
       const data = await response.json();
-      return data.show_onboarding !== false; // true or undefined = show
+      // If show_onboarding is false in DB, the tour is completed/dismissed
+      // If show_onboarding is true/undefined in DB, the tour should still show (not completed)
+      return data.show_onboarding === false;
     } catch (error) {
       console.error('Error checking onboarding status:', error);
       // Fallback to localStorage on error
       const key = getOnboardingKey(userId);
-      const localValue = localStorage.getItem(key) === 'true';
-      return !localValue; // If localStorage says completed (true), return false for isCompleted check
+      return localStorage.getItem(key) === 'true';
     }
   },
 
