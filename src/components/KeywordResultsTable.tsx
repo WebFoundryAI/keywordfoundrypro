@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,7 @@ interface KeywordResultsTableProps {
     volumeMax?: number | null;
     difficultyMin?: number | null;
     difficultyMax?: number | null;
+    cpcMin?: number | null;
   }) => void;
 }
 
@@ -151,13 +152,12 @@ export const KeywordResultsTable = ({
   const [localSearchTerm, setLocalSearchTerm] = useState(externalSearchTerm);
   const [sortBy, setSortBy] = useState<keyof KeywordResult>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [showFilters, setShowFilters] = useState(false);
-  
-  // Local filter state for UI (controlled by URL params)
-  const [volumeMin, setVolumeMin] = useState<string>('');
-  const [volumeMax, setVolumeMax] = useState<string>('');
-  const [difficultyMin, setDifficultyMin] = useState<string>('');
-  const [difficultyMax, setDifficultyMax] = useState<string>('');
+  const filtersRef = useRef<HTMLDivElement>(null);
+
+  // Local filter state for UI (controlled by URL params) - simplified single-value filters
+  const [volumeGte, setVolumeGte] = useState<string>('');
+  const [difficultyLte, setDifficultyLte] = useState<string>('');
+  const [cpcGte, setCpcGte] = useState<string>('');
 
   // Sync local search with external
   useEffect(() => {
@@ -218,31 +218,36 @@ export const KeywordResultsTable = ({
   const handleApplyFilters = () => {
     if (onFiltersChange) {
       onFiltersChange({
-        volumeMin: volumeMin ? parseInt(volumeMin) : null,
-        volumeMax: volumeMax ? parseInt(volumeMax) : null,
-        difficultyMin: difficultyMin ? parseInt(difficultyMin) : null,
-        difficultyMax: difficultyMax ? parseInt(difficultyMax) : null,
+        volumeMin: volumeGte ? parseInt(volumeGte) : null,
+        volumeMax: null, // Not used with single-value filters
+        difficultyMin: null, // Not used with single-value filters
+        difficultyMax: difficultyLte ? parseInt(difficultyLte) : null,
+        cpcMin: cpcGte ? parseFloat(cpcGte) : null,
       });
     }
   };
 
   const handleResetFilters = () => {
-    setVolumeMin('');
-    setVolumeMax('');
-    setDifficultyMin('');
-    setDifficultyMax('');
+    setVolumeGte('');
+    setDifficultyLte('');
+    setCpcGte('');
     if (onFiltersChange) {
       onFiltersChange({
         volumeMin: null,
         volumeMax: null,
         difficultyMin: null,
         difficultyMax: null,
+        cpcMin: null,
       });
     }
   };
 
+  const scrollToFilters = () => {
+    filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const totalPages = Math.ceil(totalCount / pageSize);
-  const hasActiveFilters = volumeMin || volumeMax || difficultyMin || difficultyMax;
+  const hasActiveFilters = volumeGte || difficultyLte || cpcGte;
 
   const totalVolume = results.reduce((sum, result) => sum + (result.searchVolume ?? 0), 0);
   const avgDifficulty = results.length > 0 
@@ -334,7 +339,7 @@ export const KeywordResultsTable = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={scrollToFilters}
                 className="bg-background/50"
               >
                 <Filter className="w-4 h-4 mr-2" />
@@ -350,75 +355,81 @@ export const KeywordResultsTable = ({
               </Badge>
             </div>
 
-            {showFilters && (
-              <div className="bg-muted/30 rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Filters</span>
-                  <span className="text-xs text-muted-foreground">Server-side filtering</span>
-                </div>
+            {/* Always-visible filters with simplified single-value inputs */}
+            <div ref={filtersRef} className="bg-muted/30 rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Filters</span>
+                <span className="text-xs text-muted-foreground">Server-side filtering</span>
+              </div>
 
-                {/* Volume Filter */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Volume Filter - ≥ semantics */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Search Volume</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      value={volumeMin}
-                      onChange={(e) => setVolumeMin(e.target.value)}
-                      className="bg-background"
-                    />
-                    <span className="text-muted-foreground">to</span>
-                    <Input
-                      type="number"
-                      placeholder="Max"
-                      value={volumeMax}
-                      onChange={(e) => setVolumeMax(e.target.value)}
-                      className="bg-background"
-                    />
-                  </div>
+                  <Label className="text-sm font-medium">Search Volume (≥)</Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="Value"
+                    value={volumeGte}
+                    onChange={(e) => setVolumeGte(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Only show keywords with volume at least this value.
+                  </p>
                 </div>
 
-                {/* Difficulty Filter */}
+                {/* Difficulty Filter - ≤ semantics */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Difficulty (0-100)</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      value={difficultyMin}
-                      onChange={(e) => setDifficultyMin(e.target.value)}
-                      className="bg-background"
-                    />
-                    <span className="text-muted-foreground">to</span>
-                    <Input
-                      type="number"
-                      placeholder="Max"
-                      value={difficultyMax}
-                      onChange={(e) => setDifficultyMax(e.target.value)}
-                      className="bg-background"
-                    />
-                  </div>
+                  <Label className="text-sm font-medium">Difficulty (≤ 100)</Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="Value"
+                    value={difficultyLte}
+                    onChange={(e) => setDifficultyLte(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Only show keywords with difficulty at most this value.
+                  </p>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResetFilters}
-                  >
-                    Reset
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleApplyFilters}
-                  >
-                    Apply Filters
-                  </Button>
+                {/* CPC Filter - ≥ semantics */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">CPC (≥ USD)</Label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    placeholder="Value"
+                    value={cpcGte}
+                    onChange={(e) => setCpcGte(e.target.value.replace(/[^0-9.]/g, ''))}
+                    className="bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Only show keywords with CPC at least this value.
+                  </p>
                 </div>
               </div>
-            )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                <Button
+                  size="sm"
+                  onClick={handleApplyFilters}
+                >
+                  Apply Filters
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetFilters}
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="rounded-lg border border-border/50 overflow-hidden">
