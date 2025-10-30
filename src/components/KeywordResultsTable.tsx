@@ -343,7 +343,7 @@ export const KeywordResultsTable = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 {/* Volume Filter - ≥ semantics */}
                 <div className="space-y-1">
                   <Label className="text-xs font-medium">Volume ≥</Label>
