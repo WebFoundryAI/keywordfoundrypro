@@ -21,9 +21,7 @@ const KeywordResults = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Get pagination and filter params from URL
-  const page = parseInt(searchParams.get('page') || '1');
-  const pageSize = parseInt(searchParams.get('pageSize') || '50');
+  // Get filter params from URL (pagination removed - show all results)
   const searchTerm = searchParams.get('search') || '';
   const volumeMin = searchParams.get('volumeMin');
   const volumeMax = searchParams.get('volumeMax');
@@ -88,11 +86,7 @@ const KeywordResults = () => {
             query = query.gte('cpc', parseFloat(cpcMin));
           }
 
-          // Apply pagination
-          const from = (page - 1) * pageSize;
-          const to = from + pageSize - 1;
-          query = query.range(from, to);
-
+          // No pagination - fetch all filtered results
           // Execute query
           const { data: keywordResults, error, count } = await query;
             
@@ -173,12 +167,10 @@ const KeywordResults = () => {
         resultsLength: results.length,
         totalCount,
         seedKeyword,
-        keywordAnalyzed,
-        page,
-        pageSize
+        keywordAnalyzed
       });
     }, 100);
-  }, [user, loading, navigate, page, pageSize, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax, cpcMin]);
+  }, [user, loading, navigate, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax, cpcMin]);
 
   const handleExport = async (format: 'csv' | 'json' | 'txt') => {
     const researchId = localStorage.getItem('currentResearchId');
@@ -365,33 +357,14 @@ const KeywordResults = () => {
               </CardContent>
             </Card>
 
-            {/* Results Table (includes seed as first row) */}
-            <KeywordResultsTable 
+            {/* Results Table (includes seed as first row) - no pagination, shows all results */}
+            <KeywordResultsTable
               results={results}
               isLoading={false}
               onExport={handleExport}
               seedKeyword={seedKeyword}
               keywordAnalyzed={keywordAnalyzed}
               locationCode={locationCode}
-              // Pagination props
-              totalCount={totalCount}
-              page={page}
-              pageSize={pageSize}
-              onPageChange={(newPage) => {
-                setSearchParams(prev => {
-                  const params = new URLSearchParams(prev);
-                  params.set('page', String(newPage));
-                  return params;
-                });
-              }}
-              onPageSizeChange={(newSize) => {
-                setSearchParams(prev => {
-                  const params = new URLSearchParams(prev);
-                  params.set('pageSize', String(newSize));
-                  params.set('page', '1'); // Reset to first page
-                  return params;
-                });
-              }}
               // Filter props
               searchTerm={searchTerm}
               onSearchChange={(search) => {
@@ -402,7 +375,6 @@ const KeywordResults = () => {
                   } else {
                     params.delete('search');
                   }
-                  params.set('page', '1'); // Reset to first page
                   return params;
                 });
               }}
@@ -451,7 +423,6 @@ const KeywordResults = () => {
                     }
                   }
 
-                  params.set('page', '1'); // Reset to first page
                   return params;
                 });
               }}
