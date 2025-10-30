@@ -29,6 +29,7 @@ const KeywordResults = () => {
   const volumeMax = searchParams.get('volumeMax');
   const difficultyMin = searchParams.get('difficultyMin');
   const difficultyMax = searchParams.get('difficultyMax');
+  const cpcMin = searchParams.get('cpcMin');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -80,6 +81,11 @@ const KeywordResults = () => {
           }
           if (difficultyMax) {
             query = query.lte('difficulty', parseInt(difficultyMax));
+          }
+
+          // Apply CPC filter
+          if (cpcMin) {
+            query = query.gte('cpc', parseFloat(cpcMin));
           }
 
           // Apply pagination
@@ -172,7 +178,7 @@ const KeywordResults = () => {
         pageSize
       });
     }, 100);
-  }, [user, loading, navigate, page, pageSize, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax]);
+  }, [user, loading, navigate, page, pageSize, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax, cpcMin]);
 
   const handleExport = async (format: 'csv' | 'json' | 'txt') => {
     const researchId = localStorage.getItem('currentResearchId');
@@ -403,7 +409,7 @@ const KeywordResults = () => {
               onFiltersChange={(filters) => {
                 setSearchParams(prev => {
                   const params = new URLSearchParams(prev);
-                  
+
                   // Volume filters
                   if (filters.volumeMin !== undefined) {
                     if (filters.volumeMin) {
@@ -435,7 +441,16 @@ const KeywordResults = () => {
                       params.delete('difficultyMax');
                     }
                   }
-                  
+
+                  // CPC filter
+                  if (filters.cpcMin !== undefined) {
+                    if (filters.cpcMin) {
+                      params.set('cpcMin', String(filters.cpcMin));
+                    } else {
+                      params.delete('cpcMin');
+                    }
+                  }
+
                   params.set('page', '1'); // Reset to first page
                   return params;
                 });
