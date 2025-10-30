@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -7,11 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ResearchRow } from "@/types/research";
+import { BulkDeleteToolbar } from "@/components/my-research/BulkDeleteToolbar";
 
 export default function MyResearch() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   const { data: research, isLoading } = useQuery({
     queryKey: ['my-research', user?.id],
@@ -31,7 +37,34 @@ export default function MyResearch() {
     enabled: !!user?.id,
   });
 
-  const handleRowClick = (researchId: string, seedKeyword: string) => {
+  const rowIds = useMemo(() => research?.map((r) => r.id) ?? [], [research]);
+  const selectedIds = useMemo(() => rowIds.filter((id) => selected[id]), [rowIds, selected]);
+  const allOnPageSelected = rowIds.length > 0 && selectedIds.length === rowIds.length;
+
+  const toggleRow = (id: string, checked: boolean) => {
+    setSelected((s) => ({ ...s, [id]: checked }));
+  };
+
+  const toggleAll = (checked: boolean) => {
+    setSelected((s) => {
+      const next = { ...s };
+      for (const id of rowIds) next[id] = checked;
+      return next;
+    });
+  };
+
+  const handleAfterDelete = (deletedIds: string[]) => {
+    // Optimistically update the cache
+    queryClient.setQueryData<ResearchRow[]>(['my-research', user?.id], (old) =>
+      old?.filter((item) => !deletedIds.includes(item.id))
+    );
+  };
+
+  const handleRowClick = (researchId: string, seedKeyword: string, e: React.MouseEvent) => {
+    // Don't navigate if clicking on checkbox
+    if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+      return;
+    }
     localStorage.setItem('currentResearchId', researchId);
     localStorage.setItem('keywordAnalyzed', seedKeyword);
     navigate('/keyword-results');
@@ -103,6 +136,13 @@ export default function MyResearch() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allOnPageSelected}
+                      onCheckedChange={(v) => toggleAll(Boolean(v))}
+                      aria-label="Select all on page"
+                    />
+                  </TableHead>
                   <TableHead>Keyword</TableHead>
                   <TableHead>Results</TableHead>
                   <TableHead>Location</TableHead>
@@ -114,9 +154,16 @@ export default function MyResearch() {
                 {research?.map((item) => (
                   <TableRow
                     key={item.id}
-                    onClick={() => handleRowClick(item.id, item.seed_keyword)}
+                    onClick={(e) => handleRowClick(item.id, item.seed_keyword, e)}
                     className="cursor-pointer hover:bg-accent/50 transition-colors"
                   >
+                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={Boolean(selected[item.id])}
+                        onCheckedChange={(v) => toggleRow(item.id, Boolean(v))}
+                        aria-label="Select row"
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{item.seed_keyword}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
@@ -139,6 +186,12 @@ export default function MyResearch() {
           )}
         </CardContent>
       </Card>
+
+      <BulkDeleteToolbar
+        selectedIds={selectedIds}
+        onClear={() => setSelected({})}
+        onAfterDelete={handleAfterDelete}
+      />
     </div>
   );
 }
