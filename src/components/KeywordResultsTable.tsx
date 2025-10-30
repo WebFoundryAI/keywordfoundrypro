@@ -45,6 +45,9 @@ interface KeywordResultsTableProps {
     difficultyMax?: number | null;
     cpcMin?: number | null;
   }) => void;
+  // UI customization (optional - for page-specific styling)
+  hideResultsCount?: boolean;
+  hideFilteringCaption?: boolean;
 }
 
 
@@ -147,7 +150,10 @@ export const KeywordResultsTable = ({
   // Filter props
   searchTerm: externalSearchTerm = '',
   onSearchChange,
-  onFiltersChange
+  onFiltersChange,
+  // UI customization
+  hideResultsCount = false,
+  hideFilteringCaption = false
 }: KeywordResultsTableProps) => {
   const [localSearchTerm, setLocalSearchTerm] = useState(externalSearchTerm);
   const [sortBy, setSortBy] = useState<keyof KeywordResult>("searchVolume");
@@ -319,16 +325,20 @@ export const KeywordResultsTable = ({
                   className="pl-10 bg-background/50"
                 />
               </div>
-              <Badge variant="secondary" className="flex items-center gap-1">
-                {results.length} results
-              </Badge>
+              {!hideResultsCount && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  {results.length} results
+                </Badge>
+              )}
             </div>
 
             {/* Always-visible realtime filters with simplified single-value inputs */}
             <div className="bg-muted/30 rounded-lg p-4 space-y-4">
-              <div className="flex items-center justify-end mb-2">
-                <span className="text-xs text-muted-foreground">Server-side filtering</span>
-              </div>
+              {!hideFilteringCaption && (
+                <div className="flex items-center justify-end mb-2">
+                  <span className="text-xs text-muted-foreground">Server-side filtering</span>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Volume Filter - ≥ semantics */}

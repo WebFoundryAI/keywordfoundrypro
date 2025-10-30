@@ -426,7 +426,17 @@ const KeywordResults = () => {
                   return params;
                 });
               }}
+              // UI customization - hide elements for cleaner display
+              hideResultsCount={true}
+              hideFilteringCaption={true}
             />
+
+            {/* Summary pill below filters */}
+            <div className="mt-2">
+              <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                After filters: {results.length} shown • {totalCount} total
+              </span>
+            </div>
           </>
         )}
         
