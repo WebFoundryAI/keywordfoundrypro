@@ -29,7 +29,7 @@ interface KeywordResultsTableProps {
   seedKeyword?: KeywordResult | null;
   keywordAnalyzed?: string;
   locationCode?: number;
-  // Pagination
+  // Pagination (optional - page won't show pagination if not provided)
   totalCount?: number;
   page?: number;
   pageSize?: number;
@@ -469,8 +469,8 @@ export const KeywordResultsTable = ({
             </Table>
           </div>
 
-          {/* Pagination Controls */}
-          {totalCount > 0 && (
+          {/* Pagination Controls (only shown when pagination props provided) */}
+          {onPageChange && onPageSizeChange && totalCount !== undefined && page !== undefined && pageSize !== undefined && totalCount > 0 && (
             <div className="flex items-center justify-between pt-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
