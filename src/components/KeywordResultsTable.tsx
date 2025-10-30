@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search, TrendingUp, DollarSign, Target, Filter, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, Search, TrendingUp, DollarSign, Target, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
@@ -152,7 +152,6 @@ export const KeywordResultsTable = ({
   const [localSearchTerm, setLocalSearchTerm] = useState(externalSearchTerm);
   const [sortBy, setSortBy] = useState<keyof KeywordResult>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const filtersRef = useRef<HTMLDivElement>(null);
 
   // Local filter state for UI (controlled by URL params) - simplified single-value filters
   const [volumeGte, setVolumeGte] = useState<string>('');
@@ -173,6 +172,22 @@ export const KeywordResultsTable = ({
     }, 300);
     return () => clearTimeout(timer);
   }, [localSearchTerm]);
+
+  // Handle filters with debounce - realtime updates
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (onFiltersChange) {
+        onFiltersChange({
+          volumeMin: volumeGte ? parseInt(volumeGte) : null,
+          volumeMax: null,
+          difficultyMin: null,
+          difficultyMax: difficultyLte ? parseInt(difficultyLte) : null,
+          cpcMin: cpcGte ? parseFloat(cpcGte) : null,
+        });
+      }
+    }, 350); // Slightly longer debounce for filters to reduce server load
+    return () => clearTimeout(timer);
+  }, [volumeGte, difficultyLte, cpcGte, onFiltersChange]);
 
   // Client-side sorting only (filtering happens server-side)
   const sortedResults = [...results].sort((a, b) => {
@@ -208,46 +223,14 @@ export const KeywordResultsTable = ({
 
   const getSortIcon = (column: keyof KeywordResult) => {
     if (sortBy === column) {
-      return sortOrder === "asc" ? 
-        <ChevronUp className="w-4 h-4 inline ml-1" /> : 
+      return sortOrder === "asc" ?
+        <ChevronUp className="w-4 h-4 inline ml-1" /> :
         <ChevronDown className="w-4 h-4 inline ml-1" />;
     }
     return <ChevronUp className="w-4 h-4 inline ml-1 opacity-30" />;
   };
 
-  const handleApplyFilters = () => {
-    if (onFiltersChange) {
-      onFiltersChange({
-        volumeMin: volumeGte ? parseInt(volumeGte) : null,
-        volumeMax: null, // Not used with single-value filters
-        difficultyMin: null, // Not used with single-value filters
-        difficultyMax: difficultyLte ? parseInt(difficultyLte) : null,
-        cpcMin: cpcGte ? parseFloat(cpcGte) : null,
-      });
-    }
-  };
-
-  const handleResetFilters = () => {
-    setVolumeGte('');
-    setDifficultyLte('');
-    setCpcGte('');
-    if (onFiltersChange) {
-      onFiltersChange({
-        volumeMin: null,
-        volumeMax: null,
-        difficultyMin: null,
-        difficultyMax: null,
-        cpcMin: null,
-      });
-    }
-  };
-
-  const scrollToFilters = () => {
-    filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   const totalPages = Math.ceil(totalCount / pageSize);
-  const hasActiveFilters = volumeGte || difficultyLte || cpcGte;
 
   const totalVolume = results.reduce((sum, result) => sum + (result.searchVolume ?? 0), 0);
   const avgDifficulty = results.length > 0 
@@ -336,29 +319,14 @@ export const KeywordResultsTable = ({
                   className="pl-10 bg-background/50"
                 />
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={scrollToFilters}
-                className="bg-background/50"
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                Filters
-                {hasActiveFilters && (
-                  <Badge variant="secondary" className="ml-2">
-                    Active
-                  </Badge>
-                )}
-              </Button>
               <Badge variant="secondary" className="flex items-center gap-1">
                 {results.length} results
               </Badge>
             </div>
 
-            {/* Always-visible filters with simplified single-value inputs */}
-            <div ref={filtersRef} className="bg-muted/30 rounded-lg p-4 space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Filters</span>
+            {/* Always-visible realtime filters with simplified single-value inputs */}
+            <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-end mb-2">
                 <span className="text-xs text-muted-foreground">Server-side filtering</span>
               </div>
 
@@ -411,23 +379,6 @@ export const KeywordResultsTable = ({
                     Only show keywords with CPC at least this value.
                   </p>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                <Button
-                  size="sm"
-                  onClick={handleApplyFilters}
-                >
-                  Apply Filters
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResetFilters}
-                >
-                  Reset
-                </Button>
               </div>
             </div>
           </div>
