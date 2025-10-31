@@ -71,12 +71,12 @@ export function SnapshotBar({ projectId, currentState, onLoadSnapshot }: Snapsho
 
       const { data, error } = await supabase
         .from('project_snapshots')
-        .insert({
+        .insert([{
           user_id: user.id,
           project_id: projectId || null,
           name,
           state: currentState,
-        })
+        }])
         .select()
         .single();
 

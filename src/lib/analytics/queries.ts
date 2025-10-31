@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/client';
 import type {
   AnalyticsEvent,
   FunnelUser,
@@ -10,6 +9,9 @@ import type {
   EventType,
 } from './types';
 
+// NOTE: Analytics tables don't exist yet in the database
+// These are stub implementations that return empty data
+
 /**
  * Track an analytics event
  */
@@ -18,19 +20,8 @@ export async function trackEvent(
   eventType: EventType,
   metadata?: Record<string, any>
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient();
-
-  const { error } = await supabase.from('analytics_events').insert({
-    user_id: userId,
-    event_type: eventType,
-    event_metadata: metadata || null,
-  });
-
-  if (error) {
-    console.error('Error tracking event:', error);
-    return { success: false, error: error.message };
-  }
-
+  // TODO: Implement when analytics_events table is created
+  console.warn('Analytics tracking not implemented - tables not created');
   return { success: true };
 }
 
@@ -40,41 +31,8 @@ export async function trackEvent(
 export async function getFunnelUsers(
   filter?: SegmentFilter
 ): Promise<FunnelUser[]> {
-  const supabase = createClient();
-
-  let query = supabase.from('analytics_funnel_view').select('*');
-
-  // Apply filters
-  if (filter?.plan) {
-    query = query.eq('plan', filter.plan);
-  }
-
-  if (filter?.startDate) {
-    query = query.gte('signup_at', filter.startDate);
-  }
-
-  if (filter?.endDate) {
-    query = query.lte('signup_at', filter.endDate);
-  }
-
-  if (filter?.cohortWeek) {
-    query = query.eq('signup_week', filter.cohortWeek);
-  }
-
-  if (filter?.cohortMonth) {
-    query = query.eq('signup_month', filter.cohortMonth);
-  }
-
-  query = query.order('signup_at', { ascending: false });
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching funnel users:', error);
-    return [];
-  }
-
-  return data || [];
+  // TODO: Implement when analytics tables are created
+  return [];
 }
 
 /**
@@ -83,51 +41,16 @@ export async function getFunnelUsers(
 export async function getFunnelCohorts(
   filter?: SegmentFilter
 ): Promise<FunnelCohort[]> {
-  const supabase = createClient();
-
-  let query = supabase.from('analytics_funnel_cohorts').select('*');
-
-  if (filter?.plan) {
-    query = query.eq('plan', filter.plan);
-  }
-
-  if (filter?.startDate) {
-    query = query.gte('signup_week', filter.startDate);
-  }
-
-  if (filter?.endDate) {
-    query = query.lte('signup_week', filter.endDate);
-  }
-
-  query = query.order('signup_week', { ascending: false });
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching funnel cohorts:', error);
-    return [];
-  }
-
-  return data || [];
+  // TODO: Implement when analytics tables are created
+  return [];
 }
 
 /**
  * Get funnel summary (overall metrics by plan)
  */
 export async function getFunnelSummary(): Promise<FunnelSummary[]> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('analytics_funnel_summary')
-    .select('*')
-    .order('plan', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching funnel summary:', error);
-    return [];
-  }
-
-  return data || [];
+  // TODO: Implement when analytics tables are created
+  return [];
 }
 
 /**
@@ -272,15 +195,7 @@ export async function refreshFunnelView(): Promise<{
   success: boolean;
   error?: string;
 }> {
-  const supabase = createClient();
-
-  const { error } = await supabase.rpc('refresh_analytics_funnel_view');
-
-  if (error) {
-    console.error('Error refreshing funnel view:', error);
-    return { success: false, error: error.message };
-  }
-
+  // TODO: Implement when analytics tables are created
   return { success: true };
 }
 
@@ -290,38 +205,14 @@ export async function refreshFunnelView(): Promise<{
 export async function getRecentEvents(
   limit: number = 100
 ): Promise<AnalyticsEvent[]> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('analytics_events')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error('Error fetching recent events:', error);
-    return [];
-  }
-
-  return data || [];
+  // TODO: Implement when analytics tables are created
+  return [];
 }
 
 /**
  * Get events for a specific user
  */
 export async function getUserEvents(userId: string): Promise<AnalyticsEvent[]> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('analytics_events')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching user events:', error);
-    return [];
-  }
-
-  return data || [];
+  // TODO: Implement when analytics tables are created
+  return [];
 }

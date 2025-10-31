@@ -54,13 +54,16 @@ export function ShareDialog({ projectId, projectName }: ShareDialogProps) {
         .from('project_shares')
         .select(`
           *,
-          profiles:shared_with_user_id(display_name, avatar_url)
+          shared_with_profile:profiles!shared_with_user_id(display_name, avatar_url)
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as ProjectShare[];
+      return data.map(share => ({
+        ...share,
+        profiles: share.shared_with_profile || { display_name: '', avatar_url: '' }
+      })) as ProjectShare[];
     },
     enabled: open,
   });

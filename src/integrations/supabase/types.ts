@@ -38,6 +38,90 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_events: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          project_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cached_results: {
+        Row: {
+          cache_key: string
+          created_at: string
+          data: Json
+          deleted_at: string | null
+          expires_at: string
+          id: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          data: Json
+          deleted_at?: string | null
+          expires_at: string
+          id?: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          data?: Json
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      clusters: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          keywords: Json | null
+          name: string
+          research_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          keywords?: Json | null
+          name: string
+          research_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          keywords?: Json | null
+          name?: string
+          research_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       competitor_analysis: {
         Row: {
           backlink_summary: Json | null
@@ -178,6 +262,39 @@ export type Database = {
           my_domain?: string
           status?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      exports: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          file_url: string | null
+          format: string
+          id: string
+          research_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          file_url?: string | null
+          format: string
+          id?: string
+          research_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          file_url?: string | null
+          format?: string
+          id?: string
+          research_id?: string | null
+          status?: string
           user_id?: string
         }
         Relationships: []
@@ -342,6 +459,7 @@ export type Database = {
         Row: {
           api_cost: number | null
           created_at: string
+          deleted_at: string | null
           id: string
           language_code: string
           location_code: number
@@ -354,6 +472,7 @@ export type Database = {
         Insert: {
           api_cost?: number | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           language_code?: string
           location_code?: number
@@ -366,6 +485,7 @@ export type Database = {
         Update: {
           api_cost?: number | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           language_code?: string
           location_code?: number
@@ -563,6 +683,7 @@ export type Database = {
       project_snapshots: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           name: string
           project_id: string | null
@@ -571,6 +692,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           name: string
           project_id?: string | null
@@ -579,6 +701,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           name?: string
           project_id?: string | null
