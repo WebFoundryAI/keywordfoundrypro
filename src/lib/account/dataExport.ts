@@ -54,7 +54,7 @@ export async function exportUserData(): Promise<{
       supabase.from('keyword_research').select('*').eq('user_id', user.id).is('deleted_at', null),
       supabase.from('exports').select('*').eq('user_id', user.id).is('deleted_at', null),
       supabase.from('project_snapshots').select('*').eq('user_id', user.id).is('deleted_at', null),
-      supabase.from('clusters').select('*').eq('created_by', user.id).is('deleted_at', null),
+      supabase.from('clusters').select('*').eq('user_id', user.id).is('deleted_at', null),
       supabase.from('audit_events').select('*').eq('user_id', user.id),
       supabase.from('dataforseo_usage').select('*').eq('user_id', user.id),
     ]);

@@ -21,7 +21,6 @@ export interface CreateShareInput {
 export async function createProjectShare(
   input: CreateShareInput
 ): Promise<{ data: ProjectShare | null; error: string | null }> {
-  const supabase = createClient();
 
   const {
     data: { user },
@@ -77,7 +76,6 @@ export async function createProjectShare(
 export async function listProjectShares(
   projectId: string
 ): Promise<ProjectShare[]> {
-  const supabase = createClient();
 
   const { data, error } = await supabase
     .from('project_shares')
@@ -99,7 +97,6 @@ export async function listProjectShares(
 export async function deleteProjectShare(
   shareId: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = createClient();
 
   const { error } = await supabase
     .from('project_shares')
@@ -119,7 +116,6 @@ export async function deleteProjectShare(
 export async function getUserProjectRole(
   projectId: string
 ): Promise<'owner' | 'commenter' | 'viewer' | null> {
-  const supabase = createClient();
 
   const {
     data: { user },
@@ -153,7 +149,7 @@ export async function getUserProjectRole(
  * List projects shared with current user
  */
 export async function listSharedProjects(): Promise<any[]> {
-  const supabase = createClient();
+  
 
   const {
     data: { user },

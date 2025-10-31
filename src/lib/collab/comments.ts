@@ -5,8 +5,8 @@ export interface Comment {
   project_id: string;
   subject_type: 'keyword' | 'cluster';
   subject_id: string;
-  body: string;
-  author_id: string;
+  content: string;
+  created_by: string;
   created_at: string;
   updated_at: string;
   author?: {
@@ -19,7 +19,7 @@ export interface CreateCommentInput {
   project_id: string;
   subject_type: 'keyword' | 'cluster';
   subject_id: string;
-  body: string;
+  content: string;
 }
 
 /**
@@ -36,18 +36,18 @@ export async function createComment(
     return { data: null, error: 'Not authenticated' };
   }
 
-  if (!input.body.trim()) {
+  if (!input.content.trim()) {
     return { data: null, error: 'Comment body cannot be empty' };
   }
 
   const { data, error } = await supabase
-    .from('comments')
+    .from('project_comments')
     .insert({
       project_id: input.project_id,
       subject_type: input.subject_type,
       subject_id: input.subject_id,
-      body: input.body.trim(),
-      author_id: user.id,
+      content: input.content.trim(),
+      created_by: user.id,
     })
     .select()
     .single();
@@ -56,7 +56,7 @@ export async function createComment(
     return { data: null, error: error.message };
   }
 
-  return { data, error: null };
+  return { data: data as Comment, error: null };
 }
 
 /**
@@ -68,7 +68,7 @@ export async function listComments(
   subjectId: string
 ): Promise<Comment[]> {
   const { data, error } = await supabase
-    .from('comments')
+    .from('project_comments')
     .select('*')
     .eq('project_id', projectId)
     .eq('subject_type', subjectType)
@@ -84,7 +84,7 @@ export async function listComments(
   const commentsWithAuthors = await Promise.all(
     (data || []).map(async (comment) => {
       const { data: userData } = await supabase.auth.admin.getUserById(
-        comment.author_id
+        comment.created_by
       );
 
       return {
@@ -95,7 +95,7 @@ export async function listComments(
               full_name: userData.user.user_metadata?.full_name,
             }
           : { email: 'Unknown' },
-      };
+      } as Comment;
     })
   );
 
@@ -107,15 +107,15 @@ export async function listComments(
  */
 export async function updateComment(
   commentId: string,
-  body: string
+  content: string
 ): Promise<{ success: boolean; error: string | null }> {
-  if (!body.trim()) {
+  if (!content.trim()) {
     return { success: false, error: 'Comment body cannot be empty' };
   }
 
   const { error } = await supabase
-    .from('comments')
-    .update({ body: body.trim() })
+    .from('project_comments')
+    .update({ content: content.trim() })
     .eq('id', commentId);
 
   if (error) {
@@ -132,7 +132,7 @@ export async function deleteComment(
   commentId: string
 ): Promise<{ success: boolean; error: string | null }> {
   const { error } = await supabase
-    .from('comments')
+    .from('project_comments')
     .delete()
     .eq('id', commentId);
 
@@ -152,7 +152,7 @@ export async function getCommentCount(
   subjectId: string
 ): Promise<number> {
   const { count, error } = await supabase
-    .from('comments')
+    .from('project_comments')
     .select('*', { count: 'exact', head: true })
     .eq('project_id', projectId)
     .eq('subject_type', subjectType)
@@ -173,7 +173,7 @@ export async function getAllCommentCounts(
   projectId: string
 ): Promise<Record<string, number>> {
   const { data, error } = await supabase
-    .from('comments')
+    .from('project_comments')
     .select('subject_type, subject_id')
     .eq('project_id', projectId);
 

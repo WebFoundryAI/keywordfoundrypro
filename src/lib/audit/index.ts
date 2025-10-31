@@ -58,12 +58,12 @@ export async function recordAuditEvent(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const { error } = await supabase.from('audit_events').insert({
+    const { error } = await supabase.from('audit_events').insert([{
       user_id: user.id,
       project_id: params.projectId || null,
       action: params.action,
       metadata: params.meta || null,
-    });
+    }]);
 
     if (error) {
       console.error('[Audit] Error recording audit event:', error);

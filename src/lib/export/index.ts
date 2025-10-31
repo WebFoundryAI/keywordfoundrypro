@@ -241,17 +241,12 @@ export async function recordExport(
 
     const columnNames = options.columns.map((col) => col.field);
 
-    await supabase.from('exports').insert({
+    await supabase.from('exports').insert([{
       user_id: user.id,
-      project_id: options.projectId || null,
-      export_type: options.type,
-      filename: result.filename,
-      columns: columnNames,
-      row_count: result.rowCount || 0,
-      file_size_bytes: null, // Could calculate if needed
-      filters_applied: options.filters || null,
-      sort_applied: options.sort || null,
-    });
+      research_id: options.projectId || null,
+      format: 'csv',
+      status: 'completed',
+    }]);
   } catch (err) {
     console.error('[Export] Error recording export:', err);
     // Don't fail the export if recording fails

@@ -113,7 +113,13 @@ export async function setCachedResponse<T = any>(
 
     const { error } = await supabase
       .from('response_cache')
-      .upsert(cacheEntry, { onConflict: 'key' });
+      .upsert([{
+        key,
+        data,
+        user_id: userId || null,
+        created_at: now.toISOString(),
+        expires_at: expiresAt.toISOString(),
+      }], { onConflict: 'key' });
 
     if (error) {
       console.error('Error setting cached response:', error);

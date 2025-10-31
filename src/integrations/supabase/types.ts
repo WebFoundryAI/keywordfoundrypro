@@ -606,6 +606,7 @@ export type Database = {
           project_id: string
           subject_id: string | null
           subject_type: string
+          updated_at: string | null
         }
         Insert: {
           content: string
@@ -615,6 +616,7 @@ export type Database = {
           project_id: string
           subject_id?: string | null
           subject_type: string
+          updated_at?: string | null
         }
         Update: {
           content?: string
@@ -624,6 +626,7 @@ export type Database = {
           project_id?: string
           subject_id?: string | null
           subject_type?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -991,6 +994,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_error_rates_by_endpoint: {
+        Args: { since_timestamp: string }
+        Returns: {
+          endpoint: string
+          error_rate: number
+          error_requests: number
+          total_requests: number
+        }[]
+      }
       get_user_subscription: {
         Args: { user_id_param: string }
         Returns: {
@@ -1010,6 +1022,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_credit_usage: {
+        Args: { p_credits: number; p_user_id: string }
+        Returns: undefined
+      }
+      increment_query_count: { Args: { p_user_id: string }; Returns: undefined }
       increment_usage: {
         Args: { action_type: string; amount?: number; user_id_param: string }
         Returns: undefined

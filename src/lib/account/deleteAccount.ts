@@ -50,7 +50,7 @@ export async function deleteUserAccount(): Promise<{
       supabase
         .from('clusters')
         .update({ deleted_at: now })
-        .eq('created_by', user.id)
+        .eq('user_id', user.id)
         .is('deleted_at', null),
     ];
 

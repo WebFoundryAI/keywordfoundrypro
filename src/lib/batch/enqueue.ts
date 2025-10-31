@@ -185,7 +185,7 @@ export async function processBatchJob(
         })
       );
 
-      chunkPromises.push(batchPromise);
+      await Promise.all(chunkPromises);
     }
 
     // Wait for all parallel batches in this chunk to complete

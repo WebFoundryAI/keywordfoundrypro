@@ -16,7 +16,6 @@ export async function submitNPS(
   score: number,
   body?: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = createClient();
 
   const {
     data: { user },
@@ -48,7 +47,6 @@ export async function submitFeatureRequest(
   title: string,
   body: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = createClient();
 
   const {
     data: { user },
@@ -77,7 +75,6 @@ export async function submitFeatureRequest(
 }
 
 export async function listFeedback(): Promise<Feedback[]> {
-  const supabase = createClient();
 
   const { data, error } = await supabase
     .from('feedback')
@@ -96,7 +93,7 @@ export async function updateFeedbackStatus(
   feedbackId: string,
   status: Feedback['status']
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = createClient();
+  
 
   const { error } = await supabase
     .from('feedback')

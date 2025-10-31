@@ -75,7 +75,7 @@ export function SnapshotBar({ projectId, currentState, onLoadSnapshot }: Snapsho
           user_id: user.id,
           project_id: projectId || null,
           name,
-          state: currentState,
+          state: currentState as any,
         }])
         .select()
         .single();
