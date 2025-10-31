@@ -7,19 +7,25 @@ import { useToast } from '@/hooks/use-toast'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 import { OrDivider } from '@/components/auth/OrDivider'
-import { storePlanSelection } from '@/lib/planStorage'
+import { storePlanSelection, getStoredPlanSelection } from '@/lib/planStorage'
 import { getAppBaseUrl } from '@/lib/env'
 import { trackSignUp } from '@/lib/analytics'
 
 export default function SignUp() {
   const navigate = useNavigate()
   const { toast } = useToast()
-  
+
   // Get plan info from URL params
   const searchParams = new URLSearchParams(window.location.search)
   const selectedPlan = searchParams.get('plan')
   const selectedPlanId = searchParams.get('planId')
   const billingPeriod = searchParams.get('billing') || 'monthly'
+
+  // Fallback to localStorage if URL params are missing
+  const storedPlan = getStoredPlanSelection()
+  const finalPlan = selectedPlan || storedPlan?.tier
+  const finalPlanId = selectedPlanId || storedPlan?.planId
+  const finalBilling = (billingPeriod || storedPlan?.billing) as 'monthly' | 'yearly'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -51,24 +57,40 @@ export default function SignUp() {
 
     setLoading(true)
     try {
+      const trimmedEmail = email.trim()
+
       // Store plan selection in localStorage for OAuth consistency
-      if (selectedPlan && selectedPlanId) {
+      if (finalPlan && finalPlanId) {
         storePlanSelection({
-          tier: selectedPlan,
-          planId: selectedPlanId,
-          billing: billingPeriod as 'monthly' | 'yearly'
+          tier: finalPlan,
+          planId: finalPlanId,
+          billing: finalBilling
         });
       }
 
+      // Check if this is the admin email
+      const isAdminEmail = trimmedEmail === 'cloudventuresonline@gmail.com'
+
+      // Prepare user metadata with plan information
+      const userMetadata: Record<string, any> = {
+        selected_plan: finalPlan || 'free_trial',
+        plan_id: finalPlanId,
+        billing_period: finalBilling,
+      }
+
+      // Override plan for admin email
+      if (isAdminEmail) {
+        userMetadata.selected_plan = 'professional'
+        userMetadata.plan_id = 'professional'
+        userMetadata.is_admin = true
+      }
+
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: trimmedEmail,
         password,
         options: {
           emailRedirectTo: `${getAppBaseUrl()}/app/keyword-research`,
-          data: {
-            selected_plan: selectedPlan,
-            billing_period: billingPeriod,
-          }
+          data: userMetadata
         },
       })
       if (error) throw error
@@ -78,8 +100,8 @@ export default function SignUp() {
 
       toast({
         title: 'Account created!',
-        description: selectedPlan 
-          ? `You're signed up for the ${selectedPlan.replace('_', ' ')} plan. Check your email to verify your account.`
+        description: finalPlan
+          ? `You're signed up for the ${finalPlan.replace('_', ' ')} plan. Check your email to verify your account.`
           : 'Check your email to verify your account.',
         duration: 8000,
       })
@@ -96,8 +118,8 @@ export default function SignUp() {
       <div className="rounded-2xl bg-white border border-gray-200 p-8 shadow-sm">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your account</h1>
         <p className="text-sm text-gray-600 mb-6">
-          {selectedPlan 
-            ? `Sign up for the ${selectedPlan.replace('_', ' ')} plan with 7-day free trial`
+          {finalPlan
+            ? `Sign up for the ${finalPlan.replace('_', ' ')} plan with 7-day free trial`
             : 'Join and get access to your research tools'}
         </p>
 
