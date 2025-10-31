@@ -241,8 +241,7 @@ export const CreditMeter: FC<{ className?: string }> = ({ className }) => {
                   <>
                     <Progress
                       value={Math.min(usage.keywords.percentage, 100)}
-                      className="h-2"
-                      indicatorClassName={getProgressColor(usage.keywords.percentage)}
+                      className={cn("h-2", usage.keywords.percentage >= 100 ? "[&>div]:bg-destructive" : usage.keywords.percentage >= 80 ? "[&>div]:bg-yellow-500" : "")}
                     />
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{Math.round(usage.keywords.percentage)}% used</span>
@@ -266,8 +265,7 @@ export const CreditMeter: FC<{ className?: string }> = ({ className }) => {
                   <>
                     <Progress
                       value={Math.min(usage.serp.percentage, 100)}
-                      className="h-2"
-                      indicatorClassName={getProgressColor(usage.serp.percentage)}
+                      className={cn("h-2", usage.serp.percentage >= 100 ? "[&>div]:bg-destructive" : usage.serp.percentage >= 80 ? "[&>div]:bg-yellow-500" : "")}
                     />
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{Math.round(usage.serp.percentage)}% used</span>
@@ -291,8 +289,7 @@ export const CreditMeter: FC<{ className?: string }> = ({ className }) => {
                   <>
                     <Progress
                       value={Math.min(usage.related.percentage, 100)}
-                      className="h-2"
-                      indicatorClassName={getProgressColor(usage.related.percentage)}
+                      className={cn("h-2", usage.related.percentage >= 100 ? "[&>div]:bg-destructive" : usage.related.percentage >= 80 ? "[&>div]:bg-yellow-500" : "")}
                     />
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{Math.round(usage.related.percentage)}% used</span>

@@ -27,7 +27,7 @@ export function OAuthButtons() {
         provider: 'google',
         options: {
           redirectTo: `${getAppBaseUrl()}/auth/callback`,
-          data: Object.keys(userMetadata).length > 0 ? userMetadata : undefined
+          queryParams: Object.keys(userMetadata).length > 0 ? userMetadata : undefined
         },
       })
       if (error) throw error

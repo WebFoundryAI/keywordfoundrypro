@@ -477,6 +477,124 @@ export type Database = {
         }
         Relationships: []
       }
+      project_comments: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          project_id: string
+          subject_id: string | null
+          subject_type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          project_id: string
+          subject_id?: string | null
+          subject_type: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          project_id?: string
+          subject_id?: string | null
+          subject_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_comments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      project_shares: {
+        Row: {
+          created_at: string
+          id: string
+          permission: string
+          project_id: string
+          shared_by_user_id: string
+          shared_with_email: string
+          shared_with_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: string
+          project_id: string
+          shared_by_user_id: string
+          shared_with_email: string
+          shared_with_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: string
+          project_id?: string
+          shared_by_user_id?: string
+          shared_with_email?: string
+          shared_with_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_shares_shared_by_user_id_fkey"
+            columns: ["shared_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_shares_shared_with_user_id_fkey"
+            columns: ["shared_with_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      project_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          project_id: string | null
+          state: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          project_id?: string | null
+          state: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          project_id?: string | null
+          state?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       research_spaces: {
         Row: {
           created_at: string
