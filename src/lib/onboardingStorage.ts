@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 const ONBOARDING_KEY_PREFIX = 'kfp_onboarding_completed';
 
@@ -47,7 +48,7 @@ export const onboardingStorage = {
       );
 
       if (!response.ok) {
-        console.warn('Failed to fetch onboarding preference, defaulting to not completed');
+        logger.warn('Failed to fetch onboarding preference, defaulting to not completed');
         return false; // Default to not completed (should show tour) on error
       }
 
@@ -56,7 +57,7 @@ export const onboardingStorage = {
       // If show_onboarding is true/undefined in DB, the tour should still show (not completed)
       return data.show_onboarding === false;
     } catch (error) {
-      console.error('Error checking onboarding status:', error);
+      logger.error('Error checking onboarding status:', error);
       // Fallback to localStorage on error
       const key = getOnboardingKey(userId);
       return localStorage.getItem(key) === 'true';
@@ -99,13 +100,13 @@ export const onboardingStorage = {
       );
 
       if (!response.ok) {
-        console.error('Failed to update onboarding preference');
+        logger.error('Failed to update onboarding preference');
         // Still update localStorage as fallback
         const key = getOnboardingKey(userId);
         localStorage.setItem(key, 'true');
       }
     } catch (error) {
-      console.error('Error marking onboarding complete:', error);
+      logger.error('Error marking onboarding complete:', error);
       // Fallback to localStorage
       const key = getOnboardingKey(userId);
       localStorage.setItem(key, 'true');
@@ -148,13 +149,13 @@ export const onboardingStorage = {
       );
 
       if (!response.ok) {
-        console.error('Failed to reset onboarding preference');
+        logger.error('Failed to reset onboarding preference');
         // Still update localStorage as fallback
         const key = getOnboardingKey(userId);
         localStorage.removeItem(key);
       }
     } catch (error) {
-      console.error('Error resetting onboarding:', error);
+      logger.error('Error resetting onboarding:', error);
       // Fallback to localStorage
       const key = getOnboardingKey(userId);
       localStorage.removeItem(key);

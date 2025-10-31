@@ -87,7 +87,7 @@ export default function Profile() {
           // Switch should be OFF if tour IS completed (dismissed)
           setShowOnboarding(!isCompleted);
         } catch (error) {
-          console.error('Error loading onboarding preference:', error);
+          logger.error('Error loading onboarding preference:', error);
         } finally {
           setLoadingOnboarding(false);
         }
@@ -354,7 +354,7 @@ export default function Profile() {
                                 : 'The onboarding tour has been disabled',
                             });
                           } catch (error) {
-                            console.error('Error updating onboarding preference:', error);
+                            logger.error('Error updating onboarding preference:', error);
                             // Revert on error
                             setShowOnboarding(!checked);
                             toast({
