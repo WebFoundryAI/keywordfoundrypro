@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { getAppBaseUrl } from '@/lib/env'
+import { getStoredPlanSelection } from '@/lib/planStorage'
 
 export function OAuthButtons() {
   const { toast } = useToast()
@@ -10,10 +11,23 @@ export function OAuthButtons() {
   const handleGoogleSignIn = async () => {
     setLoading(true)
     try {
+      // Get stored plan selection for OAuth consistency
+      const storedPlan = getStoredPlanSelection()
+
+      // Prepare user metadata with plan information
+      const userMetadata: Record<string, any> = {}
+
+      if (storedPlan) {
+        userMetadata.selected_plan = storedPlan.tier || 'free_trial'
+        userMetadata.plan_id = storedPlan.planId
+        userMetadata.billing_period = storedPlan.billing
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${getAppBaseUrl()}/auth/callback`,
+          data: Object.keys(userMetadata).length > 0 ? userMetadata : undefined
         },
       })
       if (error) throw error
