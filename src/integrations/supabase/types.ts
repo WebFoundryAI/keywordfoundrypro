@@ -745,6 +745,33 @@ export type Database = {
         }
         Relationships: []
       }
+      response_cache: {
+        Row: {
+          created_at: string
+          data: Json
+          expires_at: string
+          id: string
+          key: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          expires_at: string
+          id?: string
+          key: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          expires_at?: string
+          id?: string
+          key?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           created_at: string | null
@@ -796,6 +823,42 @@ export type Database = {
           stripe_price_id_yearly?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_limits: {
+        Row: {
+          created_at: string
+          credits_reset_at: string
+          credits_used_this_month: number
+          id: string
+          last_query_reset: string
+          plan_id: string
+          queries_today: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_reset_at?: string
+          credits_used_this_month?: number
+          id?: string
+          last_query_reset?: string
+          plan_id?: string
+          queries_today?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_reset_at?: string
+          credits_used_this_month?: number
+          id?: string
+          last_query_reset?: string
+          plan_id?: string
+          queries_today?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

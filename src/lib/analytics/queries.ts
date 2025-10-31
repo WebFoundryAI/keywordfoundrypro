@@ -1,3 +1,4 @@
+import { supabase } from '@/integrations/supabase/client';
 import type {
   AnalyticsEvent,
   FunnelUser,
@@ -141,8 +142,6 @@ export async function getTimeSeriesData(
   endDate: string,
   granularity: 'day' | 'week' | 'month' = 'day'
 ): Promise<TimeSeriesPoint[]> {
-  const supabase = createClient();
-
   // This would need a custom SQL query for optimal performance
   // For MVP, we'll fetch and group in JS
   const users = await getFunnelUsers({ startDate, endDate });

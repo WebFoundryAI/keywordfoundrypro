@@ -62,7 +62,7 @@ export async function recordAuditEvent(
       user_id: user.id,
       project_id: params.projectId || null,
       action: params.action,
-      meta: params.meta || null,
+      metadata: params.meta || null,
     });
 
     if (error) {
@@ -127,7 +127,12 @@ export async function getAuditEvents(
       return { events: [], error: error.message };
     }
 
-    return { events: (data || []) as AuditEvent[] };
+    return {
+      events: (data || []).map(event => ({
+        ...event,
+        meta: event.metadata as AuditEventMeta,
+      })) as AuditEvent[],
+    };
   } catch (err) {
     console.error('[Audit] Unexpected error:', err);
     return {
@@ -192,7 +197,12 @@ export async function getAuditEventsAdmin(
       return { events: [], error: error.message };
     }
 
-    return { events: (data || []) as AuditEvent[] };
+    return {
+      events: (data || []).map(event => ({
+        ...event,
+        meta: event.metadata as AuditEventMeta,
+      })) as AuditEvent[],
+    };
   } catch (err) {
     console.error('[Audit] Unexpected error:', err);
     return {

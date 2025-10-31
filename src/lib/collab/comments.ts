@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Comment {
   id: string;
@@ -28,8 +28,6 @@ export interface CreateCommentInput {
 export async function createComment(
   input: CreateCommentInput
 ): Promise<{ data: Comment | null; error: string | null }> {
-  const supabase = createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -69,8 +67,6 @@ export async function listComments(
   subjectType: 'keyword' | 'cluster',
   subjectId: string
 ): Promise<Comment[]> {
-  const supabase = createClient();
-
   const { data, error } = await supabase
     .from('comments')
     .select('*')
@@ -113,8 +109,6 @@ export async function updateComment(
   commentId: string,
   body: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = createClient();
-
   if (!body.trim()) {
     return { success: false, error: 'Comment body cannot be empty' };
   }
@@ -137,8 +131,6 @@ export async function updateComment(
 export async function deleteComment(
   commentId: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = createClient();
-
   const { error } = await supabase
     .from('comments')
     .delete()
@@ -159,8 +151,6 @@ export async function getCommentCount(
   subjectType: 'keyword' | 'cluster',
   subjectId: string
 ): Promise<number> {
-  const supabase = createClient();
-
   const { count, error } = await supabase
     .from('comments')
     .select('*', { count: 'exact', head: true })
@@ -182,8 +172,6 @@ export async function getCommentCount(
 export async function getAllCommentCounts(
   projectId: string
 ): Promise<Record<string, number>> {
-  const supabase = createClient();
-
   const { data, error } = await supabase
     .from('comments')
     .select('subject_type, subject_id')
