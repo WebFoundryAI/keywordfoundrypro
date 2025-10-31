@@ -141,7 +141,7 @@ export function SnapshotBar({ projectId, currentState, onLoadSnapshot }: Snapsho
   };
 
   const handleLoad = (snapshot: Snapshot) => {
-    onLoadSnapshot(snapshot.state);
+    onLoadSnapshot(snapshot.state as SnapshotState);
     setLoadDialogOpen(false);
     toast({
       title: 'Snapshot loaded',

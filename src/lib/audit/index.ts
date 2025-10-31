@@ -62,7 +62,7 @@ export async function recordAuditEvent(
       user_id: user.id,
       project_id: params.projectId || null,
       action: params.action,
-      metadata: params.meta || null,
+      metadata: (params.meta || null) as any,
     }]);
 
     if (error) {

@@ -64,15 +64,13 @@ export async function getCachedResponse<T = any>(
       .from('response_cache')
       .select('*')
       .eq('key', key)
-      .gt('expires_at', new Date().toISOString())
-      .single();
+      .gt('expires_at', new Date().toISOString());
 
-    // Optionally filter by user
     if (userId) {
       query = query.eq('user_id', userId);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await query.maybeSingle();
 
     if (error || !data) {
       return null;
@@ -115,11 +113,10 @@ export async function setCachedResponse<T = any>(
       .from('response_cache')
       .upsert([{
         key,
-        data,
+        data: data as any,
         user_id: userId || null,
-        created_at: now.toISOString(),
         expires_at: expiresAt.toISOString(),
-      }], { onConflict: 'key' });
+      }]);
 
     if (error) {
       console.error('Error setting cached response:', error);

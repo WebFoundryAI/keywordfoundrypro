@@ -1,9 +1,7 @@
 /**
- * Site settings helpers for reading/writing application-wide configuration
- * Stored in the site_settings database table
+ * FEATURE DISABLED: site_settings table does not exist in database
+ * These functions return defaults and log warnings
  */
-
-import { supabase } from '@/integrations/supabase/client';
 
 export interface SiteSetting {
   key: string;
@@ -12,85 +10,28 @@ export interface SiteSetting {
   updated_at: string;
 }
 
-/**
- * Get the cookie banner enabled state
- * Returns false by default if not set or on error
- */
 export async function getCookieBannerEnabled(): Promise<boolean> {
-  try {
-    const { data, error } = await supabase
-      .from('site_settings')
-      .select('bool_value')
-      .eq('key', 'cookie_banner_enabled')
-      .maybeSingle();
-
-    if (error) {
-      console.error('getCookieBannerEnabled error:', error);
-      return false;
-    }
-
-    return Boolean(data?.bool_value);
-  } catch (err) {
-    console.error('getCookieBannerEnabled exception:', err);
-    return false;
-  }
+  console.warn('Site settings feature is disabled - site_settings table does not exist');
+  return false;
 }
 
-/**
- * Set the cookie banner enabled state (admin only)
- * This function will fail if the user is not an admin (RLS policy enforced)
- */
 export async function setCookieBannerEnabled(enabled: boolean): Promise<void> {
-  const { error } = await supabase
-    .from('site_settings')
-    .upsert(
-      { key: 'cookie_banner_enabled', bool_value: enabled },
-      { onConflict: 'key' }
-    );
-
-  if (error) {
-    throw new Error(`Failed to update cookie banner setting: ${error.message}`);
-  }
+  console.warn('Site settings feature is disabled - site_settings table does not exist');
 }
 
-/**
- * Get a site setting by key
- */
 export async function getSiteSetting(key: string): Promise<SiteSetting | null> {
-  const { data, error } = await supabase
-    .from('site_settings')
-    .select('*')
-    .eq('key', key)
-    .maybeSingle();
-
-  if (error) {
-    console.error(`getSiteSetting(${key}) error:`, error);
-    return null;
-  }
-
-  return data;
+  console.warn('Site settings feature is disabled - site_settings table does not exist');
+  return null;
 }
 
-/**
- * Set a site setting (admin only)
- */
 export async function setSiteSetting(
   key: string,
-  boolValue?: boolean,
-  jsonValue?: Record<string, unknown>
+  boolValue?: boolean | null,
+  jsonValue?: Record<string, unknown> | null
 ): Promise<void> {
-  const { error } = await supabase
-    .from('site_settings')
-    .upsert(
-      {
-        key,
-        bool_value: boolValue ?? null,
-        json_value: jsonValue ?? null,
-      },
-      { onConflict: 'key' }
-    );
+  console.warn('Site settings feature is disabled - site_settings table does not exist');
+}
 
-  if (error) {
-    throw new Error(`Failed to update site setting ${key}: ${error.message}`);
-  }
+export async function deleteSiteSetting(key: string): Promise<void> {
+  console.warn('Site settings feature is disabled - site_settings table does not exist');
 }

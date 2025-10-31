@@ -1,121 +1,44 @@
-import { supabase } from '@/integrations/supabase/client';
+/**
+ * FEATURE DISABLED: Feedback table does not exist in database
+ * These functions return empty data and log warnings
+ */
 
 export interface Feedback {
   id: string;
-  user_id: string | null;
-  kind: 'nps' | 'feature';
-  score: number | null;
-  title: string | null;
-  body: string | null;
-  metadata: any;
-  status: 'new' | 'triaged' | 'in-progress' | 'done' | 'wont-fix';
+  kind: 'bug' | 'feature' | 'other';
+  title: string;
+  body: string;
+  score?: number;
+  user_id: string;
   created_at: string;
 }
 
-export async function submitNPS(
-  score: number,
-  body?: string
-): Promise<{ success: boolean; error: string | null }> {
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
-  if (score < 0 || score > 10) {
-    return { success: false, error: 'Score must be between 0 and 10' };
-  }
-
-  const { error } = await supabase.from('feedback').insert({
-    user_id: user.id,
-    kind: 'nps',
-    score,
-    body,
-  });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  return { success: true, error: null };
-}
-
-export async function submitFeatureRequest(
+export async function submitFeedback(
+  kind: 'bug' | 'feature' | 'other',
   title: string,
-  body: string
-): Promise<{ success: boolean; error: string | null }> {
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
-  if (!title.trim() || !body.trim()) {
-    return { success: false, error: 'Title and body are required' };
-  }
-
-  const { error } = await supabase.from('feedback').insert({
-    user_id: user.id,
-    kind: 'feature',
-    title,
-    body,
-  });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  return { success: true, error: null };
+  body: string,
+  score?: number
+): Promise<{ success: boolean; error?: string }> {
+  console.warn('Feedback feature is disabled - feedback table does not exist');
+  return { success: false, error: 'Feature not available' };
 }
 
 export async function listFeedback(): Promise<Feedback[]> {
-
-  const { data, error } = await supabase
-    .from('feedback')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error listing feedback:', error);
-    return [];
-  }
-
-  return data || [];
+  console.warn('Feedback feature is disabled - feedback table does not exist');
+  return [];
 }
 
-export async function updateFeedbackStatus(
-  feedbackId: string,
-  status: Feedback['status']
-): Promise<{ success: boolean; error: string | null }> {
-  
-
-  const { error } = await supabase
-    .from('feedback')
-    .update({ status })
-    .eq('id', feedbackId);
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  return { success: true, error: null };
+export async function deleteFeedback(
+  feedbackId: string
+): Promise<{ success: boolean; error?: string }> {
+  console.warn('Feedback feature is disabled - feedback table does not exist');
+  return { success: false, error: 'Feature not available' };
 }
 
-// Check if user should see NPS prompt
 export function shouldShowNPS(): boolean {
-  const lastShown = localStorage.getItem('nps_last_shown');
-  if (!lastShown) return false;
-
-  const daysSinceShown = (Date.now() - parseInt(lastShown)) / (1000 * 60 * 60 * 24);
-  return daysSinceShown > 30; // Show every 30 days
+  return false;
 }
 
 export function markNPSShown(): void {
-  localStorage.setItem('nps_last_shown', Date.now().toString());
+  // No-op
 }

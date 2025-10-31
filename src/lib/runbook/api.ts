@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface RunbookDoc {
   id: string;
@@ -23,9 +23,7 @@ export interface UpdateRunbookInput {
  * Get the latest version of the runbook
  */
 export async function getLatestRunbook(): Promise<RunbookDoc | null> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
+  const { data, error} = await supabase
     .from('runbook_docs')
     .select('*')
     .order('version', { ascending: false })
@@ -44,12 +42,10 @@ export async function getLatestRunbook(): Promise<RunbookDoc | null> {
  * Get all runbook versions
  */
 export async function getAllRunbookVersions(): Promise<RunbookDoc[]> {
-  const supabase = createClient();
-
   const { data, error } = await supabase
     .from('runbook_docs')
     .select('*')
-    .order('version', { ascending: false });
+    .order('version', { ascending: false});
 
   if (error) {
     console.error('Error fetching runbook versions:', error);
@@ -65,8 +61,6 @@ export async function getAllRunbookVersions(): Promise<RunbookDoc[]> {
 export async function getRunbookByVersion(
   version: number
 ): Promise<RunbookDoc | null> {
-  const supabase = createClient();
-
   const { data, error } = await supabase
     .from('runbook_docs')
     .select('*')
@@ -89,8 +83,6 @@ export async function createRunbook(
   input: CreateRunbookInput,
   userId: string
 ): Promise<{ data: RunbookDoc | null; error: string | null }> {
-  const supabase = createClient();
-
   // Get latest version to increment
   const latest = await getLatestRunbook();
   const nextVersion = latest ? latest.version + 1 : 1;
@@ -146,7 +138,6 @@ export async function searchRunbook(query: string): Promise<RunbookDoc[]> {
     return [];
   }
 
-  const supabase = createClient();
   const searchTerm = `%${query}%`;
 
   const { data, error } = await supabase
@@ -169,8 +160,6 @@ export async function searchRunbook(query: string): Promise<RunbookDoc[]> {
 export async function getRunbookHistory(
   title: string
 ): Promise<RunbookDoc[]> {
-  const supabase = createClient();
-
   const { data, error } = await supabase
     .from('runbook_docs')
     .select('*')
@@ -189,8 +178,6 @@ export async function getRunbookHistory(
  * Check if user is admin (required for runbook access)
  */
 export async function checkIsAdmin(): Promise<boolean> {
-  const supabase = createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();

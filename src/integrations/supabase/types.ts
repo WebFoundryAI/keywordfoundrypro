@@ -566,8 +566,10 @@ export type Database = {
           email: string | null
           free_reports_renewal_at: string | null
           free_reports_used: number
+          has_seen_tour: boolean | null
           id: string
           show_onboarding: boolean
+          tour_seen_at: string | null
           updated_at: string
           user_id: string
         }
@@ -578,8 +580,10 @@ export type Database = {
           email?: string | null
           free_reports_renewal_at?: string | null
           free_reports_used?: number
+          has_seen_tour?: boolean | null
           id?: string
           show_onboarding?: boolean
+          tour_seen_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -590,8 +594,10 @@ export type Database = {
           email?: string | null
           free_reports_renewal_at?: string | null
           free_reports_used?: number
+          has_seen_tour?: boolean | null
           id?: string
           show_onboarding?: boolean
+          tour_seen_at?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -691,6 +697,7 @@ export type Database = {
           name: string
           project_id: string | null
           state: Json
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -700,6 +707,7 @@ export type Database = {
           name: string
           project_id?: string | null
           state: Json
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -709,6 +717,7 @@ export type Database = {
           name?: string
           project_id?: string | null
           state?: Json
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [

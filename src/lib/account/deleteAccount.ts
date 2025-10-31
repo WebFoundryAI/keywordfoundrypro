@@ -29,12 +29,12 @@ export async function deleteUserAccount(): Promise<{
     const deleteOperations = [
       supabase
         .from('keyword_research')
-        .update({ deleted_at: now })
+        .update({ deleted_at: now } as any)
         .eq('user_id', user.id)
         .is('deleted_at', null),
       supabase
         .from('cached_results')
-        .update({ deleted_at: now })
+        .update({ deleted_at: now } as any)
         .eq('user_id', user.id)
         .is('deleted_at', null),
       supabase

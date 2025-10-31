@@ -55,45 +55,11 @@ export async function getErrorRates(
 }
 
 /**
- * Fallback query for error rates (if RPC function doesn't exist)
+ * Fallback query for error rates (DISABLED - system_logs table doesn't exist)
  */
 async function getFallbackErrorRates(since: string): Promise<ErrorRateData[]> {
-  const { data, error } = await supabase
-    .from('system_logs')
-    .select('function_name, level')
-    .gte('created_at', since);
-
-  if (error || !data) return [];
-
-  // Group by function_name and calculate error rates
-  const grouped = new Map<
-    string,
-    { total: number; errors: number }
-  >();
-
-  for (const log of data) {
-    const endpoint = log.function_name || 'unknown';
-    if (!grouped.has(endpoint)) {
-      grouped.set(endpoint, { total: 0, errors: 0 });
-    }
-    const stats = grouped.get(endpoint)!;
-    stats.total++;
-    if (log.level === 'error') {
-      stats.errors++;
-    }
-  }
-
-  const result: ErrorRateData[] = [];
-  for (const [endpoint, stats] of grouped.entries()) {
-    result.push({
-      endpoint,
-      total_requests: stats.total,
-      error_requests: stats.errors,
-      error_rate: stats.total > 0 ? (stats.errors / stats.total) * 100 : 0,
-    });
-  }
-
-  return result.sort((a, b) => b.error_rate - a.error_rate);
+  console.warn('System logs feature is disabled - system_logs table does not exist');
+  return [];
 }
 
 /**

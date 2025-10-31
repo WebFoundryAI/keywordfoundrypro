@@ -23,11 +23,12 @@ export interface SnapshotPayload {
 export interface ProjectSnapshot {
   id: string;
   user_id: string;
-  project_id: string;
+  project_id: string | null;
   name: string | null;
-  payload: SnapshotPayload;
+  state: SnapshotPayload;
   created_at: string;
-  updated_at: string;
+  deleted_at: string | null;
+  updated_at?: string;
 }
 
 export interface SaveSnapshotParams {
@@ -57,10 +58,8 @@ export async function saveSnapshot(
     const { data, error } = await supabase
       .from('project_snapshots')
       .insert({
-        user_id: user.id,
-        project_id: params.projectId,
         name: params.name || null,
-        payload: params.payload,
+        state: params.payload as any,
       })
       .select('id')
       .single();
@@ -105,7 +104,12 @@ export async function listSnapshots(
       return { snapshots: [], error: error.message };
     }
 
-    return { snapshots: data || [] };
+    return { 
+      snapshots: (data || []).map(snap => ({
+        ...snap,
+        state: snap.state as SnapshotPayload,
+      })) as ProjectSnapshot[]
+    };
   } catch (err) {
     console.error('[Snapshots] Unexpected error:', err);
     return {
@@ -140,7 +144,12 @@ export async function loadSnapshot(
       return { snapshot: null, error: error.message };
     }
 
-    return { snapshot: data };
+    return { 
+      snapshot: {
+        ...data,
+        state: data.state as SnapshotPayload,
+      } as ProjectSnapshot
+    };
   } catch (err) {
     console.error('[Snapshots] Unexpected error:', err);
     return {

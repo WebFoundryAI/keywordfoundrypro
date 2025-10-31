@@ -3,16 +3,18 @@ import { supabase } from '@/integrations/supabase/client';
 export interface ProjectShare {
   id: string;
   project_id: string;
-  invited_email: string;
-  role: 'viewer' | 'commenter';
-  invited_by: string;
+  shared_with_email: string;
+  permission: 'viewer' | 'commenter';
+  shared_by_user_id: string;
+  shared_with_user_id: string;
   created_at: string;
 }
 
 export interface CreateShareInput {
   project_id: string;
-  invited_email: string;
-  role: 'viewer' | 'commenter';
+  shared_with_email: string;
+  permission: 'viewer' | 'commenter';
+  shared_with_user_id: string;
 }
 
 /**
@@ -32,19 +34,8 @@ export async function createProjectShare(
 
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(input.invited_email)) {
+  if (!emailRegex.test(input.shared_with_email)) {
     return { data: null, error: 'Invalid email address' };
-  }
-
-  // Check if user owns the project
-  const { data: project } = await supabase
-    .from('projects')
-    .select('user_id')
-    .eq('id', input.project_id)
-    .single();
-
-  if (!project || project.user_id !== user.id) {
-    return { data: null, error: 'Project not found or access denied' };
   }
 
   // Create the share
@@ -52,9 +43,10 @@ export async function createProjectShare(
     .from('project_shares')
     .insert({
       project_id: input.project_id,
-      invited_email: input.invited_email.toLowerCase(),
-      role: input.role,
-      invited_by: user.id,
+      shared_with_email: input.shared_with_email.toLowerCase(),
+      permission: input.permission,
+      shared_by_user_id: user.id,
+      shared_with_user_id: input.shared_with_user_id,
     })
     .select()
     .single();
@@ -67,7 +59,7 @@ export async function createProjectShare(
     return { data: null, error: error.message };
   }
 
-  return { data, error: null };
+  return { data: data as ProjectShare, error: null };
 }
 
 /**
@@ -88,7 +80,7 @@ export async function listProjectShares(
     return [];
   }
 
-  return data || [];
+  return (data || []) as ProjectShare[];
 }
 
 /**
@@ -123,34 +115,21 @@ export async function getUserProjectRole(
 
   if (!user) return null;
 
-  // Check if owner
-  const { data: project } = await supabase
-    .from('projects')
-    .select('user_id')
-    .eq('id', projectId)
-    .single();
-
-  if (project?.user_id === user.id) {
-    return 'owner';
-  }
-
   // Check if shared
   const { data: share } = await supabase
     .from('project_shares')
-    .select('role')
+    .select('permission')
     .eq('project_id', projectId)
-    .eq('invited_email', user.email)
-    .single();
+    .eq('shared_with_user_id', user.id)
+    .maybeSingle();
 
-  return share?.role || null;
+  return (share?.permission as 'commenter' | 'viewer') || null;
 }
 
 /**
  * List projects shared with current user
  */
 export async function listSharedProjects(): Promise<any[]> {
-  
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -159,8 +138,8 @@ export async function listSharedProjects(): Promise<any[]> {
 
   const { data, error } = await supabase
     .from('project_shares')
-    .select('project_id, role, projects(*)')
-    .eq('invited_email', user.email);
+    .select('project_id, permission')
+    .eq('shared_with_user_id', user.id);
 
   if (error) {
     console.error('Error listing shared projects:', error);
