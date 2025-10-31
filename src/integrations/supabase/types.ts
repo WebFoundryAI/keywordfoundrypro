@@ -447,6 +447,7 @@ export type Database = {
           free_reports_renewal_at: string | null
           free_reports_used: number
           id: string
+          show_onboarding: boolean
           updated_at: string
           user_id: string
         }
@@ -458,6 +459,7 @@ export type Database = {
           free_reports_renewal_at?: string | null
           free_reports_used?: number
           id?: string
+          show_onboarding?: boolean
           updated_at?: string
           user_id: string
         }
@@ -469,6 +471,7 @@ export type Database = {
           free_reports_renewal_at?: string | null
           free_reports_used?: number
           id?: string
+          show_onboarding?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -707,10 +710,7 @@ export type Database = {
         Args: { action_type: string; amount?: number; user_id_param: string }
         Returns: undefined
       }
-      is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
