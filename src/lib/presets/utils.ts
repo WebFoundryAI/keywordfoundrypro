@@ -1,6 +1,4 @@
-import type { PresetPayload } from './index';
-
-export function serializeFilters(filters: any): PresetPayload['filters'] {
+export function serializeFilters(filters: any): any {
   return {
     minVolume: filters.minVolume || undefined,
     maxVolume: filters.maxVolume || undefined,

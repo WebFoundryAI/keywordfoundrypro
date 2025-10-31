@@ -1,3 +1,8 @@
+/**
+ * FEATURE PARTIALLY DISABLED: Sample project creation without SERP snapshots
+ * Creates keyword research with cached results only
+ */
+
 import { supabase } from '@/integrations/supabase/client';
 import sampleData from './data/sample-keywords.json';
 
@@ -81,53 +86,30 @@ export async function createSampleProject(): Promise<SampleProjectResult> {
       };
     }
 
-    // Create cached results for each keyword
-    const cachedResults = sampleData.keywords.map((kw) => ({
-      user_id: user.id,
+    // Create keyword_results for each keyword (not cached_results)
+    const keywordResults = sampleData.keywords.map((kw) => ({
       research_id: research.id,
       keyword: kw.keyword,
       search_volume: kw.search_volume,
-      keyword_difficulty: kw.keyword_difficulty,
+      difficulty: kw.keyword_difficulty,
       cpc: kw.cpc,
-      competition: kw.competition,
       intent: kw.intent,
-      serp_features: kw.serp_features,
-      trend: kw.trend,
-      raw_data: kw,
+      metrics_source: 'sample_data',
     }));
 
-    const { error: cacheError } = await supabase
-      .from('cached_results')
-      .insert(cachedResults);
+    const { error: resultsError } = await supabase
+      .from('keyword_results')
+      .insert(keywordResults);
 
-    if (cacheError) {
-      console.error('Error creating cached results:', cacheError);
-      // Continue even if cache fails
-    }
-
-    // Create SERP snapshots for keywords that have snapshot data
-    const snapshotInserts = sampleData.snapshots.map((snapshot) => ({
-      project_id: research.id,
-      keyword_text: snapshot.keyword,
-      snapshot_json: { results: snapshot.results },
-      created_at: new Date().toISOString(),
-    }));
-
-    if (snapshotInserts.length > 0) {
-      const { error: snapshotError } = await supabase
-        .from('serp_snapshots')
-        .insert(snapshotInserts);
-
-      if (snapshotError) {
-        console.warn('Error creating SERP snapshots:', snapshotError);
-        // Continue even if snapshots fail
-      }
+    if (resultsError) {
+      console.error('Error creating keyword results:', resultsError);
+      // Continue even if results fail
     }
 
     // Mark profile as having sample project
     await supabase
       .from('profiles')
-      .update({ has_sample_project: true })
+      .update({ has_sample_project: true } as any)
       .eq('user_id', user.id);
 
     return {

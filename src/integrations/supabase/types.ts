@@ -566,8 +566,10 @@ export type Database = {
           email: string | null
           free_reports_renewal_at: string | null
           free_reports_used: number
+          has_sample_project: boolean | null
           has_seen_tour: boolean | null
           id: string
+          is_admin: boolean | null
           show_onboarding: boolean
           tour_seen_at: string | null
           updated_at: string
@@ -580,8 +582,10 @@ export type Database = {
           email?: string | null
           free_reports_renewal_at?: string | null
           free_reports_used?: number
+          has_sample_project?: boolean | null
           has_seen_tour?: boolean | null
           id?: string
+          is_admin?: boolean | null
           show_onboarding?: boolean
           tour_seen_at?: string | null
           updated_at?: string
@@ -594,8 +598,10 @@ export type Database = {
           email?: string | null
           free_reports_renewal_at?: string | null
           free_reports_used?: number
+          has_sample_project?: boolean | null
           has_seen_tour?: boolean | null
           id?: string
+          is_admin?: boolean | null
           show_onboarding?: boolean
           tour_seen_at?: string | null
           updated_at?: string

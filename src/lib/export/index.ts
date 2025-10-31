@@ -285,18 +285,13 @@ export async function getExportHistory(
       return { exports: [], error: 'Not authenticated' };
     }
 
-    let query = supabase
+    const { data, error } = await supabase
       .from('exports')
       .select('*')
       .eq('user_id', user.id)
+      .eq('project_id', projectId || null)
       .order('created_at', { ascending: false })
       .limit(limit);
-
-    if (projectId) {
-      query = query.eq('project_id', projectId);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       console.error('[Export] Error fetching export history:', error);

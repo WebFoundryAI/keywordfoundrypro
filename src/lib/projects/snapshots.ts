@@ -57,10 +57,12 @@ export async function saveSnapshot(
 
     const { data, error } = await supabase
       .from('project_snapshots')
-      .insert({
-        name: params.name || null,
-        state: params.payload as any,
-      })
+      .insert([{
+        name: params.name,
+        user_id: user.id,
+        project_id: params.projectId,
+        state: params.state as any,
+      }])
       .select('id')
       .single();
 
