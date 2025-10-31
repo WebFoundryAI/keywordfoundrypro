@@ -33,7 +33,7 @@ export interface ProjectSnapshot {
 
 export interface SaveSnapshotParams {
   projectId: string;
-  payload: SnapshotPayload;
+  state: SnapshotPayload;
   name?: string;
 }
 

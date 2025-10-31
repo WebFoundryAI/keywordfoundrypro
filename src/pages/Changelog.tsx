@@ -1,10 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ClipboardList, Rss } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 interface ChangelogEntry {
   id: string;
@@ -31,40 +30,8 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default function Changelog() {
-  const { data: entries, isLoading } = useQuery({
-    queryKey: ['changelog-public'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('changelog')
-        .select('*')
-        .eq('published', true)
-        .order('published_at', { ascending: false });
-
-      if (error) throw error;
-      return data as ChangelogEntry[];
-    }
-  });
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-8 max-w-4xl space-y-6">
-        <Skeleton className="h-12 w-64" />
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-4 w-32" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-20 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Changelog feature disabled - table not configured
+  const entries: ChangelogEntry[] = [];
 
   return (
     <div className="container mx-auto py-8 max-w-4xl space-y-6">
@@ -79,66 +46,33 @@ export default function Changelog() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <a href="/changelog/feed.rss" target="_blank" rel="noopener noreferrer">
-              <Rss className="h-4 w-4 mr-2" />
-              RSS Feed
-            </a>
+          <Button variant="outline" size="sm" disabled>
+            <Rss className="h-4 w-4 mr-2" />
+            RSS Feed
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <a href="/changelog/feed.json" target="_blank" rel="noopener noreferrer">
-              JSON Feed
-            </a>
+          <Button variant="outline" size="sm" disabled>
+            JSON Feed
           </Button>
         </div>
       </div>
 
-      {entries && entries.length === 0 && (
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertTitle>Changelog Coming Soon</AlertTitle>
+        <AlertDescription>
+          The changelog feature is currently being configured. Check back soon for updates on new features and improvements!
+        </AlertDescription>
+      </Alert>
+
+      {entries.length === 0 && (
         <Card>
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              No changelog entries yet. Check back soon!
+            <p className="text-center text-muted-foreground py-8">
+              No changelog entries available at this time.
             </p>
           </CardContent>
         </Card>
       )}
-
-      <div className="space-y-6">
-        {entries?.map((entry) => (
-          <Card key={entry.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <CardTitle className="text-2xl">{entry.title}</CardTitle>
-                  <CardDescription>
-                    {new Date(entry.published_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                    {entry.version && ` • Version ${entry.version}`}
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={`${categoryColors[entry.category]} text-white border-0`}
-                >
-                  {categoryLabels[entry.category]}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                {entry.description}
-              </p>
-              <div
-                className="prose prose-sm max-w-none dark:prose-invert"
-                dangerouslySetInnerHTML={{ __html: entry.content }}
-              />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
     </div>
   );
 }

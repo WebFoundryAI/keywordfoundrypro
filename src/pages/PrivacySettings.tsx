@@ -36,8 +36,8 @@ export default function PrivacySettings() {
 
   useEffect(() => {
     if (profile) {
-      setPrivacyOptOut(profile.privacy_opt_out || false);
-      setDataRetentionDays((profile.data_retention_days as 30 | 90 | 365) || 90);
+      setPrivacyOptOut((profile as any).privacy_opt_out || false);
+      setDataRetentionDays(((profile as any).data_retention_days as 30 | 90 | 365) || 90);
     }
   }, [profile]);
 
@@ -51,7 +51,7 @@ export default function PrivacySettings() {
         .update({
           privacy_opt_out: privacyOptOut,
           data_retention_days: dataRetentionDays,
-        })
+        } as any)
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -216,8 +216,8 @@ export default function PrivacySettings() {
             variant="outline"
             onClick={() => {
               if (profile) {
-                setPrivacyOptOut(profile.privacy_opt_out || false);
-                setDataRetentionDays((profile.data_retention_days as 30 | 90 | 365) || 90);
+                setPrivacyOptOut((profile as any).privacy_opt_out || false);
+                setDataRetentionDays(((profile as any).data_retention_days as 30 | 90 | 365) || 90);
               }
             }}
           >
