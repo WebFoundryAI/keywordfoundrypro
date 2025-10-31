@@ -172,7 +172,13 @@ serve(async (req) => {
     console.log(`Locale config: language_code=${languageCode}, location_code=${locationCode}`)
 
     // Call DataForSEO Labs API for related keywords using centralized client
-    const apiData = await callDataForSEO({
+    const apiData = await callDataForSEO<{
+      items: Array<{
+        keyword: string;
+        search_volume?: number;
+        keyword_data?: any;
+      }>;
+    }>({
       endpoint: '/dataforseo_labs/google/related_keywords/live',
       payload: [apiPayload], // DataForSEO expects array format
       module: MODULE_NAME,
@@ -244,7 +250,14 @@ serve(async (req) => {
     const intentMap: Record<string, string> = {};
     if (keywordsToClassify.length > 0) {
       try {
-        const intentData = await callDataForSEO({
+        const intentData = await callDataForSEO<{
+          items: Array<{
+            keyword: string;
+            keyword_intent?: {
+              label: string;
+            };
+          }>;
+        }>({
           endpoint: '/dataforseo_labs/google/search_intent/live',
           payload: [{
             "language_code": languageCode,

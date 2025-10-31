@@ -537,7 +537,17 @@ function extractTaskId(data: any): string | null {
 }
 
 async function fetchRankedKeywords(domain: string, userId: string, locationCode: number = 2840, languageCode: string = 'en', limit: number = 300) {
-  const data = await callDataForSEO({
+  interface RankedKeywordsResult {
+    items: Array<{
+      keyword: string;
+      search_volume?: number;
+      competition?: number;
+      cpc?: number;
+      keyword_difficulty?: number;
+    }>;
+  }
+  
+  const data = await callDataForSEO<RankedKeywordsResult>({
     endpoint: '/dataforseo_labs/google/ranked_keywords/live',
     payload: [{
       target: domain,
@@ -556,7 +566,13 @@ async function fetchRankedKeywords(domain: string, userId: string, locationCode:
 }
 
 async function fetchBacklinkSummary(domain: string, userId: string) {
-  const data = await callDataForSEO({
+  interface BacklinkResult {
+    backlinks: number;
+    referring_domains: number;
+    referring_ips: number;
+  }
+  
+  const data = await callDataForSEO<BacklinkResult>({
     endpoint: '/backlinks/summary/live',
     payload: [{
       target: domain,

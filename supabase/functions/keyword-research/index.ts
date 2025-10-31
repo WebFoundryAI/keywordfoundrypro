@@ -171,7 +171,14 @@ serve(async (req) => {
     console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
 
     // Call keyword research API for ideas using centralized client
-    const keywordIdeasData = await callDataForSEO({
+    const keywordIdeasData = await callDataForSEO<{
+      items: Array<{
+        keyword: string;
+        search_volume?: number;
+        competition?: number;
+        cpc?: number;
+      }>;
+    }>({
       endpoint: '/dataforseo_labs/google/keyword_ideas/live',
       payload: apiPayload,
       module: MODULE_NAME,
@@ -235,7 +242,12 @@ serve(async (req) => {
           "include_clickstream_data": false
         }];
         
-        const fallbackData = await callDataForSEO({
+        const fallbackData = await callDataForSEO<{
+          items: Array<{
+            keyword: string;
+            search_volume?: number;
+          }>;
+        }>({
           endpoint: '/dataforseo_labs/google/keyword_overview/live',
           payload: fallbackPayload,
           module: `${MODULE_NAME}-fallback`,

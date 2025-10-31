@@ -2,6 +2,34 @@ import { assertEquals, assertRejects } from "https://deno.land/std@0.208.0/asser
 import { callDataForSEO } from "../dataforseo/client.ts";
 import { DataForSEOError } from "../dataforseo/types.ts";
 
+// Type interfaces for test assertions
+interface KeywordIdeasResult {
+  items: Array<{
+    keyword: string;
+    search_volume?: number;
+  }>;
+}
+
+interface SerpResult {
+  items: Array<{
+    type: string;
+    domain: string;
+  }>;
+}
+
+interface RankedKeywordsResult {
+  items: Array<{
+    keyword: string;
+  }>;
+  target: string;
+}
+
+interface BacklinkResult {
+  backlinks: number;
+  referring_domains: number;
+  target: string;
+}
+
 // Mock environment variables
 Deno.env.set('DATAFORSEO_LOGIN', 'test_login');
 Deno.env.set('DATAFORSEO_PASSWORD', 'test_password');
@@ -46,7 +74,7 @@ Deno.test("callDataForSEO - keyword ideas endpoint", async () => {
   mockFetch(keywordIdeasFixture);
   
   try {
-    const response = await callDataForSEO({
+    const response = await callDataForSEO<KeywordIdeasResult>({
       endpoint: '/dataforseo_labs/google/keyword_ideas/live',
       payload: [{
         keywords: ['seo tools'],
@@ -71,7 +99,7 @@ Deno.test("callDataForSEO - SERP organic endpoint", async () => {
   mockFetch(serpOrganicFixture);
   
   try {
-    const response = await callDataForSEO({
+    const response = await callDataForSEO<SerpResult>({
       endpoint: '/serp/google/organic/live/advanced',
       payload: [{
         keyword: 'seo tools',
@@ -95,7 +123,7 @@ Deno.test("callDataForSEO - ranked keywords endpoint", async () => {
   mockFetch(rankedKeywordsFixture);
   
   try {
-    const response = await callDataForSEO({
+    const response = await callDataForSEO<RankedKeywordsResult>({
       endpoint: '/dataforseo_labs/google/ranked_keywords/live',
       payload: [{
         target: 'example.com',
@@ -118,7 +146,7 @@ Deno.test("callDataForSEO - backlink summary endpoint", async () => {
   mockFetch(backlinkSummaryFixture);
   
   try {
-    const response = await callDataForSEO({
+    const response = await callDataForSEO<BacklinkResult>({
       endpoint: '/backlinks/summary/live',
       payload: [{
         target: 'example.com'

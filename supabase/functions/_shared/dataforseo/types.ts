@@ -18,7 +18,7 @@ export interface DataForSEOTask<T = unknown> {
   result_count: number;
   path: string[];
   data: unknown;
-  result: T;
+  result: Array<T>;
 }
 
 export interface DataForSEOResponse<T = unknown> {

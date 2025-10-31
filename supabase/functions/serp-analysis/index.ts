@@ -151,7 +151,14 @@ serve(async (req) => {
     console.log('SERP API Payload:', JSON.stringify(apiPayload, null, 2));
 
     // Call SERP API using centralized client
-    const serpData = await callDataForSEO({
+    const serpData = await callDataForSEO<{
+      items: Array<{
+        type: string;
+        title?: string;
+        url?: string;
+        domain?: string;
+      }>;
+    }>({
       endpoint: '/serp/google/organic/live/advanced',
       payload: apiPayload,
       module: MODULE_NAME,
