@@ -1,5 +1,6 @@
 import { assertEquals, assertRejects } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import { callDataForSEO, DataForSEOError } from "../dataforseo/client.ts";
+import { callDataForSEO } from "../dataforseo/client.ts";
+import { DataForSEOError } from "../dataforseo/types.ts";
 
 // Mock environment variables
 Deno.env.set('DATAFORSEO_LOGIN', 'test_login');

@@ -4,7 +4,16 @@
  */
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
-import { createHash } from 'https://deno.land/std@0.168.0/hash/mod.ts';
+
+/**
+ * Generate SHA-256 hash using Web Crypto API
+ */
+async function generateHash(input: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export interface CacheOptions {
   userId: string;
@@ -40,7 +49,7 @@ const DEFAULT_TTL_SECONDS = 86400; // 24 hours
  * Generate a deterministic cache key from query parameters
  * Format: hash(userId|projectId|seedQuery|country|language|depth|endpoint|filters)
  */
-export function generateCacheKey(options: CacheOptions): string {
+export async function generateCacheKey(options: CacheOptions): Promise<string> {
   // Normalize filters to ensure consistent key generation
   const normalizedFilters = options.filters
     ? JSON.stringify(sortObjectKeys(options.filters))
@@ -60,9 +69,7 @@ export function generateCacheKey(options: CacheOptions): string {
 
   // Join and hash
   const keyString = components.join('|');
-  const hash = createHash('sha256');
-  hash.update(keyString);
-  return hash.toString();
+  return await generateHash(keyString);
 }
 
 /**
@@ -74,11 +81,13 @@ function sortObjectKeys(obj: Record<string, unknown>): Record<string, unknown> {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item =>
+    const mapped = obj.map(item =>
       typeof item === 'object' && item !== null
         ? sortObjectKeys(item as Record<string, unknown>)
         : item
     );
+    // Arrays are serialized as part of the parent object
+    return mapped as unknown as Record<string, unknown>;
   }
 
   const sorted: Record<string, unknown> = {};
@@ -100,7 +109,7 @@ export async function getCachedResult<T = unknown>(
   options: CacheOptions
 ): Promise<CacheResult<T>> {
   try {
-    const cacheKey = generateCacheKey(options);
+    const cacheKey = await generateCacheKey(options);
 
     // Query cache table
     const { data, error } = await supabase
@@ -144,7 +153,6 @@ export async function getCachedResult<T = unknown>(
       hit_count: data.hit_count + 1,
       age_seconds: Math.floor((Date.now() - createdAt.getTime()) / 1000),
       user_id: options.userId,
-      project_id: options.projectId,
       timestamp: new Date().toISOString(),
     }));
 
@@ -168,7 +176,7 @@ export async function setCachedResult<T = unknown>(
   value: T
 ): Promise<boolean> {
   try {
-    const cacheKey = generateCacheKey(options);
+    const cacheKey = await generateCacheKey(options);
     const ttlSeconds = options.ttlSeconds || DEFAULT_TTL_SECONDS;
 
     const { error } = await supabase
@@ -176,7 +184,6 @@ export async function setCachedResult<T = unknown>(
       .upsert({
         cache_key: cacheKey,
         user_id: options.userId,
-        project_id: options.projectId || null,
         value_json: value as Record<string, unknown>,
         ttl_seconds: ttlSeconds,
         first_seen_at: new Date().toISOString(),
@@ -196,7 +203,6 @@ export async function setCachedResult<T = unknown>(
       cache_key: cacheKey,
       ttl_seconds: ttlSeconds,
       user_id: options.userId,
-      project_id: options.projectId,
       timestamp: new Date().toISOString(),
     }));
 

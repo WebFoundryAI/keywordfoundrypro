@@ -3,10 +3,20 @@
  * Integrates with existing user_subscriptions and user_usage tables
  */
 
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 import { CreditLimitError } from './dataforseo/types.ts';
 
 export type ActionType = 'keyword' | 'serp' | 'related';
+
+interface UserSubscription {
+  tier: string;
+  status: string;
+  is_trial: boolean;
+  trial_ends_at: string | null;
+  period_end: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+}
 
 export interface CreditCheck {
   allowed: boolean;
@@ -52,10 +62,12 @@ export async function checkCredits(
       };
     }
 
-    // Get detailed usage information
-    const { data: subscription } = await supabase
-      .rpc('get_user_subscription', { user_id_param: userId })
-      .single();
+  // Get detailed usage information
+  const { data, error: subError } = await supabase
+    .rpc('get_user_subscription', { user_id_param: userId })
+    .single();
+  
+  const subscription = data as UserSubscription | null;
 
     if (!subscription) {
       return {

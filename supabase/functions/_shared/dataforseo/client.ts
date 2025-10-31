@@ -5,7 +5,8 @@ import type {
   UsageLogParams,
   RetryAttemptLog,
 } from './types.ts';
-import { DataForSEOError } from './types.ts';
+import { DataForSEOError, CreditLimitError } from './types.ts';
+export { DataForSEOError, CreditLimitError };
 
 const DATAFORSEO_BASE_URL = 'https://api.dataforseo.com/v3';
 const MAX_RETRIES = 3;
