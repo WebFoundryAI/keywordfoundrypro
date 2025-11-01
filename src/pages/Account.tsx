@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,15 +16,43 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { exportUserData, downloadDataExport } from '@/lib/account/dataExport';
 import { deleteUserAccount, canDeleteAccount } from '@/lib/account/deleteAccount';
-import { Download, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { Download, Trash2, Loader2, AlertTriangle, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function Account() {
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [onboardingLoading, setOnboardingLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Load onboarding preference
+  useEffect(() => {
+    const loadOnboardingPref = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('show_onboarding')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profile) {
+          setShowOnboarding(profile.show_onboarding ?? true);
+        }
+      } catch (error) {
+        console.error('Error loading onboarding preference:', error);
+      }
+    };
+
+    loadOnboardingPref();
+  }, [user]);
 
   const handleExportData = async () => {
     setExportLoading(true);
@@ -50,6 +80,36 @@ export default function Account() {
       });
     } finally {
       setExportLoading(false);
+    }
+  };
+
+  const handleOnboardingToggle = async (checked: boolean) => {
+    if (!user) return;
+
+    setOnboardingLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ show_onboarding: checked })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setShowOnboarding(checked);
+      toast({
+        title: 'Preference Updated',
+        description: checked 
+          ? 'Onboarding tour will show on your next visit to Research'
+          : 'Onboarding tour will not show automatically',
+      });
+    } catch (error) {
+      toast({
+        title: 'Update Failed',
+        description: 'Unable to update onboarding preference',
+        variant: 'destructive',
+      });
+    } finally {
+      setOnboardingLoading(false);
     }
   };
 
@@ -105,6 +165,35 @@ export default function Account() {
           Manage your account and privacy settings
         </p>
       </div>
+
+      {/* Onboarding Tour Preference */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Onboarding Tour</CardTitle>
+          <CardDescription>
+            Control when the product tour appears
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <Label htmlFor="show-onboarding" className="flex items-center gap-2 cursor-pointer">
+                <Play className="h-4 w-4" />
+                <span className="font-medium">Show onboarding tour on next visit</span>
+              </Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Enable this to see the product tour when you visit the Research page
+              </p>
+            </div>
+            <Switch
+              id="show-onboarding"
+              checked={showOnboarding}
+              onCheckedChange={handleOnboardingToggle}
+              disabled={onboardingLoading}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Data Subject Rights */}
       <Card>

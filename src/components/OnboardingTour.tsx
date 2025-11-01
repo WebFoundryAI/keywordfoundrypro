@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
-import { onboardingStorage } from '@/lib/onboardingStorage';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { analytics } from '@/lib/analytics';
 import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 
 const steps: Step[] = [
   {
@@ -52,14 +52,23 @@ export function OnboardingTour() {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Only show on /research and if not completed for this user
+    // Only show on /research and if user wants to see onboarding
     const checkOnboarding = async () => {
       if (location.pathname === '/research' && user) {
-        const isCompleted = await onboardingStorage.isCompleted(user.id);
-        // Show tour only if NOT completed (isCompleted returns false)
-        if (!isCompleted) {
-          // Delay to let page render
-          setTimeout(() => setRun(true), 500);
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('show_onboarding')
+            .eq('user_id', user.id)
+            .single();
+
+          // Show tour if show_onboarding is true
+          if (profile?.show_onboarding) {
+            // Delay to let page render
+            setTimeout(() => setRun(true), 500);
+          }
+        } catch (error) {
+          console.error('Error checking onboarding status:', error);
         }
       }
     };
@@ -68,11 +77,15 @@ export function OnboardingTour() {
   }, [location, user]);
 
   const handleJoyrideCallback = async (data: CallBackProps) => {
-    const { status, index, type } = data;
+    const { status } = data;
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
       if (user) {
-        await onboardingStorage.markCompleted(user.id);
+        // Set show_onboarding to false in Supabase
+        await supabase
+          .from('profiles')
+          .update({ show_onboarding: false })
+          .eq('user_id', user.id);
       }
       setRun(false);
 

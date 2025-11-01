@@ -409,7 +409,7 @@ export const KeywordResultsTable = ({
               <TableHeader>
                 <TableRow className="bg-muted/30">
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none flex-[2] min-w-[280px]"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth select-none flex-[2] min-w-[320px]"
                     onClick={() => handleSort("keyword")}
                   >
                     <div className="flex items-center">
@@ -427,7 +427,7 @@ export const KeywordResultsTable = ({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none w-16 min-w-[60px]"
+                    className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none w-16 min-w-[70px]"
                     onClick={() => handleSort("difficulty")}
                   >
                     <div className="flex items-center justify-end">
