@@ -65,7 +65,7 @@ export default function DemoCompetitorAnalyzer() {
     try {
       // Call demo endpoint (no auth required)
       const analyzeResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/competitor-analyze-demo`,
+        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/competitor-analyze-demo`,
         {
           method: 'POST',
           headers: {
@@ -84,7 +84,7 @@ export default function DemoCompetitorAnalyzer() {
 
       // Generate AI insights (demo version)
       const insightsResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ai-insights-demo`,
+        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/generate-ai-insights-demo`,
         {
           method: 'POST',
           headers: {

@@ -68,21 +68,11 @@ export default function SignUp() {
         });
       }
 
-      // Check if this is the admin email
-      const isAdminEmail = trimmedEmail === 'cloudventuresonline@gmail.com'
-
       // Prepare user metadata with plan information
       const userMetadata: Record<string, any> = {
         selected_plan: finalPlan || 'free_trial',
         plan_id: finalPlanId,
         billing_period: finalBilling,
-      }
-
-      // Override plan for admin email
-      if (isAdminEmail) {
-        userMetadata.selected_plan = 'professional'
-        userMetadata.plan_id = 'professional'
-        userMetadata.is_admin = true
       }
 
       const { data, error } = await supabase.auth.signUp({

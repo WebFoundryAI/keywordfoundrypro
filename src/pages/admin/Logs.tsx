@@ -55,7 +55,7 @@ export default function AdminLogs() {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-logs?${params}`,
+        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/fetch-logs?${params}`,
         {
           headers: {
             'Authorization': `Bearer ${session.access_token}`,

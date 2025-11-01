@@ -78,7 +78,7 @@ export default function Billing() {
 
       // Call create-checkout-session Edge Function
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`,
+        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/create-checkout-session`,
         {
           method: 'POST',
           headers: {
@@ -128,7 +128,7 @@ export default function Billing() {
 
       // Call create-portal-session Edge Function
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/create-portal-session`,
         {
           method: 'POST',
           headers: {

@@ -37,7 +37,7 @@ export const onboardingStorage = {
 
       // Call Supabase Edge Function
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-preferences`,
+        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/onboarding-preferences`,
         {
           method: 'GET',
           headers: {
@@ -88,7 +88,7 @@ export const onboardingStorage = {
 
       // Call Supabase Edge Function to set show_onboarding = false
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-preferences`,
+        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/onboarding-preferences`,
         {
           method: 'POST',
           headers: {
@@ -137,7 +137,7 @@ export const onboardingStorage = {
 
       // Call Supabase Edge Function to set show_onboarding = true
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-preferences`,
+        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/onboarding-preferences`,
         {
           method: 'POST',
           headers: {
