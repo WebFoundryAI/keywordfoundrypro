@@ -6,6 +6,7 @@ interface RunbookViewerProps {
 }
 
 export function RunbookViewer({ runbook }: RunbookViewerProps) {
+  // renderMarkdown now returns sanitized HTML (XSS-safe)
   const html = renderMarkdown(runbook.body_md);
 
   return (

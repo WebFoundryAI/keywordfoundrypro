@@ -1,5 +1,7 @@
+import DOMPurify from 'dompurify';
+
 /**
- * Simple markdown renderer
+ * Simple markdown renderer with XSS protection
  * Handles basic markdown syntax for documentation
  */
 
@@ -58,5 +60,9 @@ export function renderMarkdown(markdown: string): string {
   // Blockquotes
   html = html.replace(/^&gt; (.+)$/gim, '<blockquote class="border-l-4 border-gray-300 dark:border-gray-700 pl-4 italic my-4">$1</blockquote>');
 
-  return html;
+  // Sanitize HTML to prevent XSS attacks
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'strong', 'em', 'code', 'pre', 'a', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'blockquote', 'br'],
+    ALLOWED_ATTR: ['href', 'class', 'target', 'rel']
+  });
 }
