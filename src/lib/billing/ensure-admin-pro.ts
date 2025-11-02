@@ -1,12 +1,13 @@
 /**
- * Ensure admin users have a Pro subscription record in the database
+ * Ensure admin users have an Enterprise subscription record in the database
  *
  * This creates a virtual/internal subscription for admins so they appear
- * in the Subscriptions UI as active Pro users without requiring Stripe payment.
+ * in the Subscriptions UI as active Enterprise users without requiring Stripe payment.
  *
  * The upsert is idempotent and safe to call repeatedly.
  */
 
+import React from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = "https://vhjffdzroebdkbmvcpgv.supabase.co";
@@ -17,11 +18,11 @@ export interface EnsureAdminProParams {
 }
 
 /**
- * Upsert internal Pro subscription for admin user
+ * Upsert internal Enterprise subscription for admin user
  *
  * Creates or updates a subscription record with:
  * - status: 'active'
- * - tier: 'pro'
+ * - tier: 'enterprise'
  * - stripe_subscription_id: null (internal grant, not from Stripe)
  * - stripe_customer_id: 'internal-admin'
  *
@@ -50,19 +51,19 @@ export async function ensureAdminPro({
       // If already has internal admin subscription with correct tier, skip
       if (
         existing.stripe_customer_id === 'internal-admin' &&
-        existing.tier === 'pro' &&
+        existing.tier === 'enterprise' &&
         existing.status === 'active'
       ) {
-        console.log(`[ensureAdminPro] Admin ${userId} already has internal Pro subscription`);
+        console.log(`[ensureAdminPro] Admin ${userId} already has internal Enterprise subscription`);
         return { success: true };
       }
 
-      // Update existing subscription to internal admin Pro
+      // Update existing subscription to internal admin Enterprise
       const { error: updateError } = await supabase
         .from('user_subscriptions')
         .update({
           status: 'active',
-          tier: 'pro',
+          tier: 'enterprise',
           stripe_subscription_id: null,
           stripe_customer_id: 'internal-admin',
           current_period_start: now,
@@ -76,7 +77,7 @@ export async function ensureAdminPro({
         return { success: false, error: updateError.message };
       }
 
-      console.log(`[ensureAdminPro] Updated subscription for admin ${userId} to internal Pro`);
+      console.log(`[ensureAdminPro] Updated subscription for admin ${userId} to internal Enterprise`);
       return { success: true };
     }
 
@@ -86,7 +87,7 @@ export async function ensureAdminPro({
       .insert({
         user_id: userId,
         status: 'active',
-        tier: 'pro',
+        tier: 'enterprise',
         stripe_subscription_id: null,
         stripe_customer_id: 'internal-admin',
         current_period_start: now,
@@ -99,7 +100,7 @@ export async function ensureAdminPro({
       return { success: false, error: insertError.message };
     }
 
-    console.log(`[ensureAdminPro] Created internal Pro subscription for admin ${userId}`);
+    console.log(`[ensureAdminPro] Created internal Enterprise subscription for admin ${userId}`);
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -109,7 +110,7 @@ export async function ensureAdminPro({
 }
 
 /**
- * React hook to ensure admin Pro subscription on mount
+ * React hook to ensure admin Enterprise subscription on mount
  * Call this in admin pages or layouts to ensure subscription exists
  */
 export function useEnsureAdminPro(userId: string | undefined, isAdmin: boolean) {
@@ -122,13 +123,10 @@ export function useEnsureAdminPro(userId: string | undefined, isAdmin: boolean) 
       if (result.success) {
         setEnsured(true);
       } else {
-        console.warn('[useEnsureAdminPro] Failed to ensure admin Pro:', result.error);
+        console.warn('[useEnsureAdminPro] Failed to ensure admin Enterprise:', result.error);
       }
     });
   }, [userId, isAdmin, ensured]);
 
   return ensured;
 }
-
-// Export for backwards compatibility
-import React from 'react';
