@@ -11,7 +11,8 @@ import { logger } from '@/lib/logger';
 import { trackExport } from '@/lib/analytics';
 
 const KeywordResults = () => {
-  const [results, setResults] = useState<KeywordResult[]>([]);
+  const [allResults, setAllResults] = useState<KeywordResult[]>([]); // Store all results from DB
+  const [filteredResults, setFilteredResults] = useState<KeywordResult[]>([]); // Filtered results for display
   const [totalCount, setTotalCount] = useState<number>(0);
   const [seedKeyword, setSeedKeyword] = useState<KeywordResult | null>(null);
   const [keywordAnalyzed, setKeywordAnalyzed] = useState<string>("");
@@ -20,6 +21,8 @@ const KeywordResults = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   // Get filter params from URL (pagination removed - show all results)
   const searchTerm = searchParams.get('search') || '';
@@ -30,6 +33,7 @@ const KeywordResults = () => {
   const cpcMin = searchParams.get('cpcMin');
   const intent = searchParams.get('intent');
 
+  // Effect 1: Initial data load (runs once on mount)
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth/sign-in');
@@ -40,155 +44,170 @@ const KeywordResults = () => {
       const researchId = localStorage.getItem('currentResearchId');
       const storedKeywordAnalyzed = localStorage.getItem('keywordAnalyzed');
 
-      // Guard: If no seed keyword context, redirect to research page
+      // Guard: If no seed keyword context, show error instead of redirecting
       if (!researchId || !storedKeywordAnalyzed) {
-        logger.warn('No seed keyword context found, redirecting to research page');
-        toast({
-          title: 'No keyword research found',
-          description: 'Please start with a seed keyword to view results.',
-          variant: 'default',
-        });
-        navigate('/research');
+        logger.warn('No seed keyword context found');
+        setHasError(true);
+        setIsInitialLoading(false);
         return;
       }
 
-      if (researchId && storedKeywordAnalyzed) {
-        try {
-          // Fetch location code from keyword_research table
-          const { data: researchData, error: researchError } = await supabase
-            .from('keyword_research')
-            .select('location_code')
-            .eq('id', researchId)
-            .single();
+      try {
+        setIsInitialLoading(true);
+        
+        // Fetch location code from keyword_research table
+        const { data: researchData, error: researchError } = await supabase
+          .from('keyword_research')
+          .select('location_code')
+          .eq('id', researchId)
+          .single();
 
-          if (researchError) {
-            logger.error('Error fetching research data:', researchError);
-          } else if (researchData) {
-            setLocationCode(researchData.location_code);
-          }
+        if (researchError) {
+          logger.error('Error fetching research data:', researchError);
+        } else if (researchData) {
+          setLocationCode(researchData.location_code);
+        }
 
-          // Build query with filters
-          let query = supabase
-            .from('keyword_results')
-            .select('*', { count: 'exact' })
-            .eq('research_id', researchId);
-
-          // Apply search filter (null-safe)
-          if (searchTerm) {
-            query = query.ilike('keyword', `%${searchTerm}%`);
-          }
-
-          // Apply volume filters (null-safe with parseInt validation)
-          if (volumeMin && !isNaN(parseInt(volumeMin))) {
-            query = query.gte('search_volume', parseInt(volumeMin));
-          }
-          if (volumeMax && !isNaN(parseInt(volumeMax))) {
-            query = query.lte('search_volume', parseInt(volumeMax));
-          }
-
-          // Apply difficulty filters (null-safe with parseInt validation)
-          if (difficultyMin && !isNaN(parseInt(difficultyMin))) {
-            query = query.gte('difficulty', parseInt(difficultyMin));
-          }
-          if (difficultyMax && !isNaN(parseInt(difficultyMax))) {
-            query = query.lte('difficulty', parseInt(difficultyMax));
-          }
-
-          // Apply CPC filter (null-safe with parseFloat validation)
-          if (cpcMin && !isNaN(parseFloat(cpcMin))) {
-            query = query.gte('cpc', parseFloat(cpcMin));
-          }
-
-          // Apply Intent filter (null-safe)
-          if (intent && intent !== '') {
-            query = query.eq('intent', intent.toLowerCase());
-          }
-
-          // No pagination - fetch all filtered results
-          // Execute query
-          const { data: keywordResults, error, count } = await query;
-            
-          if (error) {
-            logger.error('Error fetching keyword results:', error);
-            toast({
-              title: "Error",
-              description: "Failed to load keyword results",
-              variant: "destructive",
-            });
-            return;
-          }
-
-          // Set total count for pagination
-          setTotalCount(count || 0);
+        // Fetch ALL results from database (no filters in query)
+        const { data: keywordResults, error, count } = await supabase
+          .from('keyword_results')
+          .select('*', { count: 'exact' })
+          .eq('research_id', researchId);
           
-          // Convert to frontend format
-          const convertedResults = (keywordResults || []).map(result => ({
-            keyword: result.keyword,
-            searchVolume: result.search_volume ?? null,
-            cpc: result.cpc ?? null,
-            intent: result.intent || 'informational',
-            difficulty: result.difficulty ?? null,
-            suggestions: result.suggestions || [],
-            related: result.related_keywords || [],
-            clusterId: result.cluster_id,
-            metricsSource: result.metrics_source || 'dataforseo_labs'
-          }));
-          
-          // Normalize whitespace for comparison (handles "survival bushcraft" vs "survival  bushcraft")
-          const normalizeKeyword = (kw: string) => kw.toLowerCase().replace(/\s+/g, ' ').trim();
-          const normalizedStored = normalizeKeyword(storedKeywordAnalyzed);
-          
-          // Separate seed keyword from other results
-          const seedKeywordResult = convertedResults.find(r => 
-            normalizeKeyword(r.keyword) === normalizedStored
-          );
-          const otherResults = convertedResults.filter(r => 
-            normalizeKeyword(r.keyword) !== normalizedStored
-          );
-          
-          // Always create a seed keyword, even if not found in results
-          const finalSeedKeyword = seedKeywordResult || {
-            keyword: storedKeywordAnalyzed,
-            searchVolume: 0, // Show 0 when no data (safe default)
-            cpc: 0, // Show 0 when no data (safe default)
-            intent: 'informational',
-            difficulty: null, // null displays as "—" (truly missing)
-            suggestions: [],
-            related: [],
-            metricsSource: 'dataforseo_labs',
-            isSeedKeyword: true
-          };
-          
-          // Include seed keyword as first row in results
-          const allResults = [{ ...finalSeedKeyword, isSeedKeyword: true }, ...otherResults];
-          
-          setResults(allResults);
-          setSeedKeyword(finalSeedKeyword);
-          setKeywordAnalyzed(storedKeywordAnalyzed);
-          
-        } catch (error) {
-          logger.error('Error loading keyword results:', error);
+        if (error) {
+          logger.error('Error fetching keyword results:', error);
           toast({
-            title: "Error", 
+            title: "Error",
             description: "Failed to load keyword results",
             variant: "destructive",
           });
+          setHasError(true);
+          return;
         }
+
+        // Set total count
+        setTotalCount(count || 0);
+        
+        // Convert to frontend format
+        const convertedResults = (keywordResults || []).map(result => ({
+          keyword: result.keyword,
+          searchVolume: result.search_volume ?? null,
+          cpc: result.cpc ?? null,
+          intent: result.intent || 'informational',
+          difficulty: result.difficulty ?? null,
+          suggestions: result.suggestions || [],
+          related: result.related_keywords || [],
+          clusterId: result.cluster_id,
+          metricsSource: result.metrics_source || 'dataforseo_labs'
+        }));
+        
+        // Normalize whitespace for comparison
+        const normalizeKeyword = (kw: string) => kw.toLowerCase().replace(/\s+/g, ' ').trim();
+        const normalizedStored = normalizeKeyword(storedKeywordAnalyzed);
+        
+        // Separate seed keyword from other results
+        const seedKeywordResult = convertedResults.find(r => 
+          normalizeKeyword(r.keyword) === normalizedStored
+        );
+        const otherResults = convertedResults.filter(r => 
+          normalizeKeyword(r.keyword) !== normalizedStored
+        );
+        
+        // Always create a seed keyword, even if not found in results
+        const finalSeedKeyword = seedKeywordResult || {
+          keyword: storedKeywordAnalyzed,
+          searchVolume: 0,
+          cpc: 0,
+          intent: 'informational',
+          difficulty: null,
+          suggestions: [],
+          related: [],
+          metricsSource: 'dataforseo_labs',
+          isSeedKeyword: true
+        };
+        
+        // Include seed keyword as first row in results
+        const allResultsWithSeed = [{ ...finalSeedKeyword, isSeedKeyword: true }, ...otherResults];
+        
+        setAllResults(allResultsWithSeed);
+        setSeedKeyword(finalSeedKeyword);
+        setKeywordAnalyzed(storedKeywordAnalyzed);
+        setHasError(false);
+        
+      } catch (error) {
+        logger.error('Error loading keyword results:', error);
+        toast({
+          title: "Error", 
+          description: "Failed to load keyword results",
+          variant: "destructive",
+        });
+        setHasError(true);
+      } finally {
+        setIsInitialLoading(false);
       }
     };
     
-    loadKeywordResults();
+    if (!loading) {
+      loadKeywordResults();
+    }
+  }, [user, loading, navigate, toast]);
 
-    // Also log final state
-    setTimeout(() => {
-      logger.log('KeywordResults - Final component state:', {
-        resultsLength: results.length,
-        totalCount,
-        seedKeyword,
-        keywordAnalyzed
-      });
-    }, 100);
-  }, [user, loading, navigate, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax, cpcMin, intent]);
+  // Effect 2: Client-side filtering (no database queries!)
+  useEffect(() => {
+    if (allResults.length === 0) {
+      setFilteredResults([]);
+      return;
+    }
+
+    let filtered = [...allResults];
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(r => 
+        r.keyword.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply volume filters
+    if (volumeMin && !isNaN(parseInt(volumeMin))) {
+      filtered = filtered.filter(r => 
+        (r.searchVolume ?? 0) >= parseInt(volumeMin)
+      );
+    }
+    if (volumeMax && !isNaN(parseInt(volumeMax))) {
+      filtered = filtered.filter(r => 
+        (r.searchVolume ?? 0) <= parseInt(volumeMax)
+      );
+    }
+
+    // Apply difficulty filters
+    if (difficultyMin && !isNaN(parseInt(difficultyMin))) {
+      filtered = filtered.filter(r => 
+        (r.difficulty ?? 0) >= parseInt(difficultyMin)
+      );
+    }
+    if (difficultyMax && !isNaN(parseInt(difficultyMax))) {
+      filtered = filtered.filter(r => 
+        (r.difficulty ?? 0) <= parseInt(difficultyMax)
+      );
+    }
+
+    // Apply CPC filter
+    if (cpcMin && !isNaN(parseFloat(cpcMin))) {
+      filtered = filtered.filter(r => 
+        (r.cpc ?? 0) >= parseFloat(cpcMin)
+      );
+    }
+
+    // Apply intent filter
+    if (intent && intent !== '') {
+      filtered = filtered.filter(r => 
+        r.intent?.toLowerCase() === intent.toLowerCase()
+      );
+    }
+
+    setFilteredResults(filtered);
+  }, [allResults, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax, cpcMin, intent]);
 
   const handleExport = async (format: 'csv' | 'json' | 'txt') => {
     const researchId = localStorage.getItem('currentResearchId');
@@ -313,13 +332,39 @@ const KeywordResults = () => {
     }
   };
 
-  if (loading) {
+  if (loading || isInitialLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Loading keyword results...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-destructive">⚠️</span>
+              No Research Found
+            </CardTitle>
+            <CardDescription>
+              We couldn't find any keyword research data. Please start a new keyword research to view results.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <button
+              onClick={() => navigate('/research')}
+              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Start New Research
+            </button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -327,18 +372,18 @@ const KeywordResults = () => {
   return (
     <section className="px-6 py-8">
       <div className="container mx-auto max-w-4xl space-y-6">
-        {keywordAnalyzed && results.length > 0 && seedKeyword && (
+        {keywordAnalyzed && filteredResults.length > 0 && seedKeyword && (
           <>
             {/* Seed Keyword Summary Hero Box */}
             <KeywordMetricsSummary 
               keyword={keywordAnalyzed}
-              totalKeywords={results.length}
-              totalVolume={results.reduce((sum, r) => sum + (r.searchVolume ?? 0), 0)}
-              avgDifficulty={results.length > 0 
-                ? Math.round(results.reduce((sum, r) => sum + (r.difficulty ?? 0), 0) / results.length)
+              totalKeywords={filteredResults.length}
+              totalVolume={filteredResults.reduce((sum, r) => sum + (r.searchVolume ?? 0), 0)}
+              avgDifficulty={filteredResults.length > 0 
+                ? Math.round(filteredResults.reduce((sum, r) => sum + (r.difficulty ?? 0), 0) / filteredResults.length)
                 : null}
-              avgCpc={results.length > 0
-                ? results.reduce((sum, r) => sum + (r.cpc ?? 0), 0) / results.length
+              avgCpc={filteredResults.length > 0
+                ? filteredResults.reduce((sum, r) => sum + (r.cpc ?? 0), 0) / filteredResults.length
                 : null}
               locationCode={locationCode}
             />
@@ -411,7 +456,7 @@ const KeywordResults = () => {
 
             {/* Results Table (includes seed as first row) - no pagination, shows all results */}
             <KeywordResultsTable
-              results={results}
+              results={filteredResults}
               isLoading={false}
               onExport={handleExport}
               seedKeyword={seedKeyword}
@@ -495,7 +540,7 @@ const KeywordResults = () => {
             {/* Summary pill below filters */}
             <div className="mt-2">
               <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                After filters: {results.length} shown • {totalCount} total
+                After filters: {filteredResults.length} shown • {totalCount} total
               </span>
             </div>
           </>
