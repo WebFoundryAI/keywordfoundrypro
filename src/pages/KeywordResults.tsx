@@ -60,7 +60,7 @@ const KeywordResults = () => {
           .from('keyword_research')
           .select('location_code')
           .eq('id', researchId)
-          .single();
+          .maybeSingle();
 
         if (researchError) {
           logger.error('Error fetching research data:', researchError);
