@@ -1008,6 +1008,7 @@ export type Database = {
         Args: { action_type: string; user_id_param: string }
         Returns: boolean
       }
+      delete_old_system_logs: { Args: never; Returns: undefined }
       delete_user_completely: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -1059,6 +1060,15 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_project_member: {
+        Args: { p_min_role?: string; p_project_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      refresh_analytics_funnel_view: { Args: never; Returns: undefined }
+      update_api_key_last_used: {
+        Args: { key_hash_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
