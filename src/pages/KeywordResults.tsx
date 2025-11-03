@@ -154,11 +154,6 @@ const KeywordResults = () => {
 
   // Effect 2: Client-side filtering (no database queries!)
   useEffect(() => {
-    if (allResults.length === 0) {
-      setFilteredResults([]);
-      return;
-    }
-
     let filtered = [...allResults];
 
     // Apply search filter
@@ -372,98 +367,95 @@ const KeywordResults = () => {
   return (
     <section className="px-6 py-8">
       <div className="container mx-auto max-w-4xl space-y-6">
-        {keywordAnalyzed && seedKeyword && (
+        {!isInitialLoading && (
           <>
-            {/* Seed Keyword Summary Hero Box */}
-            <KeywordMetricsSummary 
-              keyword={keywordAnalyzed}
-              totalKeywords={filteredResults.length}
-              totalVolume={filteredResults.reduce((sum, r) => sum + (r.searchVolume ?? 0), 0)}
-              avgDifficulty={filteredResults.length > 0 
-                ? Math.round(filteredResults.reduce((sum, r) => sum + (r.difficulty ?? 0), 0) / filteredResults.length)
-                : null}
-              avgCpc={filteredResults.length > 0
-                ? filteredResults.reduce((sum, r) => sum + (r.cpc ?? 0), 0) / filteredResults.length
-                : null}
-              locationCode={locationCode}
-            />
-            
-            {/* Seed Keyword Metrics Card */}
-            <Card className="bg-gradient-card shadow-card border-border/50">
-              <CardHeader>
-                <CardTitle className="text-lg">Seed Keyword: "{keywordAnalyzed}"</CardTitle>
-                <CardDescription>
-                  Primary keyword metrics
-                  {seedKeyword.searchVolume === 0 && seedKeyword.cpc === 0 && seedKeyword.difficulty === null && (
-                    <span className="ml-2 text-xs text-warning">
-                      • No metrics returned by DataForSEO for this term
-                    </span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-background/50 p-4 rounded-lg border border-border/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
-                        <span className="text-lg">🔍</span>
+            {keywordAnalyzed && seedKeyword && (
+              <>
+                {/* Seed Keyword Summary Hero Box */}
+                <KeywordMetricsSummary
+                  keyword={keywordAnalyzed}
+                  totalKeywords={filteredResults.length}
+                  totalVolume={filteredResults.reduce((sum, r) => sum + (r.searchVolume ?? 0), 0)}
+                  avgDifficulty={filteredResults.length > 0 
+                    ? Math.round(filteredResults.reduce((sum, r) => sum + (r.difficulty ?? 0), 0) / filteredResults.length)
+                    : null}
+                  avgCpc={filteredResults.length > 0
+                    ? filteredResults.reduce((sum, r) => sum + (r.cpc ?? 0), 0) / filteredResults.length
+                    : null}
+                  locationCode={locationCode}
+                />
+                
+                {/* Seed Keyword Metrics Card */}
+                <Card className="bg-gradient-card shadow-card border-border/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Seed Keyword: "{keywordAnalyzed}"</CardTitle>
+                    <CardDescription>
+                      Primary keyword metrics
+                      {seedKeyword.searchVolume === 0 && seedKeyword.cpc === 0 && seedKeyword.difficulty === null && (
+                        <span className="ml-2 text-xs text-warning">
+                          • No metrics returned by DataForSEO for this term
+                        </span>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-background/50 p-4 rounded-lg border border-border/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                            <span className="text-lg">🔍</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground font-medium">Volume</span>
+                        </div>
+                        <p className="text-2xl font-bold text-foreground">
+                          {formatNumber(seedKeyword.searchVolume)}
+                        </p>
                       </div>
-                      <span className="text-xs text-muted-foreground font-medium">Volume</span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {formatNumber(seedKeyword.searchVolume)}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-background/50 p-4 rounded-lg border border-border/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-md bg-warning/10 flex items-center justify-center">
-                        <span className="text-lg">🎯</span>
+                      
+                      <div className="bg-background/50 p-4 rounded-lg border border-border/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-md bg-warning/10 flex items-center justify-center">
+                            <span className="text-lg">🎯</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground font-medium">Difficulty</span>
+                        </div>
+                        <p className={`text-2xl font-bold ${getDifficultyColor(seedKeyword.difficulty)}`}>
+                          {formatDifficulty(seedKeyword.difficulty)}
+                        </p>
                       </div>
-                      <span className="text-xs text-muted-foreground font-medium">Difficulty</span>
-                    </div>
-                    <p className={`text-2xl font-bold ${getDifficultyColor(seedKeyword.difficulty)}`}>
-                      {formatDifficulty(seedKeyword.difficulty)}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-background/50 p-4 rounded-lg border border-border/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-md bg-success/10 flex items-center justify-center">
-                        <span className="text-lg">💰</span>
+                      
+                      <div className="bg-background/50 p-4 rounded-lg border border-border/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-md bg-success/10 flex items-center justify-center">
+                            <span className="text-lg">💰</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground font-medium">CPC</span>
+                        </div>
+                        <p className="text-2xl font-bold text-foreground">
+                          {formatCurrency(seedKeyword.cpc, locationCode)}
+                        </p>
                       </div>
-                      <span className="text-xs text-muted-foreground font-medium">CPC</span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {formatCurrency(seedKeyword.cpc, locationCode)}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-background/50 p-4 rounded-lg border border-border/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center">
-                        <span className="text-lg">🎭</span>
+                      
+                      <div className="bg-background/50 p-4 rounded-lg border border-border/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center">
+                            <span className="text-lg">🎭</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground font-medium">Intent</span>
+                        </div>
+                        <p className="text-lg font-semibold text-foreground capitalize">
+                          {seedKeyword.intent}
+                        </p>
                       </div>
-                      <span className="text-xs text-muted-foreground font-medium">Intent</span>
                     </div>
-                    <p className="text-lg font-semibold text-foreground capitalize">
-                      {seedKeyword.intent}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
             {/* Results Table (includes seed as first row) - no pagination, shows all results */}
-            {filteredResults.length === 0 && allResults.length > 0 && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center">
-                <p className="text-yellow-800 dark:text-yellow-200 font-medium">No keywords match your current filters</p>
-                <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-1">Try adjusting or clearing your filters to see more results</p>
-              </div>
-            )}
-            
             <KeywordResultsTable
-              results={filteredResults.length > 0 ? filteredResults : allResults}
+              results={allResults}
               isLoading={false}
               onExport={handleExport}
               seedKeyword={seedKeyword}
@@ -544,16 +536,10 @@ const KeywordResults = () => {
               hideFilteringCaption={true}
             />
 
-            {/* Summary pill below filters */}
-            <div className="mt-2">
-              <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                After filters: {filteredResults.length} shown • {totalCount} total
-              </span>
-            </div>
           </>
         )}
         
-        {!keywordAnalyzed && !isInitialLoading && (
+        {!isInitialLoading && allResults.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No keyword results available. Please run a keyword research first.</p>
           </div>
