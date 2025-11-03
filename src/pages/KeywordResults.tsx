@@ -249,7 +249,7 @@ const KeywordResults = () => {
         />
 
         <KeywordResultsTable
-          results={results}
+          results={filteredResults}
           searchTerm={searchTerm}
           seedKeyword={null}
           keywordAnalyzed={researchData.seedKeyword}
