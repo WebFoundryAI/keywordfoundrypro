@@ -382,13 +382,11 @@ const KeywordResults = () => {
   return (
     <section className="px-6 py-8">
       <div className="container mx-auto max-w-4xl space-y-6">
-        {!isInitialLoading && (
+        {!isInitialLoading && allResults.length > 0 && (
           <>
-            {keywordAnalyzed && seedKeyword && (
-              <>
-                {/* Seed Keyword Summary Hero Box */}
-                <KeywordMetricsSummary
-                  keyword={keywordAnalyzed}
+            {/* Seed Keyword Summary Hero Box */}
+            <KeywordMetricsSummary
+              keyword={keywordAnalyzed || 'Unknown'}
                   totalKeywords={filteredResults.length}
                   totalVolume={filteredResults.reduce((sum, r) => sum + (r.searchVolume ?? 0), 0)}
                   avgDifficulty={filteredResults.length > 0 
@@ -400,10 +398,10 @@ const KeywordResults = () => {
                   locationCode={locationCode}
                 />
                 
-                {/* Seed Keyword Metrics Card */}
-                <Card className="bg-gradient-card shadow-card border-border/50">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Seed Keyword: "{keywordAnalyzed}"</CardTitle>
+            {/* Seed Keyword Metrics Card */}
+            <Card className="bg-gradient-card shadow-card border-border/50">
+              <CardHeader>
+                <CardTitle className="text-lg">Seed Keyword: "{keywordAnalyzed || 'Unknown'}"</CardTitle>
                     <CardDescription>
                       Primary keyword metrics
                       {seedKeyword.searchVolume === 0 && seedKeyword.cpc === 0 && seedKeyword.difficulty === null && (
@@ -463,17 +461,15 @@ const KeywordResults = () => {
                         </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </>
-            )}
+              </CardContent>
+            </Card>
 
             {/* Results Table */}
             <KeywordResultsTable
               results={allResults}
               searchTerm={searchTerm}
-              seedKeyword={seedKeyword}
-              keywordAnalyzed={keywordAnalyzed}
+              seedKeyword={seedKeyword || null}
+              keywordAnalyzed={keywordAnalyzed || 'Unknown'}
               onSearchChange={(value) => {
                 setSearchParams(prev => {
                   const newParams = new URLSearchParams(prev);
@@ -503,10 +499,12 @@ const KeywordResults = () => {
               locationCode={locationCode}
               onExport={handleExport}
             />
+          </>
+        )}
 
-            {!isInitialLoading && allResults.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">No keyword results available</p>
+        {!isInitialLoading && allResults.length === 0 && !hasError && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground mb-4">No keyword results found for this research</p>
                 <button
                   onClick={() => navigate('/research')}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
@@ -515,8 +513,6 @@ const KeywordResults = () => {
                 </button>
               </div>
             )}
-          </>
-        )}
       </div>
     </section>
   );
