@@ -6,7 +6,6 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
 import { logger } from '@/lib/logger';
 import { trackExport } from '@/lib/analytics';
 
@@ -14,7 +13,6 @@ const KeywordResults = () => {
   const [allResults, setAllResults] = useState<KeywordResult[]>([]);
   const [filteredResults, setFilteredResults] = useState<KeywordResult[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
-  const [seedKeyword, setSeedKeyword] = useState<KeywordResult | null>(null);
   const [keywordAnalyzed, setKeywordAnalyzed] = useState<string>("");
   const [locationCode, setLocationCode] = useState<number>(2840);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -166,7 +164,6 @@ const KeywordResults = () => {
         const allResultsWithSeed = [{ ...finalSeedKeyword, isSeedKeyword: true }, ...otherResults];
         
         setAllResults(allResultsWithSeed);
-        setSeedKeyword(finalSeedKeyword);
         setHasError(false);
         
         toast({
@@ -387,88 +384,22 @@ const KeywordResults = () => {
             {/* Seed Keyword Summary Hero Box */}
             <KeywordMetricsSummary
               keyword={keywordAnalyzed || 'Unknown'}
-                  totalKeywords={filteredResults.length}
-                  totalVolume={filteredResults.reduce((sum, r) => sum + (r.searchVolume ?? 0), 0)}
-                  avgDifficulty={filteredResults.length > 0 
-                    ? Math.round(filteredResults.reduce((sum, r) => sum + (r.difficulty ?? 0), 0) / filteredResults.length)
-                    : null}
-                  avgCpc={filteredResults.length > 0
-                    ? filteredResults.reduce((sum, r) => sum + (r.cpc ?? 0), 0) / filteredResults.length
-                    : null}
-                  locationCode={locationCode}
-                />
-                
-            {/* Seed Keyword Metrics Card */}
-            <Card className="bg-gradient-card shadow-card border-border/50">
-              <CardHeader>
-                <CardTitle className="text-lg">Seed Keyword: "{keywordAnalyzed || 'Unknown'}"</CardTitle>
-                    <CardDescription>
-                      Primary keyword metrics
-                      {seedKeyword.searchVolume === 0 && seedKeyword.cpc === 0 && seedKeyword.difficulty === null && (
-                        <span className="ml-2 text-xs text-warning">
-                          • No metrics returned by DataForSEO for this term
-                        </span>
-                      )}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-background/50 p-4 rounded-lg border border-border/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
-                            <span className="text-lg">🔍</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground font-medium">Volume</span>
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">
-                          {formatNumber(seedKeyword.searchVolume)}
-                        </p>
-                      </div>
-                      
-                      <div className="bg-background/50 p-4 rounded-lg border border-border/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-md bg-warning/10 flex items-center justify-center">
-                            <span className="text-lg">🎯</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground font-medium">Difficulty</span>
-                        </div>
-                        <p className={`text-2xl font-bold ${getDifficultyColor(seedKeyword.difficulty)}`}>
-                          {formatDifficulty(seedKeyword.difficulty)}
-                        </p>
-                      </div>
-                      
-                      <div className="bg-background/50 p-4 rounded-lg border border-border/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-md bg-success/10 flex items-center justify-center">
-                            <span className="text-lg">💰</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground font-medium">CPC</span>
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">
-                          {formatCurrency(seedKeyword.cpc, locationCode)}
-                        </p>
-                      </div>
-                      
-                      <div className="bg-background/50 p-4 rounded-lg border border-border/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center">
-                            <span className="text-lg">🎭</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground font-medium">Intent</span>
-                        </div>
-                        <p className="text-lg font-semibold text-foreground capitalize">
-                          {seedKeyword.intent}
-                        </p>
-                      </div>
-                    </div>
-              </CardContent>
-            </Card>
+              totalKeywords={filteredResults.length}
+              totalVolume={filteredResults.reduce((sum, r) => sum + (r.searchVolume ?? 0), 0)}
+              avgDifficulty={filteredResults.length > 0 
+                ? Math.round(filteredResults.reduce((sum, r) => sum + (r.difficulty ?? 0), 0) / filteredResults.length)
+                : null}
+              avgCpc={filteredResults.length > 0
+                ? filteredResults.reduce((sum, r) => sum + (r.cpc ?? 0), 0) / filteredResults.length
+                : null}
+              locationCode={locationCode}
+            />
 
             {/* Results Table */}
             <KeywordResultsTable
               results={allResults}
               searchTerm={searchTerm}
-              seedKeyword={seedKeyword || null}
+              seedKeyword={null}
               keywordAnalyzed={keywordAnalyzed || 'Unknown'}
               onSearchChange={(value) => {
                 setSearchParams(prev => {
