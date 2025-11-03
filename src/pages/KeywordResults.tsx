@@ -372,7 +372,7 @@ const KeywordResults = () => {
   return (
     <section className="px-6 py-8">
       <div className="container mx-auto max-w-4xl space-y-6">
-        {keywordAnalyzed && filteredResults.length > 0 && seedKeyword && (
+        {keywordAnalyzed && allResults.length > 0 && seedKeyword && (
           <>
             {/* Seed Keyword Summary Hero Box */}
             <KeywordMetricsSummary 
@@ -546,7 +546,7 @@ const KeywordResults = () => {
           </>
         )}
         
-        {!keywordAnalyzed && (
+        {(!keywordAnalyzed || (allResults.length === 0 && !isInitialLoading)) && (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No keyword results available. Please run a keyword research first.</p>
           </div>
