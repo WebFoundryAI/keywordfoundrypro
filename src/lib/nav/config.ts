@@ -187,6 +187,13 @@ export const adminNav: NavItem[] = [
     requiresAdmin: true
   },
   {
+    path: "/admin/connection-diagnostic",
+    label: "Connection Diagnostic",
+    icon: Settings,
+    description: "Test Edge Function deployment",
+    requiresAdmin: true
+  },
+  {
     path: "/admin/logs",
     label: "Server Logs",
     icon: FileText,

@@ -182,11 +182,6 @@ export default function CompetitorAnalyzer() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
   const [errorAlert, setErrorAlert] = useState<{ request_id: string; stage: string; message: string; warnings: string[] } | null>(null);
-  const [diagnosticTest, setDiagnosticTest] = useState<{
-    running: boolean;
-    result: { ok: boolean; request_id: string; data?: { d4s_creds_present: boolean } } | null;
-    error: { message: string } | null
-  } | null>(null);
   const [aiInsightsError, setAiInsightsError] = useState<{
     request_id: string;
     status: number;
@@ -214,20 +209,6 @@ export default function CompetitorAnalyzer() {
     };
     fetchProfile();
   }, []);
-
-  const runDiagnosticTest = async () => {
-    setDiagnosticTest({ running: true, result: null, error: null });
-
-    try {
-      const { data, error } = await supabase.functions.invoke('competitor-analyze', {
-        body: { op: 'health' }
-      });
-
-      setDiagnosticTest({ running: false, result: data, error });
-    } catch (err) {
-      setDiagnosticTest({ running: false, result: null, error: { message: err instanceof Error ? err.message : 'Unknown error' } });
-    }
-  };
 
   const handleCompare = async () => {
     if (!yourDomain || !competitorDomain) {
@@ -808,11 +789,6 @@ export default function CompetitorAnalyzer() {
             <p className="text-muted-foreground">
               Compare your domain against a competitor to discover keyword gaps, backlink opportunities, and technical insights
             </p>
-            <p style={{ margin: '8px 0' }}>
-              <a href="/docs/competitor-analysis" target="_self" rel="noopener" data-testid="docs-link">
-                How we calculate this
-              </a>
-            </p>
           </div>
           {!isAdmin && reportsLeft !== null && (
             <Badge variant="secondary" className="text-sm">
@@ -825,96 +801,6 @@ export default function CompetitorAnalyzer() {
             </Badge>
           )}
         </div>
-
-        {/* Diagnostic Test Panel */}
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              🔧 Connection Diagnostic Tool
-            </CardTitle>
-            <CardDescription>
-              Test if the Edge Function is deployed and DataForSEO credentials are configured
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              onClick={runDiagnosticTest}
-              disabled={diagnosticTest?.running}
-              variant="outline"
-            >
-              {diagnosticTest?.running ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Testing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Run Connection Test
-                </>
-              )}
-            </Button>
-
-            {diagnosticTest && !diagnosticTest.running && (
-              <div className="space-y-3 p-4 bg-white rounded-md border">
-                {diagnosticTest.error ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-red-600 font-semibold">
-                      ❌ Edge Function NOT Deployed
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      <strong>Error:</strong> {diagnosticTest.error.message || 'Failed to connect to Edge Function'}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <strong>What this means:</strong> The competitor-analyze Edge Function is not deployed to Supabase.
-                    </p>
-                    <p className="text-sm text-blue-600">
-                      <strong>How to fix:</strong> Deploy the Edge Function via Loveable.dev or Supabase CLI.
-                    </p>
-                  </div>
-                ) : diagnosticTest.result?.ok ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-green-600 font-semibold">
-                      ✅ Edge Function Deployed
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex items-center gap-2">
-                        {diagnosticTest.result.data?.d4s_creds_present ? (
-                          <>
-                            <span className="text-green-600">✅</span>
-                            <span>DataForSEO credentials are configured</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-red-600">❌</span>
-                            <span className="text-red-600">DataForSEO credentials are MISSING</span>
-                          </>
-                        )}
-                      </div>
-                      {!diagnosticTest.result.data?.d4s_creds_present && (
-                        <p className="text-sm text-blue-600 mt-2">
-                          <strong>How to fix:</strong> Add DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD to Supabase Edge Function secrets.
-                        </p>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Request ID: {diagnosticTest.result.request_id}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-yellow-600 font-semibold">
-                      ⚠️ Unexpected Response
-                    </div>
-                    <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">
-                      {JSON.stringify(diagnosticTest.result, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         {errorAlert && (
           <Alert variant="destructive" className="relative">

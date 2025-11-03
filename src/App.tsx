@@ -58,6 +58,7 @@ import Changelog from "./pages/Changelog";
 import AdminStatus from "./pages/admin/StatusAdmin";
 import AdminChangelog from "./pages/admin/ChangelogAdmin";
 import AdminCookieSettings from "./pages/admin/CookieSettings";
+import AdminConnectionDiagnostic from "./pages/admin/ConnectionDiagnostic";
 import LegalTerms from "./pages/legal/Terms";
 import LegalPrivacy from "./pages/legal/PrivacyPolicy";
 import LegalContact from "./pages/legal/ContactPage";
@@ -136,6 +137,7 @@ const App = () => (
                   <Route path="status" element={<AdminStatus />} />
                   <Route path="changelog" element={<AdminChangelog />} />
                   <Route path="cookie-settings" element={<AdminCookieSettings />} />
+                  <Route path="connection-diagnostic" element={<AdminConnectionDiagnostic />} />
                 </Route>
 
                 <Route path="/auth/sign-in" element={<SignIn />} />
