@@ -56,9 +56,6 @@ export const KeywordMetricsSummary = ({
         <h2 className="text-lg font-semibold text-foreground">
           Keyword Analysis for "{keyword}"
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Summary of {totalKeywords} keywords found
-        </p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
