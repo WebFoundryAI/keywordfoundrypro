@@ -274,9 +274,6 @@ export const KeywordResultsTable = ({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl">Keyword Results</CardTitle>
-              <CardDescription>
-                {results.length} keywords found with comprehensive metrics
-              </CardDescription>
             </div>
             {/* ISSUE FIX #5: More descriptive export button labels with tooltips */}
             <div className="flex gap-2">
