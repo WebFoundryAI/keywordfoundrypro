@@ -191,7 +191,7 @@ export const KeywordResultsTable = ({
           difficultyMin: null,
           difficultyMax: difficultyLte ? parseInt(difficultyLte) : null,
           cpcMin: cpcGte ? parseFloat(cpcGte) : null,
-          intent: intentFilter || null,
+          intent: intentFilter && intentFilter !== 'all' ? intentFilter : null,
         });
       }
     }, 350); // Slightly longer debounce for filters to reduce server load
@@ -392,7 +392,7 @@ export const KeywordResultsTable = ({
                       <SelectValue placeholder="Any" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any</SelectItem>
+                      <SelectItem value="all">Any</SelectItem>
                       <SelectItem value="Commercial">Commercial</SelectItem>
                       <SelectItem value="Informational">Informational</SelectItem>
                       <SelectItem value="Navigational">Navigational</SelectItem>
