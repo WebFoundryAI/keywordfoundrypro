@@ -318,23 +318,6 @@ export const KeywordResultsTable = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-4 mb-6">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search keywords..."
-                  value={localSearchTerm}
-                  onChange={(e) => setLocalSearchTerm(e.target.value)}
-                  className="pl-10 bg-background/50"
-                />
-              </div>
-              {!hideResultsCount && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  {results.length} results
-                </Badge>
-              )}
-            </div>
-
             {/* Always-visible realtime filters - compact single row at sm+ */}
             <div className="bg-muted/30 rounded-lg p-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
