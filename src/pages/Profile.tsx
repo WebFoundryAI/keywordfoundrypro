@@ -217,7 +217,7 @@ export default function Profile() {
   const handleRowClick = (researchId: string, seedKeyword: string) => {
     localStorage.setItem('currentResearchId', researchId);
     localStorage.setItem('keywordAnalyzed', seedKeyword);
-    navigate('/keyword-results');
+    navigate(`/keyword-results?id=${researchId}`);
   };
 
   if (!user) return null;

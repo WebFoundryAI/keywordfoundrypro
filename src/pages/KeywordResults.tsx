@@ -11,8 +11,8 @@ import { logger } from '@/lib/logger';
 import { trackExport } from '@/lib/analytics';
 
 const KeywordResults = () => {
-  const [allResults, setAllResults] = useState<KeywordResult[]>([]); // Store all results from DB
-  const [filteredResults, setFilteredResults] = useState<KeywordResult[]>([]); // Filtered results for display
+  const [allResults, setAllResults] = useState<KeywordResult[]>([]);
+  const [filteredResults, setFilteredResults] = useState<KeywordResult[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [seedKeyword, setSeedKeyword] = useState<KeywordResult | null>(null);
   const [keywordAnalyzed, setKeywordAnalyzed] = useState<string>("");
@@ -24,7 +24,12 @@ const KeywordResults = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  // Get filter params from URL (pagination removed - show all results)
+  // Get research ID from URL first, then fallback to localStorage
+  const urlResearchId = searchParams.get('id');
+  const localStorageResearchId = localStorage.getItem('currentResearchId');
+  const researchId = urlResearchId || localStorageResearchId;
+
+  // Get filter params from URL
   const searchTerm = searchParams.get('search') || '';
   const volumeMin = searchParams.get('volumeMin');
   const volumeMax = searchParams.get('volumeMax');
@@ -33,7 +38,7 @@ const KeywordResults = () => {
   const cpcMin = searchParams.get('cpcMin');
   const intent = searchParams.get('intent');
 
-  // Effect 1: Initial data load (runs once on mount)
+  // Effect 1: Initial data load
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth/sign-in');
@@ -41,38 +46,66 @@ const KeywordResults = () => {
     }
 
     const loadKeywordResults = async () => {
-      const researchId = localStorage.getItem('currentResearchId');
-      const storedKeywordAnalyzed = localStorage.getItem('keywordAnalyzed');
-
-      // Guard: If no seed keyword context, show error instead of redirecting
-      if (!researchId || !storedKeywordAnalyzed) {
-        logger.warn('No seed keyword context found');
-        setHasError(true);
-        setIsInitialLoading(false);
-        return;
-      }
-
       try {
         setIsInitialLoading(true);
         
-        // Fetch location code from keyword_research table
+        // If no research ID provided, try to load the user's most recent research
+        let finalResearchId = researchId;
+        
+        if (!finalResearchId && user) {
+          const { data: recentResearch } = await supabase
+            .from('keyword_research')
+            .select('id, seed_keyword')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (recentResearch) {
+            finalResearchId = recentResearch.id;
+            setKeywordAnalyzed(recentResearch.seed_keyword);
+            localStorage.setItem('currentResearchId', recentResearch.id);
+            localStorage.setItem('keywordAnalyzed', recentResearch.seed_keyword);
+          } else {
+            logger.warn('No research found');
+            setHasError(true);
+            setIsInitialLoading(false);
+            return;
+          }
+        }
+
+        if (!finalResearchId) {
+          setHasError(true);
+          setIsInitialLoading(false);
+          return;
+        }
+        
+        // Fetch research details including seed keyword
         const { data: researchData, error: researchError } = await supabase
           .from('keyword_research')
-          .select('location_code')
-          .eq('id', researchId)
+          .select('location_code, seed_keyword')
+          .eq('id', finalResearchId)
           .maybeSingle();
 
         if (researchError) {
           logger.error('Error fetching research data:', researchError);
-        } else if (researchData) {
-          setLocationCode(researchData.location_code);
+          setHasError(true);
+          setIsInitialLoading(false);
+          return;
         }
 
-        // Fetch ALL results from database (no filters in query)
+        if (researchData) {
+          setLocationCode(researchData.location_code);
+          setKeywordAnalyzed(researchData.seed_keyword);
+          localStorage.setItem('keywordAnalyzed', researchData.seed_keyword);
+          localStorage.setItem('currentResearchId', finalResearchId);
+        }
+
+        // Fetch ALL results from database
         const { data: keywordResults, error, count } = await supabase
           .from('keyword_results')
           .select('*', { count: 'exact' })
-          .eq('research_id', researchId);
+          .eq('research_id', finalResearchId);
           
         if (error) {
           logger.error('Error fetching keyword results:', error);
@@ -82,8 +115,11 @@ const KeywordResults = () => {
             variant: "destructive",
           });
           setHasError(true);
+          setIsInitialLoading(false);
           return;
         }
+
+        logger.log('Fetched keyword results:', keywordResults?.length || 0);
 
         // Set total count
         setTotalCount(count || 0);
@@ -103,7 +139,7 @@ const KeywordResults = () => {
         
         // Normalize whitespace for comparison
         const normalizeKeyword = (kw: string) => kw.toLowerCase().replace(/\s+/g, ' ').trim();
-        const normalizedStored = normalizeKeyword(storedKeywordAnalyzed);
+        const normalizedStored = normalizeKeyword(researchData?.seed_keyword || '');
         
         // Separate seed keyword from other results
         const seedKeywordResult = convertedResults.find(r => 
@@ -115,7 +151,7 @@ const KeywordResults = () => {
         
         // Always create a seed keyword, even if not found in results
         const finalSeedKeyword = seedKeywordResult || {
-          keyword: storedKeywordAnalyzed,
+          keyword: researchData?.seed_keyword || '',
           searchVolume: 0,
           cpc: 0,
           intent: 'informational',
@@ -131,8 +167,12 @@ const KeywordResults = () => {
         
         setAllResults(allResultsWithSeed);
         setSeedKeyword(finalSeedKeyword);
-        setKeywordAnalyzed(storedKeywordAnalyzed);
         setHasError(false);
+        
+        toast({
+          title: "Success",
+          description: `Loaded ${convertedResults.length} keyword results`,
+        });
         
       } catch (error) {
         logger.error('Error loading keyword results:', error);
@@ -150,9 +190,9 @@ const KeywordResults = () => {
     if (!loading) {
       loadKeywordResults();
     }
-  }, [user, loading, navigate, toast]);
+  }, [user, loading, navigate, toast, researchId]);
 
-  // Effect 2: Client-side filtering (no database queries!)
+  // Effect 2: Client-side filtering
   useEffect(() => {
     let filtered = [...allResults];
 
@@ -205,7 +245,6 @@ const KeywordResults = () => {
   }, [allResults, searchTerm, volumeMin, volumeMax, difficultyMin, difficultyMax, cpcMin, intent]);
 
   const handleExport = async (format: 'csv' | 'json' | 'txt') => {
-    const researchId = localStorage.getItem('currentResearchId');
     if (!researchId) return;
 
     try {
@@ -215,38 +254,15 @@ const KeywordResults = () => {
         .select('*')
         .eq('research_id', researchId);
 
-      // Apply search filter
-      if (searchTerm) {
-        query = query.ilike('keyword', `%${searchTerm}%`);
-      }
+      // Apply filters
+      if (searchTerm) query = query.ilike('keyword', `%${searchTerm}%`);
+      if (volumeMin) query = query.gte('search_volume', parseInt(volumeMin));
+      if (volumeMax) query = query.lte('search_volume', parseInt(volumeMax));
+      if (difficultyMin) query = query.gte('difficulty', parseInt(difficultyMin));
+      if (difficultyMax) query = query.lte('difficulty', parseInt(difficultyMax));
+      if (cpcMin) query = query.gte('cpc', parseFloat(cpcMin));
+      if (intent && intent !== '') query = query.eq('intent', intent.toLowerCase());
 
-      // Apply volume filters
-      if (volumeMin) {
-        query = query.gte('search_volume', parseInt(volumeMin));
-      }
-      if (volumeMax) {
-        query = query.lte('search_volume', parseInt(volumeMax));
-      }
-
-      // Apply difficulty filters
-      if (difficultyMin) {
-        query = query.gte('difficulty', parseInt(difficultyMin));
-      }
-      if (difficultyMax) {
-        query = query.lte('difficulty', parseInt(difficultyMax));
-      }
-
-      // Apply CPC filter
-      if (cpcMin) {
-        query = query.gte('cpc', parseFloat(cpcMin));
-      }
-
-      // Apply Intent filter
-      if (intent && intent !== '') {
-        query = query.eq('intent', intent.toLowerCase());
-      }
-
-      // Fetch filtered results for export
       const { data: allResults, error } = await query;
 
       if (error) throw error;
@@ -270,10 +286,10 @@ const KeywordResults = () => {
           headers.join(','),
           ...exportData.map(r => [
             `"${r.keyword}"`,
-            r.searchVolume === null || r.searchVolume === undefined ? '—' : r.searchVolume,
-            r.cpc === null || r.cpc === undefined ? '—' : r.cpc,
+            r.searchVolume ?? '—',
+            r.cpc ?? '—',
             r.intent || 'informational',
-            r.difficulty === null || r.difficulty === undefined ? '—' : r.difficulty
+            r.difficulty ?? '—'
           ].join(','))
         ];
         content = csvRows.join('\n');
@@ -285,10 +301,10 @@ const KeywordResults = () => {
           headers.join('\t'),
           ...exportData.map(r => [
             r.keyword,
-            r.searchVolume === null || r.searchVolume === undefined ? '—' : r.searchVolume,
-            r.cpc === null || r.cpc === undefined ? '—' : r.cpc,
+            r.searchVolume ?? '—',
+            r.cpc ?? '—',
             r.intent || 'informational',
-            r.difficulty === null || r.difficulty === undefined ? '—' : r.difficulty
+            r.difficulty ?? '—'
           ].join('\t'))
         ];
         content = txtRows.join('\n');
@@ -310,7 +326,6 @@ const KeywordResults = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      // Track export event
       trackExport(format);
       
       toast({
@@ -453,96 +468,54 @@ const KeywordResults = () => {
               </>
             )}
 
-            {/* Results Table (includes seed as first row) - no pagination, shows all results */}
+            {/* Results Table */}
             <KeywordResultsTable
               results={allResults}
-              isLoading={false}
-              onExport={handleExport}
+              searchTerm={searchTerm}
               seedKeyword={seedKeyword}
               keywordAnalyzed={keywordAnalyzed}
-              locationCode={locationCode}
-              // Filter props
-              searchTerm={searchTerm}
-              onSearchChange={(search) => {
+              onSearchChange={(value) => {
                 setSearchParams(prev => {
-                  const params = new URLSearchParams(prev);
-                  if (search) {
-                    params.set('search', search);
+                  const newParams = new URLSearchParams(prev);
+                  if (value) {
+                    newParams.set('search', value);
                   } else {
-                    params.delete('search');
+                    newParams.delete('search');
                   }
-                  return params;
+                  return newParams;
                 });
               }}
               onFiltersChange={(filters) => {
                 setSearchParams(prev => {
-                  const params = new URLSearchParams(prev);
-
-                  // Volume filters
-                  if (filters.volumeMin !== undefined) {
-                    if (filters.volumeMin) {
-                      params.set('volumeMin', String(filters.volumeMin));
+                  const newParams = new URLSearchParams(prev);
+                  
+                  Object.entries(filters).forEach(([key, value]) => {
+                    if (value !== null && value !== undefined && value !== '') {
+                      newParams.set(key, value.toString());
                     } else {
-                      params.delete('volumeMin');
+                      newParams.delete(key);
                     }
-                  }
-                  if (filters.volumeMax !== undefined) {
-                    if (filters.volumeMax) {
-                      params.set('volumeMax', String(filters.volumeMax));
-                    } else {
-                      params.delete('volumeMax');
-                    }
-                  }
-
-                  // Difficulty filters
-                  if (filters.difficultyMin !== undefined) {
-                    if (filters.difficultyMin) {
-                      params.set('difficultyMin', String(filters.difficultyMin));
-                    } else {
-                      params.delete('difficultyMin');
-                    }
-                  }
-                  if (filters.difficultyMax !== undefined) {
-                    if (filters.difficultyMax) {
-                      params.set('difficultyMax', String(filters.difficultyMax));
-                    } else {
-                      params.delete('difficultyMax');
-                    }
-                  }
-
-                  // CPC filter
-                  if (filters.cpcMin !== undefined) {
-                    if (filters.cpcMin) {
-                      params.set('cpcMin', String(filters.cpcMin));
-                    } else {
-                      params.delete('cpcMin');
-                    }
-                  }
-
-                  // Intent filter
-                  if (filters.intent !== undefined) {
-                    if (filters.intent) {
-                      params.set('intent', filters.intent);
-                    } else {
-                      params.delete('intent');
-                    }
-                  }
-
-                  return params;
+                  });
+                  
+                  return newParams;
                 });
               }}
-              // UI customization - hide elements for cleaner display
-              hideResultsCount={true}
-              hideFilteringCaption={true}
+              locationCode={locationCode}
+              onExport={handleExport}
             />
 
+            {!isInitialLoading && allResults.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">No keyword results available</p>
+                <button
+                  onClick={() => navigate('/research')}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  Start New Research
+                </button>
+              </div>
+            )}
           </>
-        )}
-        
-        {!isInitialLoading && allResults.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No keyword results available. Please run a keyword research first.</p>
-          </div>
         )}
       </div>
     </section>

@@ -158,8 +158,8 @@ const Research = () => {
       // Track successful keyword research
       trackKeywordResearch(data.total_results || convertedResults.length);
       
-      // Navigate to results page
-      navigate('/keyword-results');
+        // Navigate to results page with research ID in URL
+        navigate(`/keyword-results?id=${data.research_id}`);
       
     } catch (err: any) {
       logger.error('Keyword research error:', err);

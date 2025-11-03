@@ -67,7 +67,7 @@ export default function MyResearch() {
     }
     localStorage.setItem('currentResearchId', researchId);
     localStorage.setItem('keywordAnalyzed', seedKeyword);
-    navigate('/keyword-results');
+    navigate(`/keyword-results?id=${researchId}`);
   };
 
   const handleNewResearch = () => {

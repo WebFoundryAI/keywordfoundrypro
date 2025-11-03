@@ -29,7 +29,7 @@ export default function AdminResearch() {
   const handleRowClick = (researchId: string, seedKeyword: string) => {
     localStorage.setItem('currentResearchId', researchId);
     localStorage.setItem('keywordAnalyzed', seedKeyword);
-    navigate('/keyword-results');
+    navigate(`/keyword-results?id=${researchId}`);
   };
 
   if (isLoading) {
