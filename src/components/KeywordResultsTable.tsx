@@ -337,12 +337,6 @@ export const KeywordResultsTable = ({
 
             {/* Always-visible realtime filters - compact single row at sm+ */}
             <div className="bg-muted/30 rounded-lg p-4">
-              {!hideFilteringCaption && (
-                <div className="flex items-center justify-end mb-2">
-                  <span className="text-xs text-muted-foreground">Server-side filtering</span>
-                </div>
-              )}
-
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 {/* Volume Filter - ≥ semantics */}
                 <div className="space-y-1">
