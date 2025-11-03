@@ -372,7 +372,7 @@ const KeywordResults = () => {
   return (
     <section className="px-6 py-8">
       <div className="container mx-auto max-w-4xl space-y-6">
-        {keywordAnalyzed && allResults.length > 0 && seedKeyword && (
+        {keywordAnalyzed && seedKeyword && (
           <>
             {/* Seed Keyword Summary Hero Box */}
             <KeywordMetricsSummary 
@@ -455,8 +455,15 @@ const KeywordResults = () => {
             </Card>
 
             {/* Results Table (includes seed as first row) - no pagination, shows all results */}
+            {filteredResults.length === 0 && allResults.length > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center">
+                <p className="text-yellow-800 dark:text-yellow-200 font-medium">No keywords match your current filters</p>
+                <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-1">Try adjusting or clearing your filters to see more results</p>
+              </div>
+            )}
+            
             <KeywordResultsTable
-              results={filteredResults}
+              results={filteredResults.length > 0 ? filteredResults : allResults}
               isLoading={false}
               onExport={handleExport}
               seedKeyword={seedKeyword}
@@ -546,7 +553,7 @@ const KeywordResults = () => {
           </>
         )}
         
-        {(!keywordAnalyzed || (allResults.length === 0 && !isInitialLoading)) && (
+        {!keywordAnalyzed && !isInitialLoading && (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No keyword results available. Please run a keyword research first.</p>
           </div>
