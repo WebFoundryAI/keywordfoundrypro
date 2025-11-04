@@ -317,62 +317,69 @@ export const KeywordResultsTable = ({
           <div className="space-y-4 mb-6">
             {/* Always-visible realtime filters - compact single row at sm+ */}
             <div className="bg-muted/30 rounded-lg p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                {/* Volume Filter - ≥ semantics */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium">Volume ≥</Label>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="Min"
-                    value={volumeGte}
-                    onChange={(e) => setVolumeGte(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="bg-background text-sm h-9 px-2 w-full max-w-[140px]"
-                  />
-                </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  {/* Volume Filter - ≥ semantics */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">Volume ≥</Label>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="Min"
+                      value={volumeGte}
+                      onChange={(e) => setVolumeGte(e.target.value.replace(/[^0-9]/g, ''))}
+                      className="bg-background text-sm h-9 px-2 w-full max-w-[100px]"
+                    />
+                  </div>
 
-                {/* Difficulty Filter - ≤ semantics */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium">Diff ≤</Label>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="Max"
-                    value={difficultyLte}
-                    onChange={(e) => setDifficultyLte(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="bg-background text-sm h-9 px-2 w-full max-w-[140px]"
-                  />
-                </div>
+                  {/* Difficulty Filter - ≤ semantics */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">Diff ≤</Label>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="Max"
+                      value={difficultyLte}
+                      onChange={(e) => setDifficultyLte(e.target.value.replace(/[^0-9]/g, ''))}
+                      className="bg-background text-sm h-9 px-2 w-full max-w-[100px]"
+                    />
+                  </div>
 
-                {/* CPC Filter - ≥ semantics */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium">CPC ≥ (USD)</Label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    placeholder="Min"
-                    value={cpcGte}
-                    onChange={(e) => setCpcGte(e.target.value.replace(/[^0-9.]/g, ''))}
-                    className="bg-background text-sm h-9 px-2 w-full max-w-[140px]"
-                  />
-                </div>
+                  {/* CPC Filter - ≥ semantics */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">CPC ≥ (USD)</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      placeholder="Min"
+                      value={cpcGte}
+                      onChange={(e) => setCpcGte(e.target.value.replace(/[^0-9.]/g, ''))}
+                      className="bg-background text-sm h-9 px-2 w-full max-w-[100px]"
+                    />
+                  </div>
 
-                {/* Intent Filter - dropdown */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium">Intent</Label>
-                  <Select value={intentFilter} onValueChange={setIntentFilter}>
-                    <SelectTrigger className="bg-background text-sm h-9 px-2 w-full max-w-[140px]">
-                      <SelectValue placeholder="Any" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Any</SelectItem>
-                      <SelectItem value="Commercial">Commercial</SelectItem>
-                      <SelectItem value="Informational">Informational</SelectItem>
-                      <SelectItem value="Navigational">Navigational</SelectItem>
-                      <SelectItem value="Transactional">Transactional</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {/* Intent Filter - dropdown */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">Intent</Label>
+                    <Select value={intentFilter} onValueChange={setIntentFilter}>
+                      <SelectTrigger className="bg-background text-sm h-9 px-2 w-full max-w-[100px]">
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any</SelectItem>
+                        <SelectItem value="Commercial">Commercial</SelectItem>
+                        <SelectItem value="Informational">Informational</SelectItem>
+                        <SelectItem value="Navigational">Navigational</SelectItem>
+                        <SelectItem value="Transactional">Transactional</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                {/* Results Counter */}
+                <div className="text-sm text-muted-foreground whitespace-nowrap">
+                  <span className="font-medium text-foreground">{results.length}</span> of <span className="font-medium text-foreground">{totalCount ?? results.length}</span>
                 </div>
               </div>
             </div>
