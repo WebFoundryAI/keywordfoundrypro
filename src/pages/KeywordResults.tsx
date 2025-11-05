@@ -9,13 +9,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { logger } from '@/lib/logger';
 import { trackExport } from '@/lib/analytics';
 
+const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 const KeywordResults = () => {
   const [results, setResults] = useState<KeywordResult[]>(() => {
     const stored = localStorage.getItem('keywordResultsData');
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        return parsed.results || [];
+        // Check if cache is expired
+        if (parsed.updatedAt && Date.now() - parsed.updatedAt < CACHE_EXPIRATION_MS) {
+          return parsed.results || [];
+        }
+        // Cache expired, clear it
+        localStorage.removeItem('keywordResultsData');
+        localStorage.removeItem('lastKeywordResultsResearchId');
       } catch {
         return [];
       }
@@ -33,11 +41,14 @@ const KeywordResults = () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (parsed.seedKeyword && parsed.locationCode) {
-          return {
-            seedKeyword: parsed.seedKeyword,
-            locationCode: parsed.locationCode
-          };
+        // Check if cache is expired
+        if (parsed.updatedAt && Date.now() - parsed.updatedAt < CACHE_EXPIRATION_MS) {
+          if (parsed.seedKeyword && parsed.locationCode) {
+            return {
+              seedKeyword: parsed.seedKeyword,
+              locationCode: parsed.locationCode
+            };
+          }
         }
       } catch {}
     }
@@ -73,7 +84,14 @@ const KeywordResults = () => {
     if (storedData) {
       try {
         const parsed = JSON.parse(storedData);
-        persistedResearchId = parsed.researchId;
+        // Check if cache is expired
+        if (parsed.updatedAt && Date.now() - parsed.updatedAt < CACHE_EXPIRATION_MS) {
+          persistedResearchId = parsed.researchId;
+        } else {
+          // Cache expired, clear it
+          localStorage.removeItem('keywordResultsData');
+          localStorage.removeItem('lastKeywordResultsResearchId');
+        }
       } catch {}
     }
 
