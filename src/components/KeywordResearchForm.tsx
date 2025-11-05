@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Globe, MapPin, Zap, AlertCircle } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface KeywordResearchFormProps {
   onSubmit: (data: KeywordFormData) => void;
@@ -48,6 +50,8 @@ const LOCATION_OPTIONS = [
 ];
 
 export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchFormProps) => {
+  const { subscription, plan, usage, isLoading: subscriptionLoading } = useSubscription();
+  
   // Load previous limit from localStorage if available
   const getPreviousLimit = () => {
     const stored = localStorage.getItem('lastSearchLimit');
@@ -242,13 +246,37 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
           </div>
 
           <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Estimated Cost:</span>
-              <span className="text-primary font-bold">${estimatedCost.toFixed(2)}</span>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Based on API usage pricing. Actual cost may vary.
-            </div>
+            {subscriptionLoading ? (
+              <>
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Keyword Research Usage:</span>
+                  <span className="text-primary font-bold">
+                    {plan?.keywords_per_month === -1 
+                      ? 'Unlimited' 
+                      : `${(usage?.keywords_used || 0).toLocaleString()} of ${(plan?.keywords_per_month || 0).toLocaleString()}`}
+                  </span>
+                </div>
+                
+                {plan && plan.keywords_per_month !== -1 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Remaining:</span>
+                    <span className="font-medium">
+                      {Math.max(0, (plan?.keywords_per_month || 0) - (usage?.keywords_used || 0)).toLocaleString()} credits
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/30 pt-2 mt-2">
+                  <span>This query cost:</span>
+                  <span>${estimatedCost.toFixed(2)}</span>
+                </div>
+              </>
+            )}
           </div>
 
           <Button 
