@@ -12,6 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeWithAuth, DataForSEOApiError } from "@/lib/supabaseHelpers";
 import { invokeFunction } from "@/lib/invoke";
 import { Loader2, TrendingUp, Link as LinkIcon, Code, Sparkles, RefreshCw, Download, AlertCircle, X, Globe, MapPin, FileQuestion } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toCSV, toJSON, normalizedFilename, type GapKeywordRow, type ExportMeta } from "@/utils/exportHelpers";
 import { logger } from '@/lib/logger';
@@ -179,6 +185,8 @@ export default function CompetitorAnalyzer() {
   const [yourKeywordsSortOrder, setYourKeywordsSortOrder] = useState<'asc' | 'desc'>('desc');
   const [competitorKeywordsSortField, setCompetitorKeywordsSortField] = useState<'keyword' | 'rank_absolute' | 'search_volume'>('search_volume');
   const [competitorKeywordsSortOrder, setCompetitorKeywordsSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [overlapSortField, setOverlapSortField] = useState<'keyword' | 'your_rank' | 'competitor_rank' | 'search_volume'>('keyword');
+  const [overlapSortOrder, setOverlapSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [profile, setProfile] = useState<{ free_reports_used: number; free_reports_renewal_at: string | null } | null>(null);
   const [errorAlert, setErrorAlert] = useState<{ request_id: string; stage: string; message: string; warnings: string[] } | null>(null);
@@ -620,6 +628,74 @@ export default function CompetitorAnalyzer() {
     return competitorKeywordsSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   }) || [];
 
+  const handleOverlapSort = (field: 'keyword' | 'your_rank' | 'competitor_rank' | 'search_volume') => {
+    if (overlapSortField === field) {
+      setOverlapSortOrder(overlapSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setOverlapSortField(field);
+      setOverlapSortOrder('asc');
+    }
+  };
+
+  // Create overlap dataset: all keywords from both domains
+  const createOverlapDataset = () => {
+    if (!analysisData?.your_keywords && !analysisData?.competitor_keywords) return [];
+    
+    const keywordMap = new Map();
+    
+    // Add your keywords
+    (analysisData?.your_keywords || []).forEach(kw => {
+      keywordMap.set(kw.keyword, {
+        keyword: kw.keyword,
+        your_rank: kw.rank_absolute,
+        competitor_rank: null,
+        search_volume: kw.search_volume,
+        your_url: kw.url,
+        competitor_url: null,
+      });
+    });
+    
+    // Add or merge competitor keywords
+    (analysisData?.competitor_keywords || []).forEach(kw => {
+      if (keywordMap.has(kw.keyword)) {
+        const existing = keywordMap.get(kw.keyword);
+        existing.competitor_rank = kw.rank_absolute;
+        existing.competitor_url = kw.url;
+      } else {
+        keywordMap.set(kw.keyword, {
+          keyword: kw.keyword,
+          your_rank: null,
+          competitor_rank: kw.rank_absolute,
+          search_volume: kw.search_volume,
+          your_url: null,
+          competitor_url: kw.url,
+        });
+      }
+    });
+    
+    return Array.from(keywordMap.values());
+  };
+
+  const sortedOverlapKeywords = createOverlapDataset().sort((a, b) => {
+    const order = overlapSortOrder === 'asc' ? 1 : -1;
+    if (overlapSortField === 'keyword') {
+      return a.keyword.localeCompare(b.keyword) * order;
+    } else if (overlapSortField === 'your_rank') {
+      // Handle nulls: nulls go to end regardless of sort order
+      if (a.your_rank === null && b.your_rank === null) return 0;
+      if (a.your_rank === null) return 1;
+      if (b.your_rank === null) return -1;
+      return (a.your_rank - b.your_rank) * order;
+    } else if (overlapSortField === 'competitor_rank') {
+      if (a.competitor_rank === null && b.competitor_rank === null) return 0;
+      if (a.competitor_rank === null) return 1;
+      if (b.competitor_rank === null) return -1;
+      return (a.competitor_rank - b.competitor_rank) * order;
+    } else {
+      return (a.search_volume - b.search_volume) * order;
+    }
+  });
+
   const handleExportCSV = () => {
     if (!sortedKeywords.length) return;
 
@@ -756,6 +832,69 @@ export default function CompetitorAnalyzer() {
     
     trackExport('csv');
     toast({ title: "CSV Downloaded", description: `Exported ${rows.length} competitor keywords` });
+  };
+
+  const handleExportOverlapCSV = () => {
+    if (!sortedOverlapKeywords.length) return;
+
+    const rows = sortedOverlapKeywords.map(kw => ({
+      keyword: kw.keyword,
+      your_rank: kw.your_rank ?? '',
+      competitor_rank: kw.competitor_rank ?? '',
+      search_volume: kw.search_volume,
+      your_url: kw.your_url || '',
+      competitor_url: kw.competitor_url || '',
+    }));
+
+    const csvContent = [
+      `# Your Domain: ${yourDomain}`,
+      `# Competitor Domain: ${competitorDomain}`,
+      `# Total Keywords: ${rows.length}`,
+      `# Generated: ${new Date().toISOString()}`,
+      'keyword,your_rank,competitor_rank,search_volume,your_url,competitor_url',
+      ...rows.map(r => `"${r.keyword}",${r.your_rank},${r.competitor_rank},${r.search_volume},"${r.your_url}","${r.competitor_url}"`)
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kfp_overlap_keywords_${yourDomain.replace(/[^a-z0-9]/gi, '_')}_vs_${competitorDomain.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    trackExport('csv');
+    toast({ title: "CSV Downloaded", description: `Exported ${rows.length} overlap keywords` });
+  };
+
+  const handleExportOverlapJSON = () => {
+    if (!sortedOverlapKeywords.length) return;
+
+    const data = {
+      meta: {
+        run_timestamp: new Date().toISOString(),
+        your_domain: yourDomain,
+        competitor_domain: competitorDomain,
+        total_keywords: sortedOverlapKeywords.length,
+      },
+      overlap_keywords: sortedOverlapKeywords,
+    };
+
+    const jsonContent = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kfp_overlap_keywords_${yourDomain.replace(/[^a-z0-9]/gi, '_')}_vs_${competitorDomain.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    trackExport('json');
+    toast({ title: "JSON Downloaded", description: `Exported ${sortedOverlapKeywords.length} overlap keywords` });
   };
 
   const backlinksChartData = analysisData ? [
@@ -1171,6 +1310,123 @@ export default function CompetitorAnalyzer() {
                       <li>The competitor has no ranking keywords in the specified market</li>
                       <li>Try adjusting the location or language settings</li>
                     </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Keyword Overlap Analysis - Head-to-Head */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Keyword Overlap Analysis - Head-to-Head</span>
+                  <Badge variant="secondary">{sortedOverlapKeywords.length} keywords</Badge>
+                </CardTitle>
+                <CardDescription>
+                  Side-by-side ranking comparison for all keywords from both domains
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {sortedOverlapKeywords.length > 0 ? (
+                  <>
+                    <div className="flex justify-end gap-2 mb-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={!sortedOverlapKeywords.length}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Download
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={handleExportOverlapCSV}>
+                            CSV
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleExportOverlapJSON}>
+                            JSON
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleOverlapSort('keyword')}>
+                              Keyword {overlapSortField === 'keyword' && (overlapSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleOverlapSort('your_rank')}>
+                              Your Rank {overlapSortField === 'your_rank' && (overlapSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleOverlapSort('competitor_rank')}>
+                              Competitor Rank {overlapSortField === 'competitor_rank' && (overlapSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-right py-3 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleOverlapSort('search_volume')}>
+                              Search Volume {overlapSortField === 'search_volume' && (overlapSortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th className="text-left py-3 px-2">
+                              Your URL
+                            </th>
+                            <th className="text-left py-3 px-2">
+                              Competitor URL
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedOverlapKeywords.map((kw, idx) => (
+                            <tr key={idx} className="border-b hover:bg-muted/30">
+                              <td className="py-2 px-2">{kw.keyword}</td>
+                              <td className="text-right py-2 px-2">
+                                {kw.your_rank !== null ? `#${kw.your_rank}` : '—'}
+                              </td>
+                              <td className="text-right py-2 px-2">
+                                {kw.competitor_rank !== null ? `#${kw.competitor_rank}` : '—'}
+                              </td>
+                              <td className="text-right py-2 px-2">{kw.search_volume.toLocaleString()}</td>
+                              <td className="py-2 px-2">
+                                {kw.your_url ? (
+                                  <a 
+                                    href={kw.your_url} 
+                                    target="_blank" 
+                                    rel="nofollow noopener noreferrer"
+                                    className="text-primary hover:underline text-xs truncate max-w-xs block"
+                                  >
+                                    {kw.your_url}
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )}
+                              </td>
+                              <td className="py-2 px-2">
+                                {kw.competitor_url ? (
+                                  <a 
+                                    href={kw.competitor_url} 
+                                    target="_blank" 
+                                    rel="nofollow noopener noreferrer"
+                                    className="text-primary hover:underline text-xs truncate max-w-xs block"
+                                  >
+                                    {kw.competitor_url}
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No Keywords Found</h3>
+                    <p className="text-sm text-muted-foreground">
+                      No ranking keywords available for overlap analysis
+                    </p>
                   </div>
                 )}
               </CardContent>
