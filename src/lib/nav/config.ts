@@ -71,19 +71,19 @@ export const headerNav: NavItem[] = [
     description: "Competitor analysis",
     requiresAuth: true,
     tourId: "competitor-tab"
-  }
-  // Removed: Docs, Status, Changelog, Roadmap (admins see same nav as regular users)
-];
-
-// Account menu navigation
-export const accountNav: NavItem[] = [
+  },
   {
     path: "/my-research",
     label: "My Research",
     icon: Database,
     description: "View your research history",
     requiresAuth: true
-  },
+  }
+  // Removed: Docs, Status, Changelog, Roadmap (admins see same nav as regular users)
+];
+
+// Account menu navigation
+export const accountNav: NavItem[] = [
   {
     path: "/profile",
     label: "Profile",
