@@ -228,12 +228,13 @@ const KeywordResults = () => {
     );
   }
 
-  const totalVolume = filteredResults.reduce((sum, r) => sum + (r.searchVolume || 0), 0);
-  const avgDifficulty = filteredResults.length > 0
-    ? filteredResults.reduce((sum, r) => sum + (r.difficulty || 0), 0) / filteredResults.length
+  // Calculate metrics from UNFILTERED results for overview cards
+  const totalVolume = results.reduce((sum, r) => sum + (r.searchVolume || 0), 0);
+  const avgDifficulty = results.length > 0
+    ? results.reduce((sum, r) => sum + (r.difficulty || 0), 0) / results.length
     : 0;
-  const avgCpc = filteredResults.length > 0
-    ? filteredResults.reduce((sum, r) => sum + (r.cpc || 0), 0) / filteredResults.length
+  const avgCpc = results.length > 0
+    ? results.reduce((sum, r) => sum + (r.cpc || 0), 0) / results.length
     : 0;
 
   return (
@@ -241,7 +242,7 @@ const KeywordResults = () => {
       <div className="container mx-auto max-w-4xl space-y-6">
         <KeywordMetricsSummary
           keyword={researchData.seedKeyword}
-          totalKeywords={filteredResults.length}
+          totalKeywords={results.length}
           totalVolume={totalVolume}
           avgDifficulty={avgDifficulty}
           avgCpc={avgCpc}
@@ -250,6 +251,7 @@ const KeywordResults = () => {
 
         <KeywordResultsTable
           results={filteredResults}
+          totalCount={results.length}
           searchTerm={searchTerm}
           seedKeyword={null}
           keywordAnalyzed={researchData.seedKeyword}
