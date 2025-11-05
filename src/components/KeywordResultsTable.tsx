@@ -250,7 +250,7 @@ export const KeywordResultsTable = ({
   const handleSerpClick = (keyword: string) => {
     const language = localStorage.getItem('lastLanguageCode') || 'en';
     const location = locationCode || parseInt(localStorage.getItem('lastLocationCode') || '2840');
-    navigate(`/serp-analysis?keyword=${encodeURIComponent(keyword)}&language=${encodeURIComponent(language)}&location=${encodeURIComponent(location.toString())}`);
+    navigate(`/serp-analysis?keyword=${encodeURIComponent(keyword)}&language=${encodeURIComponent(language)}&location=${encodeURIComponent(location.toString())}&fresh=true`);
   };
 
   const totalPages = Math.ceil(totalCount / pageSize);

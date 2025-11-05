@@ -70,6 +70,11 @@ const SerpAnalysis = () => {
   const [limit] = useState(10);
   
   const [results, setResults] = useState<SerpResult[]>(() => {
+    // Don't load from cache if fresh=true parameter is present
+    const isFreshRequest = searchParams.get('fresh') === 'true';
+    if (isFreshRequest) {
+      return [];
+    }
     const stored = localStorage.getItem('serpAnalysisResults');
     return stored ? JSON.parse(stored) : [];
   });
@@ -152,6 +157,13 @@ const SerpAnalysis = () => {
         setResults(data.results);
         localStorage.setItem('serpAnalysisResults', JSON.stringify(data.results));
         localStorage.setItem('lastKeyword', keyword.trim());
+        
+        // Remove fresh parameter after successful analysis
+        if (searchParams.get('fresh') === 'true') {
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('fresh');
+          setSearchParams(newParams, { replace: true });
+        }
         
         // Track successful SERP analysis
         trackSerpAnalysis();
