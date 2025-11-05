@@ -2,7 +2,6 @@ import { Search, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { UserMenu } from "@/components/UserMenu";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
@@ -56,9 +55,6 @@ export const Header = ({ user }: HeaderProps) => {
             )}
             {user ? (
               <div className="flex items-center gap-2">
-                <div data-tour="theme-toggle">
-                  <ThemeToggle />
-                </div>
                 <div data-tour="user-menu">
                   <UserMenu />
                 </div>
