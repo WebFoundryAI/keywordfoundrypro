@@ -146,10 +146,15 @@ const SerpAnalysis = () => {
     setIsLoading(true);
     
     try {
+      const languageName = LANGUAGE_OPTIONS.find(l => l.code === languageCode)?.name;
+      const locationName = LOCATION_OPTIONS.find(l => l.code === locationCode)?.name;
+      
       const data = await invokeFunction('serp-analysis', {
         keyword: keyword.trim(),
         languageCode,
+        languageName,
         locationCode,
+        locationName,
         limit
       });
 

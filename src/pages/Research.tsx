@@ -85,7 +85,9 @@ const Research = () => {
       const data = await invokeFunction('keyword-research', {
         keyword: formData.keyword.trim(),
         languageCode: formData.languageCode,
+        languageName: formData.languageName,
         locationCode: formData.locationCode,
+        locationName: formData.locationName,
         limit: formData.limit
       });
       

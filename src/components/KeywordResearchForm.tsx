@@ -16,7 +16,9 @@ interface KeywordResearchFormProps {
 export interface KeywordFormData {
   keyword: string;
   languageCode: string;
+  languageName?: string;
   locationCode: number;
+  locationName?: string;
   limit: number;
   includeSuggestions: boolean;
   includeRelated: boolean;
@@ -61,7 +63,9 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
   const [formData, setFormData] = useState<KeywordFormData>({
     keyword: "",
     languageCode: "en",
+    languageName: "English",
     locationCode: 2840,
+    locationName: "United States",
     limit: getPreviousLimit(),
     includeSuggestions: true,
     includeRelated: true,
@@ -192,7 +196,10 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
                 <Globe className="w-4 h-4 text-primary" />
                 Language
               </Label>
-              <Select value={formData.languageCode} onValueChange={(value) => setFormData({ ...formData, languageCode: value })}>
+              <Select value={formData.languageCode} onValueChange={(value) => {
+                const lang = LANGUAGE_OPTIONS.find(l => l.code === value);
+                setFormData({ ...formData, languageCode: value, languageName: lang?.name });
+              }}>
                 <SelectTrigger className="bg-background/50 border-border/50">
                   <SelectValue />
                 </SelectTrigger>
@@ -211,7 +218,10 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
                 <MapPin className="w-4 h-4 text-primary" />
                 Location
               </Label>
-              <Select value={formData.locationCode.toString()} onValueChange={(value) => setFormData({ ...formData, locationCode: parseInt(value) })}>
+              <Select value={formData.locationCode.toString()} onValueChange={(value) => {
+                const loc = LOCATION_OPTIONS.find(l => l.code === parseInt(value));
+                setFormData({ ...formData, locationCode: parseInt(value), locationName: loc?.name });
+              }}>
                 <SelectTrigger className="bg-background/50 border-border/50">
                   <SelectValue />
                 </SelectTrigger>

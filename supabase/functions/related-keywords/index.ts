@@ -56,12 +56,14 @@ const KeywordRequestSchema = z.object({
     .regex(/^[a-z]{2}$/, "Invalid language code format")
     .optional()
     .default('en'),
+  languageName: z.string().optional(),
   locationCode: z.number()
     .int("Location code must be an integer")
     .min(1, "Invalid location code")
     .max(9999999, "Invalid location code")
     .optional()
     .default(2840),
+  locationName: z.string().optional(),
   depth: z.number()
     .int("Depth must be an integer")
     .min(0, "Depth must be at least 0")
@@ -86,7 +88,9 @@ const KeywordRequestSchema = z.object({
 interface KeywordRequest {
   keyword: string;
   languageCode?: string;
+  languageName?: string;
   locationCode?: number;
+  locationName?: string;
   depth?: number;
   limit?: number;
   offset?: number;
@@ -132,8 +136,10 @@ serve(async (req) => {
     const validatedData = KeywordRequestSchema.parse(rawBody);
     const { 
       keyword, 
-      languageCode, 
+      languageCode,
+      languageName,
       locationCode,
+      locationName,
       depth,
       limit,
       offset,
@@ -327,7 +333,9 @@ serve(async (req) => {
           user_id: user.id,
           seed_keyword: keyword,
           language_code: languageCode,
+          language_name: languageName,
           location_code: locationCode,
+          location_name: locationName,
           results_limit: relatedKeywords.length,
           total_results: relatedKeywords.length,
           api_cost: estimatedCost,

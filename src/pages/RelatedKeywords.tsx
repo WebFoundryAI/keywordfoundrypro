@@ -246,10 +246,15 @@ const RelatedKeywords = () => {
     setTotalCount(0);
     
     try {
+      const languageName = LANGUAGE_OPTIONS.find(l => l.code === languageCode)?.name;
+      const locationName = LOCATION_OPTIONS.find(l => l.code === locationCode)?.name;
+      
       const data = await invokeFunction('related-keywords', {
         keyword: keyword.trim(),
         languageCode,
+        languageName,
         locationCode,
+        locationName,
         limit: 100,
         depth,
         offset: 0
@@ -299,10 +304,15 @@ const RelatedKeywords = () => {
     setIsLoadingMore(true);
     
     try {
+      const languageName = LANGUAGE_OPTIONS.find(l => l.code === languageCode)?.name;
+      const locationName = LOCATION_OPTIONS.find(l => l.code === locationCode)?.name;
+      
       const data = await invokeFunction('related-keywords', {
         keyword: keyword.trim(),
         languageCode,
+        languageName,
         locationCode,
+        locationName,
         limit: 100,
         depth,
         offset: currentOffset
