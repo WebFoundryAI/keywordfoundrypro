@@ -81,16 +81,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               });
             }
 
-            // Guarantee subscription row exists (creates trial if missing)
-            const { error: rpcErr } = await supabase.rpc('ensure_user_subscription', {
-              user_id_param: user.id
-            });
-            
-            if (rpcErr) {
-              logger.error('ensure_user_subscription error', rpcErr);
-            }
-
-            // Check if user is admin
+            // Check if user is admin FIRST
             const { data: adminRole } = await supabase
               .from('user_roles')
               .select('role')
@@ -104,6 +95,52 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             
             if (isAdmin) {
               logger.log('Admin user - analytics tracking disabled');
+            }
+
+            // For non-admin users, ensure subscription is ready before redirecting
+            if (!isAdmin) {
+              logger.log('Non-admin user - verifying subscription setup');
+              
+              // Call ensure_user_subscription
+              const { error: rpcErr } = await supabase.rpc('ensure_user_subscription', {
+                user_id_param: user.id
+              });
+              
+              if (rpcErr) {
+                logger.error('ensure_user_subscription error', rpcErr);
+              }
+
+              // Verify subscription exists with retries (max 3 attempts, 500ms between)
+              let subscriptionReady = false;
+              for (let attempt = 1; attempt <= 3; attempt++) {
+                logger.log(`Verifying subscription (attempt ${attempt}/3)`);
+                
+                const { data: subscription } = await supabase
+                  .from('user_subscriptions')
+                  .select('id, status, tier')
+                  .eq('user_id', user.id)
+                  .maybeSingle();
+
+                if (subscription) {
+                  logger.log('Subscription verified:', subscription);
+                  subscriptionReady = true;
+                  break;
+                }
+
+                if (attempt < 3) {
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                }
+              }
+
+              if (!subscriptionReady) {
+                logger.error('Failed to verify subscription after 3 attempts');
+                // Still allow redirect but log the issue
+              }
+            } else {
+              // For admins, just call ensure_user_subscription without waiting
+              await supabase.rpc('ensure_user_subscription', {
+                user_id_param: user.id
+              });
             }
 
             // Only redirect from specific whitelist paths
