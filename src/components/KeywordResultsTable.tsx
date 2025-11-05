@@ -8,6 +8,12 @@ import { Download, Search, TrendingUp, DollarSign, Target, ChevronUp, ChevronDow
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface KeywordResult {
   keyword: string;
@@ -275,42 +281,30 @@ export const KeywordResultsTable = ({
             <div>
               <CardTitle className="text-xl">Keyword Results</CardTitle>
             </div>
-            {/* ISSUE FIX #5: More descriptive export button labels with tooltips */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onExport?.('csv')}
-                className="bg-background/50"
-                aria-label="Export keywords to CSV format"
-                title="Export to CSV (spreadsheet format)"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onExport?.('json')}
-                className="bg-background/50"
-                aria-label="Export keywords to JSON format"
-                title="Export to JSON (developer format)"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export JSON
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onExport?.('txt')}
-                className="bg-background/50"
-                aria-label="Export keywords to plain text format"
-                title="Export to TXT (plain text list)"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export TXT
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-background/50"
+                  aria-label="Download results"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download results
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => onExport?.('csv')}>
+                  CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onExport?.('json')}>
+                  JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onExport?.('txt')}>
+                  TXT
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardHeader>
         <CardContent>
