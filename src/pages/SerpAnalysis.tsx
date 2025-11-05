@@ -320,7 +320,7 @@ const SerpAnalysis = () => {
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Based on DataForSEO Live Mode pricing: $0.002 for first SERP (10 results), $0.0015 for each additional SERP.
+                  Pricing: $0.002 for first SERP (10 results), $0.0015 for each additional SERP.
                 </div>
               </div>
 

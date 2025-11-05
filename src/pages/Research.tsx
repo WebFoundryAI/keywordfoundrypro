@@ -171,7 +171,7 @@ const Research = () => {
         if (err.isRateLimit) {
           toast({
             title: "Rate Limit Exceeded",
-            description: "DataForSEO API rate limit reached. Please wait a few minutes before trying again.",
+            description: "API rate limit reached. Please wait a few minutes before trying again.",
             variant: "destructive",
             action: (
               <a 
@@ -187,7 +187,7 @@ const Research = () => {
         } else if (err.isCreditsExhausted) {
           toast({
             title: "API Credits Exhausted",
-            description: "DataForSEO API credits have been exhausted. Please add credits to your DataForSEO account.",
+            description: "API credits have been exhausted. Please add credits to your account.",
             variant: "destructive",
             action: (
               <a 
@@ -243,7 +243,7 @@ const Research = () => {
         {isLoading && (
           <LoadingIndicator
             isLoading={isLoading}
-            message="Analyzing keywords with DataForSEO..."
+            message="Analyzing keywords..."
             showProgress={true}
             estimatedDuration={10}
           />

@@ -926,7 +926,7 @@ export default function CompetitorAnalyzer() {
             
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Top N Keywords (DataForSEO API)</label>
+                <label className="text-sm font-medium mb-2 block">Top N Keywords</label>
                 <Input
                   data-testid="limit-input"
                   type="number"

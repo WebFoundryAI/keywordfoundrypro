@@ -35,7 +35,7 @@ const steps: Step[] = [
   },
   {
     target: '[data-tour="submit-button"]',
-    content: 'Click here to get real-time keyword metrics powered by DataForSEO.',
+    content: 'Click here to get real-time keyword metrics for your research.',
     disableBeacon: true,
   },
   {
