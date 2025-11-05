@@ -10,12 +10,39 @@ import { logger } from '@/lib/logger';
 import { trackExport } from '@/lib/analytics';
 
 const KeywordResults = () => {
-  const [results, setResults] = useState<KeywordResult[]>([]);
+  const [results, setResults] = useState<KeywordResult[]>(() => {
+    const stored = localStorage.getItem('keywordResultsData');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        return parsed.results || [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  
   const [isLoading, setIsLoading] = useState(true);
+  
   const [researchData, setResearchData] = useState<{
     seedKeyword: string;
     locationCode: number;
-  } | null>(null);
+  } | null>(() => {
+    const stored = localStorage.getItem('keywordResultsData');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.seedKeyword && parsed.locationCode) {
+          return {
+            seedKeyword: parsed.seedKeyword,
+            locationCode: parsed.locationCode
+          };
+        }
+      } catch {}
+    }
+    return null;
+  });
   
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
@@ -39,7 +66,28 @@ const KeywordResults = () => {
       return;
     }
 
+    // Check if we have persisted data
+    const storedData = localStorage.getItem('keywordResultsData');
+    let persistedResearchId: string | null = null;
+    
+    if (storedData) {
+      try {
+        const parsed = JSON.parse(storedData);
+        persistedResearchId = parsed.researchId;
+      } catch {}
+    }
+
     if (!researchId) {
+      // No ID in URL - check if we have persisted data
+      if (persistedResearchId) {
+        // Update URL to reflect persisted research ID
+        setSearchParams({ id: persistedResearchId }, { replace: true });
+        // Data already loaded from localStorage initialization, skip fetch
+        setIsLoading(false);
+        return;
+      }
+      
+      // No persisted data either - redirect to research page
       toast({
         title: "No Research ID",
         description: "Please start a new keyword research",
@@ -49,6 +97,14 @@ const KeywordResults = () => {
       return;
     }
 
+    // Have researchId - check if it matches persisted data
+    if (researchId === persistedResearchId && results.length > 0 && researchData) {
+      // Already have this data loaded, no need to fetch
+      setIsLoading(false);
+      return;
+    }
+
+    // Different research ID or no data - fetch fresh
     loadData();
   }, [user, authLoading, researchId]);
 
@@ -92,6 +148,17 @@ const KeywordResults = () => {
       }));
 
       setResults(converted);
+      
+      // Persist data to localStorage
+      const persistData = {
+        researchId: researchId,
+        seedKeyword: research.seed_keyword,
+        locationCode: research.location_code,
+        results: converted,
+        updatedAt: Date.now()
+      };
+      localStorage.setItem('keywordResultsData', JSON.stringify(persistData));
+      localStorage.setItem('lastKeywordResultsResearchId', researchId);
     } catch (error) {
       logger.error('Error loading data:', error);
       toast({
