@@ -60,14 +60,23 @@ export default function MyResearch() {
     );
   };
 
-  const handleRowClick = (researchId: string, seedKeyword: string, e: React.MouseEvent) => {
+  const handleRowClick = (researchId: string, seedKeyword: string, querySource: string | null, e: React.MouseEvent) => {
     // Don't navigate if clicking on checkbox
     if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
       return;
     }
     localStorage.setItem('currentResearchId', researchId);
     localStorage.setItem('keywordAnalyzed', seedKeyword);
-    navigate(`/keyword-results?id=${researchId}`);
+    
+    // Route based on query source
+    if (querySource === 'serps') {
+      navigate(`/serp-analysis?keyword=${encodeURIComponent(seedKeyword)}`);
+    } else if (querySource === 'related keyword') {
+      navigate(`/related-keywords?keyword=${encodeURIComponent(seedKeyword)}`);
+    } else {
+      // Default to keyword results for "keyword results" or blank
+      navigate(`/keyword-results?id=${researchId}`);
+    }
   };
 
   const handleNewResearch = () => {
@@ -144,6 +153,7 @@ export default function MyResearch() {
                     />
                   </TableHead>
                   <TableHead>Keyword</TableHead>
+                  <TableHead>Query</TableHead>
                   <TableHead>Results</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Language</TableHead>
@@ -154,7 +164,7 @@ export default function MyResearch() {
                 {research?.map((item) => (
                   <TableRow
                     key={item.id}
-                    onClick={(e) => handleRowClick(item.id, item.seed_keyword, e)}
+                    onClick={(e) => handleRowClick(item.id, item.seed_keyword, (item as any).query_source, e)}
                     className="cursor-pointer hover:bg-accent/50 transition-colors"
                   >
                     <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
@@ -165,6 +175,9 @@ export default function MyResearch() {
                       />
                     </TableCell>
                     <TableCell className="font-medium">{item.seed_keyword}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {(item as any).query_source || ''}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">
                         {item.total_results || 0} results
