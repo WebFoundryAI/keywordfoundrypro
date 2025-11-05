@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getStoredPlanSelection, clearStoredPlanSelection } from '@/lib/planStorage';
 import { logger } from '@/lib/logger';
+import { setAnalyticsExclusion, clearAnalyticsExclusion } from '@/lib/analytics/exclusion';
 
 interface AuthContextType {
   user: User | null;
@@ -97,6 +98,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               .eq('role', 'admin')
               .maybeSingle();
 
+            // Set analytics exclusion based on admin status
+            const isAdmin = !!adminRole;
+            setAnalyticsExclusion(isAdmin);
+            
+            if (isAdmin) {
+              logger.log('Admin user - analytics tracking disabled');
+            }
+
             // Only redirect from specific whitelist paths
             const currentPath = window.location.pathname;
             const shouldRedirect = ['/', '/auth/callback', '/pricing', '/auth/sign-in'].includes(currentPath);
@@ -115,11 +124,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error) {
         logger.error('Error getting session:', error);
       } else {
         logger.log('Initial session:', session?.user?.id);
+        
+        // Re-verify analytics exclusion if user is already signed in
+        if (session?.user) {
+          const { data: adminRole } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+          
+          setAnalyticsExclusion(!!adminRole);
+        }
       }
       setSession(session);
       setUser(session?.user ?? null);
@@ -132,6 +153,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     try {
       setLoading(true);
+      
+      // Clear analytics exclusion
+      clearAnalyticsExclusion();
       
       // Clear all client-side caches and storage
       localStorage.clear();

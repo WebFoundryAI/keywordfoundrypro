@@ -1,4 +1,5 @@
 import Plausible from 'plausible-tracker';
+import { isExcludedFromAnalytics } from './analytics/exclusion';
 
 const isEnabled = import.meta.env.VITE_PLAUSIBLE_ENABLED === 'true';
 const domain = import.meta.env.VITE_PLAUSIBLE_DOMAIN || '';
@@ -11,10 +12,20 @@ const plausible = Plausible({
 
 export const analytics = {
   pageview: () => {
+    // Check exclusion FIRST
+    if (isExcludedFromAnalytics()) {
+      return;
+    }
+    
     if (isEnabled && domain) plausible.trackPageview();
   },
 
   event: (eventName: string, props?: Record<string, string | number>) => {
+    // Check exclusion FIRST
+    if (isExcludedFromAnalytics()) {
+      return;
+    }
+    
     if (isEnabled && domain) plausible.trackEvent(eventName, { props });
   },
 };
