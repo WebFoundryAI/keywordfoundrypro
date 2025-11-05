@@ -8,6 +8,7 @@ import { Download, Search, TrendingUp, DollarSign, Target, ChevronUp, ChevronDow
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatNumber, formatDifficulty, formatCurrency, getDifficultyColor } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -162,6 +163,7 @@ export const KeywordResultsTable = ({
   hideResultsCount = false,
   hideFilteringCaption = false
 }: KeywordResultsTableProps) => {
+  const navigate = useNavigate();
   const [localSearchTerm, setLocalSearchTerm] = useState(externalSearchTerm);
   const [sortBy, setSortBy] = useState<keyof KeywordResult>("searchVolume");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -243,6 +245,12 @@ export const KeywordResultsTable = ({
         <ChevronDown className="w-4 h-4 inline ml-1" />;
     }
     return <ChevronUp className="w-4 h-4 inline ml-1 opacity-30" />;
+  };
+
+  const handleSerpClick = (keyword: string) => {
+    const language = localStorage.getItem('lastLanguageCode') || 'en';
+    const location = locationCode || parseInt(localStorage.getItem('lastLocationCode') || '2840');
+    navigate(`/serp-analysis?keyword=${encodeURIComponent(keyword)}&language=${encodeURIComponent(language)}&location=${encodeURIComponent(location.toString())}`);
   };
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -392,6 +400,9 @@ export const KeywordResultsTable = ({
                       {getSortIcon("keyword")}
                     </div>
                   </TableHead>
+                  <TableHead className="w-14 min-w-[56px]">
+                    SERP
+                  </TableHead>
                   <TableHead
                     className="cursor-pointer hover:bg-muted/50 transition-smooth text-right select-none min-w-[90px]"
                     onClick={() => handleSort("searchVolume")}
@@ -442,6 +453,17 @@ export const KeywordResultsTable = ({
                           <Badge variant="outline" className="text-xs shrink-0">SEED</Badge>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSerpClick(result.keyword)}
+                        className="h-7 px-2 text-xs"
+                        aria-label="View SERP"
+                      >
+                        SERP
+                      </Button>
                     </TableCell>
                     <TableCell className="text-right font-mono">
                       {formatNumber(result.searchVolume)}
