@@ -148,7 +148,8 @@ serve(async (req) => {
         seed_keyword: keyword,
         language_code: languageCode,
         location_code: locationCode,
-        results_limit: limit
+        results_limit: limit,
+        query_source: 'keyword results'
       })
       .select()
       .single();

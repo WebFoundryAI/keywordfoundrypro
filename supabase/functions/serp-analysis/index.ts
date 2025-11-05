@@ -221,7 +221,8 @@ serve(async (req) => {
         location_code: locationCode,
         results_limit: organicResults.length,
         total_results: organicResults.length,
-        api_cost: estimatedCost
+        api_cost: estimatedCost,
+        query_source: 'serps'
       })
       .select()
       .single();

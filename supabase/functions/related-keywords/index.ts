@@ -330,7 +330,8 @@ serve(async (req) => {
           location_code: locationCode,
           results_limit: relatedKeywords.length,
           total_results: relatedKeywords.length,
-          api_cost: estimatedCost
+          api_cost: estimatedCost,
+          query_source: 'related keyword'
         })
         .select()
         .single();

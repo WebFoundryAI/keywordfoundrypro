@@ -465,6 +465,7 @@ export type Database = {
           language_name: string | null
           location_code: number
           location_name: string | null
+          query_source: string | null
           results_limit: number
           seed_keyword: string
           total_results: number | null
@@ -480,6 +481,7 @@ export type Database = {
           language_name?: string | null
           location_code?: number
           location_name?: string | null
+          query_source?: string | null
           results_limit?: number
           seed_keyword: string
           total_results?: number | null
@@ -495,6 +497,7 @@ export type Database = {
           language_name?: string | null
           location_code?: number
           location_name?: string | null
+          query_source?: string | null
           results_limit?: number
           seed_keyword?: string
           total_results?: number | null
