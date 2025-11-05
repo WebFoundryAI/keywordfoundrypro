@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
             // Only redirect from specific whitelist paths
             const currentPath = window.location.pathname;
-            const shouldRedirect = ['/', '/auth/callback', '/pricing'].includes(currentPath);
+            const shouldRedirect = ['/', '/auth/callback', '/pricing', '/auth/sign-in'].includes(currentPath);
             
             if (shouldRedirect) {
               didRedirectRef.current = true;
