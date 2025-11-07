@@ -19,7 +19,8 @@ import {
   ClipboardList,
   TrendingUp,
   Lock,
-  Cookie
+  Cookie,
+  LayoutDashboard
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -35,6 +36,13 @@ export interface NavItem {
 
 // Main header navigation (for ALL authenticated users - admin and non-admin see the same)
 export const headerNav: NavItem[] = [
+  {
+    path: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    description: "Usage dashboard",
+    requiresAuth: true
+  },
   {
     path: "/research",
     label: "Research",

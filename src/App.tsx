@@ -52,6 +52,7 @@ import ProjectMembers from "./pages/ProjectMembers";
 import AdminRoadmap from "./pages/admin/RoadmapAdmin";
 import Billing from "./pages/Billing";
 import Account from "./pages/Account";
+import Dashboard from "./pages/Dashboard";
 import MyResearch from "./pages/MyResearch";
 import Status from "./pages/Status";
 import Changelog from "./pages/Changelog";
@@ -92,6 +93,7 @@ const App = () => (
               <Routes>
                 <Route element={<MainLayout />}>
                   <Route path="/" element={<Index />} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/research" element={<ProtectedRoute><Research /></ProtectedRoute>} />
                   <Route path="/my-research" element={<ProtectedRoute><MyResearch /></ProtectedRoute>} />
                   <Route path="/keyword-results" element={<ProtectedRoute><KeywordResults /></ProtectedRoute>} />
