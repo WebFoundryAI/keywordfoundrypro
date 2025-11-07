@@ -222,15 +222,15 @@ const Pricing = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Keyword Searches</span>
-                      <span className="font-semibold">{formatNumber(plan.keywords_per_month)}/mo</span>
+                      <span className="font-semibold">{formatNumber(plan.keywords_per_month)}{plan.tier !== 'free_trial' && '/mo'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">SERP Analyses</span>
-                      <span className="font-semibold">{formatNumber(plan.serp_analyses_per_month)}/mo</span>
+                      <span className="font-semibold">{formatNumber(plan.serp_analyses_per_month)}{plan.tier !== 'free_trial' && '/mo'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Related Keywords</span>
-                      <span className="font-semibold">{formatNumber(plan.related_keywords_per_month)}/mo</span>
+                      <span className="font-semibold">{formatNumber(plan.related_keywords_per_month)}{plan.tier !== 'free_trial' && '/mo'}</span>
                     </div>
                     {plan.max_saved_projects !== null && (
                       <div className="flex justify-between text-sm">
