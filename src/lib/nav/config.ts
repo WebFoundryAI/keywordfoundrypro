@@ -81,13 +81,6 @@ export const headerNav: NavItem[] = [
     tourId: "competitor-tab"
   },
   {
-    path: "/my-research",
-    label: "My Research",
-    icon: Database,
-    description: "View your research history",
-    requiresAuth: true
-  },
-  {
     path: "/pricing",
     label: "Pricing",
     icon: CreditCard,

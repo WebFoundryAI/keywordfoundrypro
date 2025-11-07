@@ -53,7 +53,6 @@ import AdminRoadmap from "./pages/admin/RoadmapAdmin";
 import Billing from "./pages/Billing";
 import Account from "./pages/Account";
 import Dashboard from "./pages/Dashboard";
-import MyResearch from "./pages/MyResearch";
 import Status from "./pages/Status";
 import Changelog from "./pages/Changelog";
 import AdminStatus from "./pages/admin/StatusAdmin";
@@ -95,7 +94,6 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/research" element={<ProtectedRoute><Research /></ProtectedRoute>} />
-                  <Route path="/my-research" element={<ProtectedRoute><MyResearch /></ProtectedRoute>} />
                   <Route path="/keyword-results" element={<ProtectedRoute><KeywordResults /></ProtectedRoute>} />
                   <Route path="/serp-analysis" element={<ProtectedRoute><SerpAnalysis /></ProtectedRoute>} />
                   <Route path="/related-keywords" element={<ProtectedRoute><RelatedKeywords /></ProtectedRoute>} />

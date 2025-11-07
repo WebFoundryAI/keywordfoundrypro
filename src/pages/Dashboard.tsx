@@ -1,16 +1,89 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 import { UsageProgressBar } from '@/components/UsageProgressBar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from '@/hooks/useSubscription';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { Search, TrendingUp, Link2, AlertCircle, Crown, ArrowUpRight } from 'lucide-react';
+import { Search, TrendingUp, Link2, AlertCircle, Crown, ArrowUpRight, Plus } from 'lucide-react';
+import { useState, useMemo } from "react";
+import { ResearchRow } from "@/types/research";
+import { BulkDeleteToolbar } from "@/components/my-research/BulkDeleteToolbar";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const { subscription, plan, usage, isLoading, keywordsPercentage, serpPercentage, relatedPercentage } = useSubscription();
   const { isAdmin } = useIsAdmin();
+
+  const { data: research, isLoading: isResearchLoading } = useQuery({
+    queryKey: ['my-research', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const { data, error } = await supabase
+        .from('keyword_research')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const rowIds = useMemo(() => research?.map((r) => r.id) ?? [], [research]);
+  const selectedIds = useMemo(() => rowIds.filter((id) => selected[id]), [rowIds, selected]);
+  const allOnPageSelected = rowIds.length > 0 && selectedIds.length === rowIds.length;
+
+  const toggleRow = (id: string, checked: boolean) => {
+    setSelected((s) => ({ ...s, [id]: checked }));
+  };
+
+  const toggleAll = (checked: boolean) => {
+    setSelected((s) => {
+      const next = { ...s };
+      for (const id of rowIds) next[id] = checked;
+      return next;
+    });
+  };
+
+  const handleAfterDelete = (deletedIds: string[]) => {
+    queryClient.setQueryData<ResearchRow[]>(['my-research', user?.id], (old) =>
+      old?.filter((item) => !deletedIds.includes(item.id))
+    );
+  };
+
+  const handleRowClick = (researchId: string, seedKeyword: string, querySource: string | null, e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+      return;
+    }
+    localStorage.setItem('currentResearchId', researchId);
+    localStorage.setItem('keywordAnalyzed', seedKeyword);
+    
+    if (querySource === 'serps') {
+      navigate(`/serp-analysis?keyword=${encodeURIComponent(seedKeyword)}`);
+    } else if (querySource === 'related keyword') {
+      navigate(`/related-keywords?keyword=${encodeURIComponent(seedKeyword)}`);
+    } else {
+      navigate(`/keyword-results?id=${researchId}`);
+    }
+  };
+
+  const handleNewResearch = () => {
+    navigate('/research');
+  };
 
   const isNearLimit = (percentage: number) => percentage >= 80;
   const isOverLimit = (percentage: number) => percentage >= 100;
@@ -30,6 +103,105 @@ export default function Dashboard() {
           Monitor your usage and manage your subscription
         </p>
       </div>
+
+      {/* Research History Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Research History</CardTitle>
+              <CardDescription>
+                {isResearchLoading ? "Loading..." : research?.length === 0
+                  ? "No research sessions yet. Start your first keyword research!"
+                  : `Showing ${research?.length ?? 0} research sessions`
+                }
+              </CardDescription>
+            </div>
+            <Button onClick={handleNewResearch}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Research
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isResearchLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : research?.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">You haven't performed any keyword research yet.</p>
+              <Button onClick={handleNewResearch}>
+                <Plus className="mr-2 h-4 w-4" />
+                Start Your First Research
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allOnPageSelected}
+                      onCheckedChange={(v) => toggleAll(Boolean(v))}
+                      aria-label="Select all on page"
+                    />
+                  </TableHead>
+                  <TableHead>Keyword</TableHead>
+                  <TableHead>Query</TableHead>
+                  <TableHead>Results</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Language</TableHead>
+                  <TableHead>Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {research?.map((item) => (
+                  <TableRow
+                    key={item.id}
+                    onClick={(e) => handleRowClick(item.id, item.seed_keyword, (item as any).query_source, e)}
+                    className="cursor-pointer hover:bg-accent/50 transition-colors"
+                  >
+                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={Boolean(selected[item.id])}
+                        onCheckedChange={(v) => toggleRow(item.id, Boolean(v))}
+                        aria-label="Select row"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{item.seed_keyword}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {(item as any).query_source || ''}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {item.total_results || 0} results
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {item.location_name || 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {item.language_name || 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <BulkDeleteToolbar
+        selectedIds={selectedIds}
+        onClear={() => setSelected({})}
+        onAfterDelete={handleAfterDelete}
+      />
 
       {/* Admin Badge */}
       {isAdmin && (
@@ -200,11 +372,6 @@ export default function Dashboard() {
             <Link to="/profile">
               <Button className="w-full justify-start" variant="outline">
                 Profile Settings
-              </Button>
-            </Link>
-            <Link to="/my-research">
-              <Button className="w-full justify-start" variant="outline">
-                My Research Projects
               </Button>
             </Link>
             <Link to="/account">
