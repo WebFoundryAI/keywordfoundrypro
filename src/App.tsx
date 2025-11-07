@@ -63,6 +63,7 @@ import LegalTerms from "./pages/legal/Terms";
 import LegalPrivacy from "./pages/legal/PrivacyPolicy";
 import LegalContact from "./pages/legal/ContactPage";
 import { CookieBannerGate } from "./components/CookieBannerGate";
+import { TrialExpiredBanner } from "./components/TrialExpiredBanner";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <AnalyticsTracker />
+              <TrialExpiredBanner />
               <Routes>
                 <Route element={<MainLayout />}>
                   <Route path="/" element={<Index />} />
