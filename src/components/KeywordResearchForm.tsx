@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Globe, MapPin, Zap, AlertCircle } from "lucide-react";
+import { Search, Globe, MapPin, Zap } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -72,41 +72,6 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
     includeSerp: false,
   });
   
-  const [spellingSuggestion, setSpellingSuggestion] = useState<string>("");
-  const [showSuggestion, setShowSuggestion] = useState(false);
-
-  // Check for common misspellings and suggest corrections
-  useEffect(() => {
-    if (!formData.keyword.trim() || formData.keyword.length < 3) {
-      setShowSuggestion(false);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        // Use Datamuse API for spelling suggestions (free, no API key needed)
-        const response = await fetch(`https://api.datamuse.com/sug?s=${encodeURIComponent(formData.keyword)}&max=1`);
-        const suggestions = await response.json();
-        
-        if (suggestions.length > 0 && suggestions[0].word.toLowerCase() !== formData.keyword.toLowerCase()) {
-          setSpellingSuggestion(suggestions[0].word);
-          setShowSuggestion(true);
-        } else {
-          setShowSuggestion(false);
-        }
-      } catch (error) {
-        // Silently fail - spell check is optional
-        setShowSuggestion(false);
-      }
-    }, 800); // Wait for user to stop typing
-
-    return () => clearTimeout(timer);
-  }, [formData.keyword]);
-
-  const applySuggestion = () => {
-    setFormData({ ...formData, keyword: spellingSuggestion });
-    setShowSuggestion(false);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,26 +133,6 @@ export const KeywordResearchForm = ({ onSubmit, isLoading }: KeywordResearchForm
               required
               data-tour="keyword-input"
             />
-            {showSuggestion && spellingSuggestion && (
-              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border border-border/50 text-sm">
-                <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Did you mean:</span>
-                <button
-                  type="button"
-                  onClick={applySuggestion}
-                  className="font-medium text-primary hover:underline"
-                >
-                  {spellingSuggestion}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowSuggestion(false)}
-                  className="ml-auto text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Ignore
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-tour="language-select">
