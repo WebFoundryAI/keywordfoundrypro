@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { UsageProgressBar } from '@/components/UsageProgressBar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,11 +80,20 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Usage Overview</CardTitle>
-                  <CardDescription>
-                    Real-time monitoring of your monthly usage limits with visual indicators
-                  </CardDescription>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <CardTitle>{plan?.name || 'Free Trial Plan'}</CardTitle>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={subscription?.status === 'active' ? 'default' : 'secondary'}>
+                        {subscription?.status || 'active'}
+                      </Badge>
+                      {subscription?.is_trial && daysRemaining !== null && (
+                        <span className="text-sm text-muted-foreground">
+                          {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left in trial
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 {!isAdmin && plan && (
                   <Link to="/pricing">
@@ -152,11 +160,6 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-        </div>
-
-        {/* Subscription Status Details */}
-        <div className="md:col-span-2">
-          <SubscriptionStatus />
         </div>
 
         {/* Quick Actions */}
