@@ -889,6 +889,33 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          notification_type: string
+          period_start: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notification_type: string
+          period_start: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notification_type?: string
+          period_start?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_limits: {
         Row: {
           created_at: string
