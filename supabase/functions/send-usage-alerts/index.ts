@@ -14,7 +14,7 @@ interface UsageAlert {
   tier: string;
   usage_type: string;
   used: number;
-  limit: number;
+  usage_limit: number;
   percentage: number;
   period_end: string;
 }
@@ -85,7 +85,7 @@ serve(async (req) => {
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #dc2626;">Usage Alert</h2>
               <p>Hi ${alert.display_name || "there"},</p>
-              <p>You've used <strong>${alert.used} out of ${alert.limit}</strong> ${usageTypeLabel} (${Math.round(alert.percentage)}% of your monthly limit).</p>
+              <p>You've used <strong>${alert.used} out of ${alert.usage_limit}</strong> ${usageTypeLabel} (${Math.round(alert.percentage)}% of your monthly limit).</p>
               
               <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0;">
                 <p style="margin: 0; color: #991b1b;">

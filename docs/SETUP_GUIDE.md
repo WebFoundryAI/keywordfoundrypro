@@ -119,6 +119,75 @@ WHERE tier NOT IN ('free_trial', 'admin');
 
 ---
 
+## 4. Email Notifications for Usage Limits
+
+The system includes automated email alerts when users reach 80% of their usage limits.
+
+### Setup Cron Job (Recommended)
+
+To automatically check usage and send alerts, set up a cron job:
+
+1. **Enable Extensions** (if not already enabled):
+```sql
+-- Enable required extensions for cron jobs
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+```
+
+2. **Create the Cron Job**:
+```sql
+-- Run usage alerts check every hour
+SELECT cron.schedule(
+  'send-usage-alerts-hourly',
+  '0 * * * *', -- Every hour at minute 0
+  $$
+  SELECT net.http_post(
+    url:='https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/send-usage-alerts',
+    headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZoamZmZHpyb2ViZGtibXZjcGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzA0MDgsImV4cCI6MjA3NDcwNjQwOH0.jxNm1b-5oJJTzFFHpmZ1BNYZGb2lJuphDlmY3Si4tHc"}'::jsonb,
+    body:='{}'::jsonb
+  ) as request_id;
+  $$
+);
+```
+
+### Manual Testing
+
+You can manually trigger the alerts edge function from Supabase dashboard:
+- Go to [Edge Functions](https://supabase.com/dashboard/project/vhjffdzroebdkbmvcpgv/functions/send-usage-alerts)
+- Click "Run function"
+
+Or using curl:
+```bash
+curl -X POST https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/send-usage-alerts \
+  -H "Authorization: Bearer YOUR_ANON_KEY" \
+  -H "Content-Type: application/json"
+```
+
+### How It Works
+
+1. **Monitoring**: The `get_users_near_limits()` function checks all active subscriptions
+2. **Threshold**: Alerts trigger when usage reaches 80% of any limit (keywords, SERP, or related)
+3. **Deduplication**: The `usage_notifications` table prevents duplicate emails in the same period
+4. **Admin Exclusion**: Admin users are automatically excluded from alerts
+5. **Email Content**: Users receive clear info about which limit they're approaching and next steps
+
+### View Notification History
+```sql
+-- See all sent notifications
+SELECT 
+  un.sent_at,
+  p.email,
+  un.notification_type,
+  us.tier
+FROM usage_notifications un
+JOIN profiles p ON p.user_id = un.user_id
+JOIN user_subscriptions us ON us.user_id = un.user_id
+ORDER BY un.sent_at DESC
+LIMIT 50;
+```
+
+---
+
 ## Testing Checklist
 
 ### Test New User Flow:

@@ -1113,6 +1113,20 @@ export type Database = {
           trial_ends_at: string
         }[]
       }
+      get_users_near_limits: {
+        Args: never
+        Returns: {
+          display_name: string
+          email: string
+          percentage: number
+          period_end: string
+          tier: string
+          usage_limit: number
+          usage_type: string
+          used: number
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
