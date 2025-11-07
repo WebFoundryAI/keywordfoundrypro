@@ -101,17 +101,40 @@ const AdminSubscriptions = () => {
   });
 
   const updateSubscriptionMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+    mutationFn: async ({ subscription, updates }: { subscription: Subscription; updates: any }) => {
+      // Update the subscription
       const { error } = await supabase
         .from('user_subscriptions')
         .update(updates)
-        .eq('id', id);
+        .eq('id', subscription.id);
       
       if (error) throw error;
+
+      // Send notification email
+      try {
+        const { data: currentUser } = await supabase.auth.getUser();
+        
+        await supabase.functions.invoke('send-subscription-notification', {
+          body: {
+            userId: subscription.user_id,
+            oldTier: subscription.tier,
+            newTier: updates.tier || subscription.tier,
+            oldStatus: subscription.status,
+            newStatus: updates.status || subscription.status,
+            changedBy: currentUser.user?.email || 'Admin'
+          }
+        });
+        
+        console.log('Notification email sent successfully');
+      } catch (emailError: any) {
+        console.error('Failed to send notification email:', emailError);
+        // Don't fail the whole operation if email fails
+        toast.info('Subscription updated, but notification email failed to send');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-subscriptions'] });
-      toast.success('Subscription updated successfully');
+      toast.success('Subscription updated and user notified');
       setEditingSubscription(null);
     },
     onError: (error: any) => {
@@ -145,7 +168,7 @@ const AdminSubscriptions = () => {
     }
 
     updateSubscriptionMutation.mutate({
-      id: editingSubscription.id,
+      subscription: editingSubscription,
       updates
     });
   };
