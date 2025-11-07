@@ -86,6 +86,12 @@ export const headerNav: NavItem[] = [
     icon: Database,
     description: "View your research history",
     requiresAuth: true
+  },
+  {
+    path: "/pricing",
+    label: "Pricing",
+    icon: CreditCard,
+    description: "View pricing plans"
   }
   // Removed: Docs, Status, Changelog, Roadmap (admins see same nav as regular users)
 ];
