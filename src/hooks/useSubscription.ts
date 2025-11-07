@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
+import { resolveUserPlan } from '@/lib/billing/plan';
+import type { PlanId } from '@/lib/billing/entitlements';
 
 interface Subscription {
   tier: 'free_trial' | 'starter' | 'professional' | 'enterprise' | 'admin';
@@ -35,8 +37,31 @@ interface Usage {
 export const useSubscription = () => {
   const { user } = useAuth();
 
+  // Helper to map PlanId to database tier
+  const mapPlanIdToDbTier = (planId: PlanId): string => {
+    const mapping: Record<PlanId, string> = {
+      'free': 'free_trial',
+      'trial': 'free_trial', 
+      'pro': 'professional',
+      'enterprise': 'enterprise'
+    };
+    return mapping[planId] || planId;
+  };
+
+  // First, get the effective tier (with admin override)
+  const { data: effectiveTier, isLoading: tierLoading } = useQuery({
+    queryKey: ['effective-tier', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      // resolveUserPlan checks admin status and returns 'pro' for admins
+      const tier = await resolveUserPlan(user.id, user.user_metadata);
+      return tier;
+    },
+    enabled: !!user,
+  });
+
   const { data: subscription, isLoading: subscriptionLoading } = useQuery({
-    queryKey: ['subscription', user?.id],
+    queryKey: ['subscription', user?.id, effectiveTier],
     queryFn: async () => {
       if (!user) return null;
 
@@ -45,26 +70,37 @@ export const useSubscription = () => {
       });
 
       if (error) throw error;
-      return data?.[0] as Subscription | null;
+      const sub = data?.[0] as Subscription | null;
+      
+      // Override the tier with mapped effectiveTier if available (for admin users)
+      if (sub && effectiveTier) {
+        const dbTier = mapPlanIdToDbTier(effectiveTier);
+        return { ...sub, tier: dbTier as any };
+      }
+      
+      return sub;
     },
-    enabled: !!user,
+    enabled: !!user && effectiveTier !== undefined,
   });
 
   const { data: plan, isLoading: planLoading } = useQuery({
-    queryKey: ['subscription-plan', subscription?.tier],
+    queryKey: ['subscription-plan', effectiveTier],
     queryFn: async () => {
-      if (!subscription?.tier) return null;
+      if (!effectiveTier) return null;
+
+      // Map internal PlanId to database tier
+      const dbTier = mapPlanIdToDbTier(effectiveTier) as 'free_trial' | 'starter' | 'professional' | 'enterprise' | 'admin';
 
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
-        .eq('tier', subscription.tier)
+        .eq('tier', dbTier)
         .single();
 
       if (error) throw error;
       return data as SubscriptionPlan;
     },
-    enabled: !!subscription?.tier,
+    enabled: !!effectiveTier,
   });
 
   const { data: usage, isLoading: usageLoading } = useQuery({
@@ -95,7 +131,7 @@ export const useSubscription = () => {
     subscription,
     plan,
     usage,
-    isLoading: subscriptionLoading || planLoading || usageLoading,
+    isLoading: tierLoading || subscriptionLoading || planLoading || usageLoading,
     keywordsPercentage: plan && usage 
       ? getUsagePercentage(usage.keywords_used || 0, plan.keywords_per_month)
       : 0,
