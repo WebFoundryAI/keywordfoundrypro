@@ -5,6 +5,7 @@ import { Users, Search, TrendingUp, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { TriggerHealthMonitor } from "@/components/admin/TriggerHealthMonitor";
 
 export default function AdminDashboard() {
   const queryClient = useQueryClient();
@@ -130,23 +131,27 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cache Management</CardTitle>
-          <CardDescription>
-            Competitor analysis cache stores results for 24 hours. Current cache version: v2
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Cached entries:</span>
-            <span className="font-semibold">{stats?.cacheEntries ?? 0}</span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Clear cache to force fresh data fetches. Old cache entries (v1) are automatically ignored.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <TriggerHealthMonitor />
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Cache Management</CardTitle>
+            <CardDescription>
+              Competitor analysis cache stores results for 24 hours. Current cache version: v2
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Cached entries:</span>
+              <span className="font-semibold">{stats?.cacheEntries ?? 0}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Clear cache to force fresh data fetches. Old cache entries (v1) are automatically ignored.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

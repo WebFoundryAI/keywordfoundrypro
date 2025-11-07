@@ -859,6 +859,36 @@ export type Database = {
         }
         Relationships: []
       }
+      trigger_health_logs: {
+        Row: {
+          checked_at: string
+          checked_by: string | null
+          id: string
+          status: string
+          table_name: string
+          table_schema: string
+          trigger_name: string
+        }
+        Insert: {
+          checked_at?: string
+          checked_by?: string | null
+          id?: string
+          status: string
+          table_name: string
+          table_schema: string
+          trigger_name: string
+        }
+        Update: {
+          checked_at?: string
+          checked_by?: string | null
+          id?: string
+          status?: string
+          table_name?: string
+          table_schema?: string
+          trigger_name?: string
+        }
+        Relationships: []
+      }
       user_limits: {
         Row: {
           created_at: string
@@ -1010,6 +1040,16 @@ export type Database = {
       can_user_perform_action: {
         Args: { action_type: string; user_id_param: string }
         Returns: boolean
+      }
+      check_critical_triggers: {
+        Args: never
+        Returns: {
+          status: string
+          table_name: string
+          table_schema: string
+          trigger_exists: boolean
+          trigger_name: string
+        }[]
       }
       delete_old_system_logs: { Args: never; Returns: undefined }
       delete_user_completely: {
