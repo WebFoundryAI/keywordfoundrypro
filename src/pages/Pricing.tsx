@@ -180,15 +180,32 @@ const Pricing = () => {
             return (
               <Card 
                 key={plan.id} 
-                className={`relative ${plan.tier === 'professional' ? 'border-primary shadow-lg scale-105' : ''}`}
+                className={`relative ${
+                  isCurrentPlan 
+                    ? 'border-primary border-2 shadow-lg' 
+                    : plan.tier === 'professional' 
+                    ? 'border-primary shadow-lg scale-105' 
+                    : ''
+                }`}
               >
-                {plan.tier === 'professional' && (
+                {isCurrentPlan && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-primary text-primary-foreground">Your Current Plan</Badge>
+                  </div>
+                )}
+                {!isCurrentPlan && plan.tier === 'professional' && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                     <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
                   </div>
                 )}
                 
                 <CardHeader>
+                  <div className="flex items-center justify-between mb-2">
+                    <CardTitle>{plan.name}</CardTitle>
+                    {isCurrentPlan && (
+                      <Badge variant="outline" className="border-primary text-primary">Active</Badge>
+                    )}
+                  </div>
                   <CardDescription className="text-3xl font-bold mt-2" aria-label={displayPrice === 0 ? '7-day free trial' : undefined}>
                     {displayPrice === 0 ? (
                       '7-day free trial'
