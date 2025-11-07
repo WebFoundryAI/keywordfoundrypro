@@ -226,22 +226,16 @@ export const adminNav: NavItem[] = [
 // Footer navigation (public links)
 export const footerNav: NavItem[] = [
   {
-    path: "/terms",
-    label: "Terms",
+    path: "/about",
+    label: "About",
     icon: FileText,
-    description: "Terms of Service"
+    description: "About us"
   },
   {
-    path: "/privacy",
-    label: "Privacy",
-    icon: Shield,
-    description: "Privacy Policy"
-  },
-  {
-    path: "/contact",
-    label: "Contact",
-    icon: MessageSquare,
-    description: "Contact us"
+    path: "/roadmap",
+    label: "Roadmap",
+    icon: Map,
+    description: "Product roadmap"
   },
   {
     path: "/status",
@@ -256,10 +250,28 @@ export const footerNav: NavItem[] = [
     description: "Updates"
   },
   {
-    path: "/docs",
+    path: "/docs/troubleshooting",
     label: "Docs",
     icon: BookOpen,
     description: "Documentation"
+  },
+  {
+    path: "/legal/terms",
+    label: "Terms",
+    icon: FileText,
+    description: "Terms of Service"
+  },
+  {
+    path: "/legal/privacy",
+    label: "Privacy",
+    icon: Shield,
+    description: "Privacy Policy"
+  },
+  {
+    path: "/legal/contact",
+    label: "Contact",
+    icon: MessageSquare,
+    description: "Contact us"
   }
 ];
 
