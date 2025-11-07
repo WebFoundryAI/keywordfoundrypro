@@ -106,13 +106,6 @@ export const accountNav: NavItem[] = [
     requiresAuth: true
   },
   {
-    path: "/billing",
-    label: "Billing",
-    icon: CreditCard,
-    description: "Manage billing",
-    requiresAuth: true
-  },
-  {
     path: "/privacy-settings",
     label: "Privacy",
     icon: Lock,
