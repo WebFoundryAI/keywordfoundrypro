@@ -3,8 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
-  ChevronLeft,
-  ChevronRight,
   LogOut,
   LogIn,
   UserPlus,
@@ -81,40 +79,9 @@ export function AppSidebar() {
   const { toast } = useToast();
   const { counts } = useNotificationCounts();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isPinned, setIsPinned] = useState(true); // Default to pinned/open
-  const [isHovering, setIsHovering] = useState(false);
 
   const isExpanded = state === "expanded";
   const isCollapsed = state === "collapsed";
-
-  // Load pinned state from localStorage
-  useEffect(() => {
-    const savedPinned = localStorage.getItem("sidebar-pinned");
-    if (savedPinned !== null) {
-      setIsPinned(savedPinned === "true");
-      setOpen(savedPinned === "true");
-    } else {
-      // If no saved state, default to pinned/open
-      setIsPinned(true);
-      setOpen(true);
-      localStorage.setItem("sidebar-pinned", "true");
-    }
-  }, [setOpen]);
-
-  // Handle hover expand when not pinned
-  useEffect(() => {
-    if (!isMobile && !isPinned) {
-      setOpen(isHovering);
-    }
-  }, [isHovering, isPinned, isMobile, setOpen]);
-
-  // Save pinned state to localStorage
-  const togglePin = () => {
-    const newPinned = !isPinned;
-    setIsPinned(newPinned);
-    setOpen(newPinned);
-    localStorage.setItem("sidebar-pinned", String(newPinned));
-  };
 
   const handleSignOut = async () => {
     try {
@@ -165,8 +132,6 @@ export function AppSidebar() {
     <Sidebar
       collapsible="icon"
       className="border-r border-border"
-      onMouseEnter={() => !isMobile && setIsHovering(true)}
-      onMouseLeave={() => !isMobile && setIsHovering(false)}
     >
       <SidebarHeader className="border-b border-border">
         <div className="flex items-center justify-between px-2 py-3">
@@ -191,20 +156,6 @@ export function AppSidebar() {
               </div>
             )}
           </Link>
-          {isExpanded && !isMobile && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={togglePin}
-            >
-              {isPinned ? (
-                <ChevronLeft className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
-          )}
         </div>
 
         {isExpanded && (
