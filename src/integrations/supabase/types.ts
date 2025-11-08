@@ -1156,6 +1156,20 @@ export type Database = {
         Args: { p_min_role?: string; p_project_id: string; p_user_id: string }
         Returns: boolean
       }
+      preview_non_admin_users_for_deletion: {
+        Args: never
+        Returns: {
+          cluster_count: number
+          competitor_analysis_count: number
+          created_at: string
+          display_name: string
+          email: string
+          export_count: number
+          keyword_research_count: number
+          snapshot_count: number
+          user_id: string
+        }[]
+      }
       purge_soft_deleted_entries: {
         Args: never
         Returns: {

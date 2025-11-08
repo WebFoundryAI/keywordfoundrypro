@@ -18,6 +18,7 @@ export default function AdminUsers() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false);
   const [purgeConfirmOpen, setPurgeConfirmOpen] = useState(false);
+  const [previewUsers, setPreviewUsers] = useState<any[]>([]);
 
   const { data: users, isLoading, refetch } = useQuery({
     queryKey: ['admin-users'],
@@ -61,6 +62,21 @@ export default function AdminUsers() {
   const handleUserDeleted = () => {
     refetch();
   };
+
+  const previewDeletionMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('preview_non_admin_users_for_deletion');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      setPreviewUsers(data || []);
+      setDeleteAllConfirmOpen(true);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to preview users: ${error.message}`);
+    }
+  });
 
   const deleteAllNonAdminsMutation = useMutation({
     mutationFn: async () => {
@@ -144,11 +160,11 @@ export default function AdminUsers() {
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
               variant="destructive"
-              onClick={() => setDeleteAllConfirmOpen(true)}
-              disabled={deleteAllNonAdminsMutation.isPending}
+              onClick={() => previewDeletionMutation.mutate()}
+              disabled={previewDeletionMutation.isPending || deleteAllNonAdminsMutation.isPending}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete All Non-Admin Users
+              {previewDeletionMutation.isPending ? 'Loading Preview...' : 'Delete All Non-Admin Users'}
             </Button>
             
             <Button
@@ -251,26 +267,89 @@ export default function AdminUsers() {
         onUserDeleted={handleUserDeleted}
       />
 
-      {/* Delete All Confirmation Dialog */}
-      <AlertDialog open={deleteAllConfirmOpen} onOpenChange={setDeleteAllConfirmOpen}>
-        <AlertDialogContent>
+      {/* Delete All Confirmation Dialog with Preview */}
+      <AlertDialog open={deleteAllConfirmOpen} onOpenChange={(open) => {
+        setDeleteAllConfirmOpen(open);
+        if (!open) setPreviewUsers([]);
+      }}>
+        <AlertDialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete All Non-Admin Users?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p className="font-bold text-destructive">
-                This will permanently delete ALL non-admin users and their data including:
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>User profiles and accounts</li>
-                <li>All keyword research data</li>
-                <li>Competitor analysis reports</li>
-                <li>Clusters and exports</li>
-                <li>Project snapshots and comments</li>
-                <li>Usage statistics and subscriptions</li>
-              </ul>
-              <p className="font-bold mt-4">
-                This action CANNOT be undone. Only admin users will remain.
-              </p>
+            <AlertDialogTitle>Delete {previewUsers.length} Non-Admin User(s)?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <Alert variant="destructive">
+                <AlertTitle>⚠️ Critical Warning</AlertTitle>
+                <AlertDescription>
+                  This will permanently delete all data for the following users. This action CANNOT be undone.
+                </AlertDescription>
+              </Alert>
+
+              {previewUsers.length === 0 ? (
+                <p className="text-center py-4 text-muted-foreground">
+                  No non-admin users found to delete.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead className="text-right">Searches</TableHead>
+                          <TableHead className="text-right">Analyses</TableHead>
+                          <TableHead className="text-right">Clusters</TableHead>
+                          <TableHead className="text-right">Exports</TableHead>
+                          <TableHead className="text-right">Snapshots</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {previewUsers.map((user) => (
+                          <TableRow key={user.user_id}>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="font-medium">{user.display_name || 'No name'}</div>
+                                <div className="text-xs text-muted-foreground">{user.email}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  Created: {new Date(user.created_at).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="secondary">{user.keyword_research_count}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="secondary">{user.competitor_analysis_count}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="secondary">{user.cluster_count}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="secondary">{user.export_count}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="secondary">{user.snapshot_count}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div className="bg-muted p-4 rounded-lg space-y-2">
+                    <p className="font-semibold text-sm">Data to be deleted for each user:</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                      <li>User profile and account</li>
+                      <li>All keyword research and results</li>
+                      <li>Competitor analysis reports</li>
+                      <li>AI reports and insights</li>
+                      <li>Clusters and exports</li>
+                      <li>Project snapshots and comments</li>
+                      <li>Project shares and research spaces</li>
+                      <li>Usage statistics and subscriptions</li>
+                      <li>User roles and limits</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -278,9 +357,9 @@ export default function AdminUsers() {
             <AlertDialogAction
               onClick={() => deleteAllNonAdminsMutation.mutate()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteAllNonAdminsMutation.isPending}
+              disabled={deleteAllNonAdminsMutation.isPending || previewUsers.length === 0}
             >
-              {deleteAllNonAdminsMutation.isPending ? 'Deleting...' : 'Delete All Non-Admins'}
+              {deleteAllNonAdminsMutation.isPending ? 'Deleting...' : `Delete ${previewUsers.length} User(s)`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
