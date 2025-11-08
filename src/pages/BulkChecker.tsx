@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +31,6 @@ const BulkChecker = () => {
   const [keywords, setKeywords] = useState("");
   const [location, setLocation] = useState("United Kingdom");
   const [language, setLanguage] = useState("English");
-  const [sandbox, setSandbox] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<KeywordResult[]>([]);
   const [filterText, setFilterText] = useState("");
@@ -125,8 +123,7 @@ const BulkChecker = () => {
         body: {
           keywords: keywordList,
           location,
-          language,
-          sandbox
+          language
         }
       });
 
@@ -326,17 +323,6 @@ const BulkChecker = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="sandbox"
-              checked={sandbox}
-              onCheckedChange={setSandbox}
-            />
-            <Label htmlFor="sandbox" className="cursor-pointer">
-              Sandbox Mode (Test with free credits)
-            </Label>
           </div>
 
           <Button
