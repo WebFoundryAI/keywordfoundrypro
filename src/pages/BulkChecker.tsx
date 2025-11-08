@@ -20,6 +20,14 @@ const BulkChecker = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<KeywordResult[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    volumeMin: null as number | null,
+    volumeMax: null as number | null,
+    difficultyMin: null as number | null,
+    difficultyMax: null as number | null,
+    cpcMin: null as number | null,
+    intent: null as string | null,
+  });
   
   const { toast } = useToast();
   const { user, loading } = useAuth();
@@ -332,13 +340,45 @@ const BulkChecker = () => {
           </div>
           
           <KeywordResultsTable
-            results={results}
+            results={results.filter(r => {
+              if (searchTerm && !r.keyword.toLowerCase().includes(searchTerm.toLowerCase())) {
+                return false;
+              }
+              if (filters.volumeMin && (r.searchVolume || 0) < filters.volumeMin) {
+                return false;
+              }
+              if (filters.volumeMax && (r.searchVolume || 0) > filters.volumeMax) {
+                return false;
+              }
+              if (filters.difficultyMin && (r.difficulty || 0) < filters.difficultyMin) {
+                return false;
+              }
+              if (filters.difficultyMax && (r.difficulty || 0) > filters.difficultyMax) {
+                return false;
+              }
+              if (filters.cpcMin && (r.cpc || 0) < filters.cpcMin) {
+                return false;
+              }
+              if (filters.intent && r.intent?.toLowerCase() !== filters.intent.toLowerCase()) {
+                return false;
+              }
+              return true;
+            })}
             totalCount={results.length}
             searchTerm={searchTerm}
             seedKeyword={null}
             keywordAnalyzed={null}
             onSearchChange={setSearchTerm}
-            onFiltersChange={() => {}}
+            onFiltersChange={(newFilters) => {
+              setFilters({
+                volumeMin: newFilters.volumeMin ? (typeof newFilters.volumeMin === 'string' ? parseInt(newFilters.volumeMin) : newFilters.volumeMin) : null,
+                volumeMax: newFilters.volumeMax ? (typeof newFilters.volumeMax === 'string' ? parseInt(newFilters.volumeMax) : newFilters.volumeMax) : null,
+                difficultyMin: newFilters.difficultyMin ? (typeof newFilters.difficultyMin === 'string' ? parseInt(newFilters.difficultyMin) : newFilters.difficultyMin) : null,
+                difficultyMax: newFilters.difficultyMax ? (typeof newFilters.difficultyMax === 'string' ? parseInt(newFilters.difficultyMax) : newFilters.difficultyMax) : null,
+                cpcMin: newFilters.cpcMin ? (typeof newFilters.cpcMin === 'string' ? parseFloat(newFilters.cpcMin) : newFilters.cpcMin) : null,
+                intent: newFilters.intent ? String(newFilters.intent) : null,
+              });
+            }}
             locationCode={2826}
             onExport={handleExport}
           />
