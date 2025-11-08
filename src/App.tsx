@@ -17,6 +17,7 @@ import Research from "./pages/Research";
 import KeywordResults from "./pages/KeywordResults";
 import SerpAnalysis from "./pages/SerpAnalysis";
 import RelatedKeywords from "./pages/RelatedKeywords";
+import BulkChecker from "./pages/BulkChecker";
 import CompetitorAnalyzer from "./pages/CompetitorAnalyzer";
 import DemoCompetitorAnalyzer from "./pages/DemoCompetitorAnalyzer";
 import SignIn from "./pages/SignIn";
@@ -97,6 +98,7 @@ const App = () => (
                   <Route path="/keyword-results" element={<ProtectedRoute><KeywordResults /></ProtectedRoute>} />
                   <Route path="/serp-analysis" element={<ProtectedRoute><SerpAnalysis /></ProtectedRoute>} />
                   <Route path="/related-keywords" element={<ProtectedRoute><RelatedKeywords /></ProtectedRoute>} />
+                  <Route path="/bulk-checker" element={<ProtectedRoute><BulkChecker /></ProtectedRoute>} />
                   <Route path="/competitor-analyzer" element={<ProtectedRoute><CompetitorAnalyzer /></ProtectedRoute>} />
                   <Route path="/demo/competitor" element={<DemoCompetitorAnalyzer />} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

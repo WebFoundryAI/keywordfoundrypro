@@ -20,7 +20,8 @@ import {
   TrendingUp,
   Lock,
   Cookie,
-  LayoutDashboard
+  LayoutDashboard,
+  ListChecks
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -70,6 +71,13 @@ export const headerNav: NavItem[] = [
     label: "Related",
     icon: TrendingUp,
     description: "Related keywords",
+    requiresAuth: true
+  },
+  {
+    path: "/bulk-checker",
+    label: "Bulk Checker",
+    icon: ListChecks,
+    description: "Bulk keyword checker",
     requiresAuth: true
   },
   {
