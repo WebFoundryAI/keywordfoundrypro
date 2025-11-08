@@ -9,7 +9,7 @@ export const MainLayout = () => {
   const { user } = useAuth();
   
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-background">
         {user && <AppSidebar />}
         <SidebarInset className="flex flex-col">

@@ -224,7 +224,70 @@ export function AppSidebar() {
 
       <SidebarContent>
         <ScrollArea className="flex-1">
+          {/* Account */}
+          {visibleAccount.length > 0 && (
+            <SidebarGroup>
+              {isExpanded && (
+                <SidebarGroupLabel>Account</SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {visibleAccount.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.path;
+                    const notificationCount = getNotificationCount(item.path);
+                    const isSignOut = item.path === '/sign-out';
+
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton
+                          asChild={!isSignOut}
+                          isActive={!isSignOut && isActive}
+                          tooltip={isCollapsed ? item.label : undefined}
+                          onClick={isSignOut ? handleSignOut : undefined}
+                          className={isSignOut ? "cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10" : ""}
+                        >
+                          {isSignOut ? (
+                            <div className="flex items-center w-full">
+                              <Icon className="h-4 w-4" />
+                              {isExpanded && (
+                                <span className="flex-1">{item.label}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <Link to={item.path} className="relative">
+                              <Icon className="h-4 w-4" />
+                              {isExpanded && (
+                                <>
+                                  <span className="flex-1">{item.label}</span>
+                                  {notificationCount > 0 && (
+                                    <Badge
+                                      variant="destructive"
+                                      className="ml-auto h-5 min-w-5 px-1 text-xs flex items-center justify-center"
+                                    >
+                                      {notificationCount > 99 ? '99+' : notificationCount}
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+                              {isCollapsed && notificationCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full text-[10px] flex items-center justify-center font-semibold">
+                                  {notificationCount > 9 ? '9+' : notificationCount}
+                                </span>
+                              )}
+                            </Link>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
           {/* Core Tools */}
+          <SidebarSeparator />
           <SidebarGroup>
             {isExpanded && (
               <SidebarGroupLabel>Core Tools</SidebarGroupLabel>
