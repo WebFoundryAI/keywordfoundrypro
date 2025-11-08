@@ -249,7 +249,7 @@ export default function SignUp() {
         {/* Sign In Link */}
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{' '}
-          <Link to="/auth/sign-in" className="text-blue-600 hover:text-blue-700 hover:underline font-medium">
+          <Link to="/" className="text-blue-600 hover:text-blue-700 hover:underline font-medium">
             Sign in
           </Link>
         </p>

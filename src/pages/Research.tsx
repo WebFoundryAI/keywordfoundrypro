@@ -19,7 +19,7 @@ const Research = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth/sign-in');
+      navigate('/');
     }
   }, [user, loading, navigate]);
 
@@ -30,7 +30,7 @@ const Research = () => {
         description: "Please sign in to perform keyword research.",
         variant: "destructive",
       });
-      navigate('/auth/sign-in');
+      navigate('/');
       return;
     }
 
@@ -51,7 +51,7 @@ const Research = () => {
         description: "Your session has expired. Please sign in again.",
         variant: "destructive",
       });
-      navigate('/auth/sign-in');
+      navigate('/');
       return;
     }
 

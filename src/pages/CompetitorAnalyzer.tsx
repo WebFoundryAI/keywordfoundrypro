@@ -230,9 +230,11 @@ export default function CompetitorAnalyzer() {
       setErrorAlert({
         request_id: 'auth-check',
         stage: 'auth',
-        message: 'Please sign in to use the Competitor Analyzer. Click here to go to the sign in page.',
+        message: 'Please sign in to use the Competitor Analyzer.',
         warnings: []
       });
+      navigate('/');
+
       return;
     }
 
@@ -961,7 +963,7 @@ export default function CompetitorAnalyzer() {
               </div>
               {errorAlert.stage === 'auth' && (
                 <Button 
-                  onClick={() => navigate('/auth/sign-in')} 
+                  onClick={() => navigate('/')} 
                   variant="outline"
                   className="mt-2"
                 >

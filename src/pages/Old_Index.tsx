@@ -34,7 +34,7 @@ const Index = () => {
           </p>
           <Button
             size="lg"
-            onClick={() => navigate(user ? '/research' : '/auth/sign-in')}
+            onClick={() => navigate(user ? '/research' : '/')}
             className="px-8 py-6 text-base font-medium hover-lift"
           >
             Get Started Now
@@ -98,7 +98,7 @@ const Index = () => {
           <Button
             size="lg"
             variant="secondary"
-            onClick={() => navigate(user ? '/research' : '/auth/sign-in')}
+            onClick={() => navigate(user ? '/research' : '/')}
             className="px-8 py-6 text-base font-medium hover-lift"
           >
             Start Your Research

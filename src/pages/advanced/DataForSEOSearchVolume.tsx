@@ -31,7 +31,7 @@ const DataForSEOSearchVolume = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth/sign-in');
+      navigate('/');
     }
   }, [user, loading, navigate]);
 
@@ -54,7 +54,7 @@ const DataForSEOSearchVolume = () => {
         description: "Please sign in to use this feature.",
         variant: "destructive",
       });
-      navigate('/auth/sign-in');
+      navigate('/');
       return;
     }
 

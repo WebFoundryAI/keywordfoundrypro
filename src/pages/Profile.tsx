@@ -72,7 +72,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth/sign-in');
+      navigate('/');
     }
   }, [user, navigate]);
 

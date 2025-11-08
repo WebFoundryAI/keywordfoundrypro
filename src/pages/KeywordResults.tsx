@@ -73,7 +73,7 @@ const KeywordResults = () => {
     if (authLoading) return;
     
     if (!user) {
-      navigate('/auth/sign-in');
+      navigate('/');
       return;
     }
 

@@ -30,7 +30,7 @@ export default function PrivacySettings() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth/sign-in');
+      navigate('/');
     }
   }, [user, navigate]);
 

@@ -123,7 +123,7 @@ export default function UpdatePassword() {
             <p className="text-sm text-destructive">{error}</p>
           </div>
           <Button
-            onClick={() => navigate("/auth/sign-in")}
+            onClick={() => navigate("/")}
             className="w-full"
           >
             Back to Sign In

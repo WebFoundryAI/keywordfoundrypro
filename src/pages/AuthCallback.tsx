@@ -11,7 +11,7 @@ const AuthCallback = () => {
       // AuthProvider handles the redirect logic in onAuthStateChange
       // This page just prevents 404 during OAuth callback processing
       if (!user) {
-        navigate('/auth/sign-in', { replace: true });
+        navigate('/', { replace: true });
       }
     }
   }, [user, loading, navigate]);

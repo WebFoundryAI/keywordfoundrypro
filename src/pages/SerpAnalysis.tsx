@@ -86,7 +86,7 @@ const SerpAnalysis = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth/sign-in');
+      navigate('/');
     }
   }, [user, loading, navigate]);
 

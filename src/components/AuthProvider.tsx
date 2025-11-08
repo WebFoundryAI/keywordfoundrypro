@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { getStoredPlanSelection, clearStoredPlanSelection } from '@/lib/planStorage';
 import { logger } from '@/lib/logger';
 import { setAnalyticsExclusion, clearAnalyticsExclusion } from '@/lib/analytics/exclusion';
-import { shouldRemainLoggedIn, markSessionActive, clearRememberMePreferences } from '@/lib/auth/rememberMe';
 
 interface AuthContextType {
   user: User | null;
@@ -146,7 +145,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
             // Only redirect from specific whitelist paths
             const currentPath = window.location.pathname;
-            const shouldRedirect = ['/', '/auth/callback', '/auth/sign-in'].includes(currentPath);
+            const shouldRedirect = ['/', '/auth/callback'].includes(currentPath);
             
             if (shouldRedirect) {
               didRedirectRef.current = true;
@@ -168,24 +167,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       } else {
         logger.log('Initial session:', session?.user?.id);
         
-        // Check Remember Me preference
+        // Re-verify analytics exclusion if user is already signed in
         if (session?.user) {
-          const shouldStayLoggedIn = shouldRemainLoggedIn();
-          
-          if (!shouldStayLoggedIn) {
-            // User didn't check Remember Me and this is a fresh browser session
-            logger.log('Remember Me not enabled - signing out');
-            await supabase.auth.signOut();
-            setSession(null);
-            setUser(null);
-            setLoading(false);
-            return;
-          }
-          
-          // Mark session as active
-          markSessionActive();
-          
-          // Re-verify analytics exclusion if user is already signed in
           const { data: adminRole } = await supabase
             .from('user_roles')
             .select('role')
@@ -210,9 +193,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Clear analytics exclusion
       clearAnalyticsExclusion();
-      
-      // Clear Remember Me preferences
-      clearRememberMePreferences();
       
       // Clear all client-side caches and storage
       localStorage.clear();

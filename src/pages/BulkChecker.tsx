@@ -47,7 +47,7 @@ const BulkChecker = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth/sign-in');
+      navigate('/');
     }
   }, [user, loading, navigate]);
 
@@ -58,7 +58,7 @@ const BulkChecker = () => {
         description: "Please sign in to use the bulk checker.",
         variant: "destructive",
       });
-      navigate('/auth/sign-in');
+      navigate('/');
       return;
     }
 
@@ -104,7 +104,7 @@ const BulkChecker = () => {
           description: "Your session has expired. Please sign in again.",
           variant: "destructive",
         });
-        navigate('/auth/sign-in');
+        navigate('/');
         return;
       }
 

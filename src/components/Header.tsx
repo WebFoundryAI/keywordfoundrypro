@@ -23,7 +23,7 @@ export const Header = ({ user }: HeaderProps) => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/auth/sign-in');
+      navigate('/');
     } catch (error) {
       toast({
         title: "Error signing out",
@@ -70,7 +70,7 @@ export const Header = ({ user }: HeaderProps) => {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/auth/sign-in')}>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
                   Log In
                 </Button>
                 <Button size="sm" onClick={() => navigate('/auth/sign-up')}>

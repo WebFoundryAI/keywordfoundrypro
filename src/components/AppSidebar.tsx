@@ -86,7 +86,7 @@ export function AppSidebar() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate("/auth/sign-in");
+      navigate("/");
     } catch (error) {
       toast({
         title: "Error signing out",

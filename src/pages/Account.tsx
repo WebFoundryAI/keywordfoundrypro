@@ -137,7 +137,7 @@ export default function Account() {
           description: 'Your account and data have been deleted. You will be signed out.',
         });
         // User is already signed out by deleteUserAccount
-        setTimeout(() => navigate('/auth/sign-in'), 2000);
+        setTimeout(() => navigate('/'), 2000);
       } else {
         toast({
           title: 'Deletion Failed',

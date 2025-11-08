@@ -33,7 +33,7 @@ const SearchVolumeAdvanced = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth/sign-in');
+      navigate('/');
     }
   }, [user, loading, navigate]);
 
@@ -44,7 +44,7 @@ const SearchVolumeAdvanced = () => {
         description: "Please sign in to use this feature.",
         variant: "destructive",
       });
-      navigate('/auth/sign-in');
+      navigate('/');
       return;
     }
 
