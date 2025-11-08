@@ -24,9 +24,9 @@ const STRIPE_ENABLED = import.meta.env.VITE_STRIPE_ENABLED === 'true';
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
   const [effectivePlan, setEffectivePlan] = useState<PlanId | null>(null);
-  const { plans, isLoading, calculateYearlySavings } = usePricing();
-  const { subscription } = useSubscription();
   const { user } = useAuth();
+  const { plans, isLoading, calculateYearlySavings } = usePricing();
+  const { subscription } = user ? useSubscription() : { subscription: null };
   const navigate = useNavigate();
   
   // Detect if this is a new user signup flow
@@ -165,7 +165,7 @@ const Pricing = () => {
           {plans.map((plan) => {
             // Use effectivePlan (with admin override) to determine current plan
             // This prevents flicker for admin users who should always see "Pro"
-            const isCurrentPlan = effectivePlan === plan.tier;
+            const isCurrentPlan = user ? effectivePlan === plan.tier : plan.tier === 'free_trial';
             const savings = plan.price_yearly ? calculateYearlySavings(plan.price_monthly, plan.price_yearly) : null;
             const price = isYearly && plan.price_yearly ? plan.price_yearly : plan.price_monthly;
             const displayPrice = isYearly && plan.price_yearly 
