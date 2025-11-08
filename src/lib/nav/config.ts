@@ -131,14 +131,16 @@ export const advancedNav: NavItem[] = [
     label: "Google Ads Status",
     icon: Info,
     description: "Check Google Ads data freshness",
-    requiresAuth: true
+    requiresAuth: true,
+    requiresAdmin: true
   },
   {
     path: "/advanced/dataforseo-search-volume",
     label: "DataForSEO Volume",
     icon: BarChart2,
     description: "Get search volume from DataForSEO",
-    requiresAuth: true
+    requiresAuth: true,
+    requiresAdmin: true
   },
   {
     path: "/advanced/search-volume-advanced",

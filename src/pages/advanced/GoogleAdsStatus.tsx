@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
+import { useAdmin } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 
@@ -11,7 +13,20 @@ const GoogleAdsStatus = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<any>(null);
   const { user } = useAuth();
+  const { isAdmin, isLoading: adminLoading } = useAdmin();
   const { toast } = useToast();
+
+  if (adminLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleRefresh = async () => {
     if (!user) {

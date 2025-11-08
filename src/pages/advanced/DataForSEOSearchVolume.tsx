@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
+import { useAdmin } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { KeywordResultsTable, KeywordResult } from "@/components/KeywordResultsTable";
 import { logger } from '@/lib/logger';
@@ -25,6 +26,7 @@ const DataForSEOSearchVolume = () => {
 
   const { toast } = useToast();
   const { user, loading } = useAuth();
+  const { isAdmin, isLoading: adminLoading } = useAdmin();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,6 +34,18 @@ const DataForSEOSearchVolume = () => {
       navigate('/auth/sign-in');
     }
   }, [user, loading, navigate]);
+
+  if (adminLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleRetrieve = async () => {
     if (!user) {
