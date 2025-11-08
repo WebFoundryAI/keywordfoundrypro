@@ -13,12 +13,25 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+interface UserPreview {
+  user_id: string;
+  email: string;
+  display_name: string;
+  keyword_research_count: number;
+  competitor_analysis_count: number;
+  cluster_count: number;
+  export_count: number;
+  snapshot_count: number;
+  created_at: string;
+}
+
 export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false);
   const [purgeConfirmOpen, setPurgeConfirmOpen] = useState(false);
-  const [previewUsers, setPreviewUsers] = useState<any[]>([]);
+  const [previewUsers, setPreviewUsers] = useState<UserPreview[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
 
   const { data: users, isLoading, refetch } = useQuery({
     queryKey: ['admin-users'],
@@ -67,14 +80,14 @@ export default function AdminUsers() {
     mutationFn: async () => {
       const { data, error } = await supabase.rpc('preview_non_admin_users_for_deletion');
       if (error) throw error;
-      return data;
+      return data as UserPreview[];
     },
     onSuccess: (data) => {
-      setPreviewUsers(data || []);
-      setDeleteAllConfirmOpen(true);
+      setPreviewUsers(data);
+      setShowPreview(true);
     },
     onError: (error: any) => {
-      toast.error(`Failed to preview users: ${error.message}`);
+      toast.error(`Failed to load preview: ${error.message}`);
     }
   });
 
@@ -89,6 +102,8 @@ export default function AdminUsers() {
       toast.success(`Successfully deleted ${deletedCount} non-admin user(s)`);
       refetch();
       setDeleteAllConfirmOpen(false);
+      setShowPreview(false);
+      setPreviewUsers([]);
     },
     onError: (error: any) => {
       toast.error(`Failed to delete users: ${error.message}`);
@@ -267,19 +282,16 @@ export default function AdminUsers() {
         onUserDeleted={handleUserDeleted}
       />
 
-      {/* Delete All Confirmation Dialog with Preview */}
-      <AlertDialog open={deleteAllConfirmOpen} onOpenChange={(open) => {
-        setDeleteAllConfirmOpen(open);
-        if (!open) setPreviewUsers([]);
-      }}>
-        <AlertDialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      {/* Preview Dialog - Shows which users will be deleted */}
+      <AlertDialog open={showPreview} onOpenChange={setShowPreview}>
+        <AlertDialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {previewUsers.length} Non-Admin User(s)?</AlertDialogTitle>
+            <AlertDialogTitle>Preview: Users to be Deleted ({previewUsers.length})</AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
               <Alert variant="destructive">
-                <AlertTitle>⚠️ Critical Warning</AlertTitle>
+                <AlertTitle>⚠️ Warning</AlertTitle>
                 <AlertDescription>
-                  This will permanently delete all data for the following users. This action CANNOT be undone.
+                  The following {previewUsers.length} non-admin user(s) will be permanently deleted along with ALL their data.
                 </AlertDescription>
               </Alert>
 
@@ -289,9 +301,9 @@ export default function AdminUsers() {
                 </p>
               ) : (
                 <div className="space-y-4">
-                  <div className="border rounded-lg overflow-hidden">
+                  <div className="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="sticky top-0 bg-background">
                         <TableRow>
                           <TableHead>User</TableHead>
                           <TableHead className="text-right">Searches</TableHead>
@@ -335,10 +347,10 @@ export default function AdminUsers() {
                   </div>
 
                   <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <p className="font-semibold text-sm">Data to be deleted for each user:</p>
+                    <p className="font-semibold text-sm">Complete data deletion includes:</p>
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                       <li>User profile and account</li>
-                      <li>All keyword research and results</li>
+                      <li>All keyword research and search results</li>
                       <li>Competitor analysis reports</li>
                       <li>AI reports and insights</li>
                       <li>Clusters and exports</li>
@@ -353,13 +365,64 @@ export default function AdminUsers() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => {
+              setShowPreview(false);
+              setPreviewUsers([]);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowPreview(false);
+                setDeleteAllConfirmOpen(true);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={previewUsers.length === 0}
+            >
+              Proceed to Delete {previewUsers.length} User(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Final Confirmation Dialog */}
+      <AlertDialog open={deleteAllConfirmOpen} onOpenChange={setDeleteAllConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">⚠️ FINAL CONFIRMATION</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <div className="space-y-2">
+                <p className="font-bold text-destructive text-lg">
+                  You are about to permanently delete {previewUsers.length} user(s) and ALL their data!
+                </p>
+                <p className="text-sm">
+                  This action is <span className="font-bold">IRREVERSIBLE</span> and will completely remove:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-sm ml-2">
+                  <li>All user accounts and profiles</li>
+                  <li>All searches and keyword research</li>
+                  <li>All competitor analyses and reports</li>
+                  <li>All clusters, exports, and snapshots</li>
+                  <li>All usage data and subscriptions</li>
+                </ul>
+              </div>
+              <Alert variant="destructive">
+                <AlertTitle>This Cannot Be Undone</AlertTitle>
+                <AlertDescription>
+                  Once deleted, this data cannot be recovered. Please ensure you have backups if needed.
+                </AlertDescription>
+              </Alert>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteAllConfirmOpen(false);
+              setPreviewUsers([]);
+            }}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteAllNonAdminsMutation.mutate()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteAllNonAdminsMutation.isPending || previewUsers.length === 0}
+              disabled={deleteAllNonAdminsMutation.isPending}
             >
-              {deleteAllNonAdminsMutation.isPending ? 'Deleting...' : `Delete ${previewUsers.length} User(s)`}
+              {deleteAllNonAdminsMutation.isPending ? 'Deleting...' : `Yes, Delete ${previewUsers.length} User(s) Permanently`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
