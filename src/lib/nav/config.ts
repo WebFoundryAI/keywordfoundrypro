@@ -27,7 +27,8 @@ import {
   Key,
   TrendingDown,
   Info,
-  BarChart2
+  BarChart2,
+  LogOut
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -161,10 +162,17 @@ export const accountNav: NavItem[] = [
     requiresAuth: true
   },
   {
-    path: "/privacy-settings",
-    label: "Privacy",
-    icon: Lock,
-    description: "Privacy settings",
+    path: "/account",
+    label: "Settings",
+    icon: Settings,
+    description: "Account settings",
+    requiresAuth: true
+  },
+  {
+    path: "/sign-out",
+    label: "Sign Out",
+    icon: LogOut,
+    description: "Sign out of your account",
     requiresAuth: true
   }
 ];

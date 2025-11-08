@@ -131,8 +131,9 @@ describe('nav/config', () => {
 
     it('should include required pages in account nav', () => {
       const paths = accountNav.map(item => item.path);
-      expect(paths).toContain('/billing');
-      expect(paths).toContain('/privacy-settings');
+      expect(paths).toContain('/profile');
+      expect(paths).toContain('/account');
+      expect(paths).toContain('/sign-out');
     });
 
     it('should include required pages in footer nav', () => {

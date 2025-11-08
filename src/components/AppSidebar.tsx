@@ -6,8 +6,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  User as UserIcon,
-  Settings,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -29,13 +29,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { headerNav, advancedNav, accountNav, adminNav, getVisibleNavItems } from "@/lib/nav/config";
@@ -354,35 +347,47 @@ export function AppSidebar() {
                       const Icon = item.icon;
                       const isActive = location.pathname === item.path;
                       const notificationCount = getNotificationCount(item.path);
+                      const isSignOut = item.path === '/sign-out';
 
                       return (
                         <SidebarMenuItem key={item.path}>
                           <SidebarMenuButton
-                            asChild
-                            isActive={isActive}
+                            asChild={!isSignOut}
+                            isActive={!isSignOut && isActive}
                             tooltip={isCollapsed ? item.label : undefined}
+                            onClick={isSignOut ? handleSignOut : undefined}
+                            className={isSignOut ? "cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10" : ""}
                           >
-                            <Link to={item.path} className="relative">
-                              <Icon className="h-4 w-4" />
-                              {isExpanded && (
-                                <>
+                            {isSignOut ? (
+                              <div className="flex items-center w-full">
+                                <Icon className="h-4 w-4" />
+                                {isExpanded && (
                                   <span className="flex-1">{item.label}</span>
-                                  {notificationCount > 0 && (
-                                    <Badge
-                                      variant="destructive"
-                                      className="ml-auto h-5 min-w-5 px-1 text-xs flex items-center justify-center"
-                                    >
-                                      {notificationCount > 99 ? '99+' : notificationCount}
-                                    </Badge>
-                                  )}
-                                </>
-                              )}
-                              {isCollapsed && notificationCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full text-[10px] flex items-center justify-center font-semibold">
-                                  {notificationCount > 9 ? '9+' : notificationCount}
-                                </span>
-                              )}
-                            </Link>
+                                )}
+                              </div>
+                            ) : (
+                              <Link to={item.path} className="relative">
+                                <Icon className="h-4 w-4" />
+                                {isExpanded && (
+                                  <>
+                                    <span className="flex-1">{item.label}</span>
+                                    {notificationCount > 0 && (
+                                      <Badge
+                                        variant="destructive"
+                                        className="ml-auto h-5 min-w-5 px-1 text-xs flex items-center justify-center"
+                                      >
+                                        {notificationCount > 99 ? '99+' : notificationCount}
+                                      </Badge>
+                                    )}
+                                  </>
+                                )}
+                                {isCollapsed && notificationCount > 0 && (
+                                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full text-[10px] flex items-center justify-center font-semibold">
+                                    {notificationCount > 9 ? '9+' : notificationCount}
+                                  </span>
+                                )}
+                              </Link>
+                            )}
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       );
@@ -452,87 +457,21 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-border">
         {user && (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton
-                    size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                  >
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
-                        {getUserInitials()}
-                      </AvatarFallback>
-                    </Avatar>
-                    {isExpanded && (
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">
-                          {user.email?.split("@")[0]}
-                        </span>
-                        <span className="truncate text-xs text-muted-foreground">
-                          {user.email}
-                        </span>
-                      </div>
-                    )}
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-56"
-                  align="end"
-                  side={isMobile ? "bottom" : "right"}
-                >
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="cursor-pointer">
-                      <UserIcon className="mr-2 h-4 w-4" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/privacy-settings" className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        )}
-
-        {!user && (
-          <div className="px-2 py-2 space-y-2">
-            {isExpanded ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => navigate("/auth/sign-in")}
-                >
-                  Log In
-                </Button>
-                <Button
-                  size="sm"
-                  className="w-full"
-                  onClick={() => navigate("/auth/sign-up")}
-                >
-                  Sign Up
-                </Button>
-              </>
-            ) : (
-              <Button
-                size="icon"
-                className="w-full"
-                onClick={() => navigate("/auth/sign-in")}
-              >
-                <UserIcon className="h-4 w-4" />
-              </Button>
+          <div className="flex items-center gap-2 px-2 py-2 opacity-60">
+            <Avatar className="h-8 w-8 rounded-lg">
+              <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                {getUserInitials()}
+              </AvatarFallback>
+            </Avatar>
+            {isExpanded && (
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold text-xs">
+                  {user.user_metadata?.full_name || 'User'}
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {user.email}
+                </span>
+              </div>
             )}
           </div>
         )}
