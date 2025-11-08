@@ -1,14 +1,12 @@
-import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { Header } from "@/components/Header";
+import { Outlet, Navigate } from "react-router-dom";
+import { SiteFooter } from "@/components/SiteFooter";
 import { useAuth } from "@/components/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
-import { adminNav } from "@/lib/nav/config";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useEnsureAdminPro } from "@/lib/billing/ensure-admin-pro";
 
 export const AdminLayout = () => {
-  const location = useLocation();
   const { user } = useAuth();
   const { isAdmin, isLoading } = useAdmin();
 
@@ -30,46 +28,20 @@ export const AdminLayout = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header user={user} />
-      <div className="flex-1 flex">
-        {/* Sidebar */}
-        <aside className="w-64 border-r bg-muted/30">
-          <div className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Admin Panel</h2>
-              <Link to="/">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-            <nav className="space-y-1">
-              {adminNav.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.path;
-
-                return (
-                  <Link key={item.path} to={item.path}>
-                    <Button
-                      variant={isActive ? "secondary" : "ghost"}
-                      className="w-full justify-start"
-                    >
-                      <Icon className="mr-2 h-4 w-4" />
-                      {item.label}
-                    </Button>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-8">
-          <Outlet />
-        </main>
+    <SidebarProvider defaultOpen={false}>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <SidebarInset className="flex flex-col">
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
+            <SidebarTrigger />
+            <div className="flex-1" />
+          </header>
+          <main className="flex-1 p-8">
+            <Outlet />
+          </main>
+          <SiteFooter />
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
