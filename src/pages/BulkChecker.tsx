@@ -8,24 +8,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Download, Trash2, Search } from "lucide-react";
+import { KeywordResultsTable, KeywordResult } from "@/components/KeywordResultsTable";
 import { logger } from '@/lib/logger';
+import { trackExport } from '@/lib/analytics';
 
-interface KeywordResult {
-  keyword: string;
-  search_volume: number;
-  competition_index: number;
-  competition: string;
-  low_top_of_page_bid: number;
-  high_top_of_page_bid: number;
-  monthly_searches: Array<{
-    year: number;
-    month: number;
-    search_volume: number;
-  }>;
-}
 
 const BulkChecker = () => {
   const [keywords, setKeywords] = useState("");
@@ -33,9 +19,7 @@ const BulkChecker = () => {
   const [language, setLanguage] = useState("English");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<KeywordResult[]>([]);
-  const [filterText, setFilterText] = useState("");
-  const [sortColumn, setSortColumn] = useState<keyof KeywordResult | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [searchTerm, setSearchTerm] = useState("");
   
   const { toast } = useToast();
   const { user, loading } = useAuth();
@@ -135,7 +119,16 @@ const BulkChecker = () => {
         throw new Error(data?.error || 'Failed to check keywords');
       }
 
-      const fetchedResults = data.results || [];
+      const fetchedResults: KeywordResult[] = (data.results || []).map((r: any) => ({
+        keyword: r.keyword,
+        searchVolume: r.search_volume,
+        cpc: (r.low_top_of_page_bid + r.high_top_of_page_bid) / 2,
+        intent: 'commercial' as const,
+        difficulty: r.competition_index,
+        suggestions: [],
+        related: [],
+        metricsSource: 'dataforseo_ads' as const
+      }));
       setResults(fetchedResults);
       
       // Persist to localStorage
@@ -167,7 +160,7 @@ const BulkChecker = () => {
     });
   };
 
-  const handleExportCSV = () => {
+  const handleExport = async (format: 'csv' | 'json' | 'txt') => {
     if (results.length === 0) {
       toast({
         title: "No Data",
@@ -177,76 +170,70 @@ const BulkChecker = () => {
       return;
     }
 
-    const headers = [
-      "Keyword",
-      "Search Volume",
-      "Competition Index",
-      "Competition",
-      "Low Top Bid",
-      "High Top Bid",
-      "Latest Monthly Volume"
-    ];
+    try {
+      const exportData = results.map(r => ({
+        keyword: r.keyword,
+        searchVolume: r.searchVolume,
+        cpc: r.cpc,
+        intent: r.intent,
+        difficulty: r.difficulty
+      }));
 
-    const rows = filteredAndSortedResults.map(result => [
-      result.keyword,
-      result.search_volume,
-      result.competition_index,
-      result.competition,
-      result.low_top_of_page_bid.toFixed(2),
-      result.high_top_of_page_bid.toFixed(2),
-      result.monthly_searches[0]?.search_volume || 0
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bulk-keywords-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "Export Complete",
-      description: "CSV file downloaded successfully.",
-    });
-  };
-
-  const handleSort = (column: keyof KeywordResult) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(column);
-      setSortDirection("desc");
+      let content: string;
+      let filename: string;
+      let mimeType: string;
+      
+      if (format === 'csv') {
+        const headers = ['Keyword', 'Search Volume', 'CPC', 'Intent', 'Difficulty'];
+        const rows = [
+          headers.join(','),
+          ...exportData.map(r => [
+            `"${r.keyword}"`,
+            r.searchVolume ?? '',
+            r.cpc?.toFixed(2) ?? '',
+            r.intent || '',
+            r.difficulty ?? ''
+          ].join(','))
+        ];
+        content = rows.join('\n');
+        filename = `bulk-keywords-${new Date().toISOString().split('T')[0]}.csv`;
+        mimeType = 'text/csv';
+      } else if (format === 'txt') {
+        content = exportData.map(r => r.keyword).join('\n');
+        filename = `bulk-keywords-${new Date().toISOString().split('T')[0]}.txt`;
+        mimeType = 'text/plain';
+      } else {
+        content = JSON.stringify(exportData, null, 2);
+        filename = `bulk-keywords-${new Date().toISOString().split('T')[0]}.json`;
+        mimeType = 'application/json';
+      }
+      
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      trackExport(format);
+      
+      toast({
+        title: "Export Complete",
+        description: `Downloaded ${results.length} keywords`,
+      });
+    } catch (error) {
+      logger.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export keywords",
+        variant: "destructive"
+      });
     }
   };
 
-  const filteredAndSortedResults = results
-    .filter(result =>
-      result.keyword.toLowerCase().includes(filterText.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (!sortColumn) return 0;
-      
-      const aVal = a[sortColumn];
-      const bVal = b[sortColumn];
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
-      }
-
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortDirection === "asc" 
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
-      }
-
-      return 0;
-    });
 
   if (loading) {
     return (
@@ -337,103 +324,25 @@ const BulkChecker = () => {
       </Card>
 
       {results.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle>Results ({results.length} keywords)</CardTitle>
-                <CardDescription>Click column headers to sort</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleExportCSV}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export CSV
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleClear}>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Clear Results
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Filter keywords..."
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
-
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('keyword')}
-                    >
-                      Keyword {sortColumn === 'keyword' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50 text-right"
-                      onClick={() => handleSort('search_volume')}
-                    >
-                      Volume {sortColumn === 'search_volume' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50 text-right"
-                      onClick={() => handleSort('competition_index')}
-                    >
-                      Comp. Index {sortColumn === 'competition_index' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('competition')}
-                    >
-                      Competition {sortColumn === 'competition' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead className="text-right">Low Bid</TableHead>
-                    <TableHead className="text-right">High Bid</TableHead>
-                    <TableHead className="text-right">Latest Monthly</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAndSortedResults.map((result, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{result.keyword}</TableCell>
-                      <TableCell className="text-right">{result.search_volume.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{result.competition_index}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          result.competition === 'LOW' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          result.competition === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                          result.competition === 'HIGH' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                        }`}>
-                          {result.competition}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">${result.low_top_of_page_bid.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">${result.high_top_of_page_bid.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">
-                        {result.monthly_searches[0]?.search_volume?.toLocaleString() || '—'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {filteredAndSortedResults.length === 0 && results.length > 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                No keywords match your filter
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={handleClear}>
+              Clear Results
+            </Button>
+          </div>
+          
+          <KeywordResultsTable
+            results={results}
+            totalCount={results.length}
+            searchTerm={searchTerm}
+            seedKeyword={null}
+            keywordAnalyzed={null}
+            onSearchChange={setSearchTerm}
+            onFiltersChange={() => {}}
+            locationCode={2826}
+            onExport={handleExport}
+          />
+        </div>
       )}
     </div>
   );
