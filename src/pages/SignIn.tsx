@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Search, User, Settings as SettingsIcon, Home } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Search } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
@@ -85,59 +85,65 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
-      {/* Left Column - Sidebar Style Branding (≈35% width) */}
-      <div className="w-full md:w-[35%] flex flex-col justify-center px-6 py-8 md:px-8 lg:px-12 bg-background border-r border-gray-200">
+      {/* Left Column - Hero Content (≈35% width) */}
+      <div className="w-full md:w-[35%] flex flex-col justify-center px-6 py-8 md:px-8 lg:px-12 bg-background border-r border-border">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="w-full max-w-sm mx-auto space-y-6"
+          className="w-full space-y-6"
         >
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center shrink-0 shadow-md">
-              <Search className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">
+          <div className="space-y-4">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               Keyword Foundry Pro
-            </span>
-          </Link>
-
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              readOnly
-            />
+            </h1>
+            <p className="text-lg font-semibold text-muted-foreground">
+              Advanced Keyword Intelligence for Technical SEO
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Unlock SEO potential with real-time, data-driven insights. A professional-grade keyword research platform built for technical SEO experts who demand accuracy and speed.
+            </p>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="space-y-1 pt-4">
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              <Home className="h-4 w-4" />
-              <span>Back to Home</span>
-            </Link>
-            <Link
-              to="/auth/sign-up"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              <User className="h-4 w-4" />
-              <span>Create Account</span>
-            </Link>
-            <Link
-              to="/pricing"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              <SettingsIcon className="h-4 w-4" />
-              <span>View Pricing</span>
-            </Link>
-          </nav>
+          {/* Features */}
+          <div className="space-y-4 pt-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <Search className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Real-time Data</h3>
+                <p className="text-xs text-muted-foreground">Access live search volume and competition metrics.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <ArrowRight className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Difficulty Score</h3>
+                <p className="text-xs text-muted-foreground">Leverage advanced algorithms to measure true ranking difficulty.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <Eye className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Intent Analysis</h3>
+                <p className="text-xs text-muted-foreground">Automatically classify search intent to align content strategies.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Secure Export & Storage</h3>
+                <p className="text-xs text-muted-foreground">Save, manage, and export keyword data with complete confidence.</p>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </div>
 
