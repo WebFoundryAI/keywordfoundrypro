@@ -188,7 +188,7 @@ const Pricing = () => {
                     <Badge className="bg-primary text-primary-foreground">Your Current Plan</Badge>
                   </div>
                 )}
-                {!isCurrentPlan && plan.tier === 'professional' && (
+                {!isCurrentPlan && !user && plan.tier === 'professional' && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                     <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
                   </div>
@@ -259,7 +259,7 @@ const Pricing = () => {
                     </Button>
                   ) : (
                     <Button onClick={() => handleGetStarted(plan.tier, plan.id)} variant="outline" className="w-full">
-                      Get Started
+                      Upgrade to {plan.name}
                     </Button>
                   )}
                 </CardFooter>
