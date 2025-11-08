@@ -159,6 +159,68 @@ const BulkChecker = () => {
     }
   };
 
+  const handleSaveToResearch = async () => {
+    if (!user || results.length === 0) return;
+
+    try {
+      setIsLoading(true);
+
+      // Create a keyword_research entry
+      const { data: researchData, error: researchError } = await supabase
+        .from('keyword_research')
+        .insert({
+          user_id: user.id,
+          seed_keyword: `Bulk Check - ${new Date().toLocaleDateString()}`,
+          location_code: 2826, // Default to UK
+          location_name: location,
+          language_code: 'en',
+          language_name: language,
+          total_results: results.length,
+          query_source: 'bulk_checker',
+        })
+        .select()
+        .single();
+
+      if (researchError) throw researchError;
+
+      // Create keyword_results entries
+      const keywordResultsData = results.map(r => ({
+        research_id: researchData.id,
+        keyword: r.keyword,
+        search_volume: r.searchVolume,
+        cpc: r.cpc,
+        difficulty: r.difficulty,
+        intent: r.intent,
+        suggestions: r.suggestions || [],
+        related_keywords: r.related || [],
+        metrics_source: r.metricsSource || 'dataforseo_ads',
+      }));
+
+      const { error: resultsError } = await supabase
+        .from('keyword_results')
+        .insert(keywordResultsData);
+
+      if (resultsError) throw resultsError;
+
+      toast({
+        title: "Saved to My Research",
+        description: `${results.length} keywords saved successfully`,
+      });
+
+      // Navigate to the results page
+      navigate(`/keyword-results?id=${researchData.id}`);
+    } catch (error: any) {
+      logger.error('Save to research error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save results",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleClear = () => {
     setResults([]);
     localStorage.removeItem('bulkCheckerResults');
@@ -333,7 +395,15 @@ const BulkChecker = () => {
 
       {results.length > 0 && (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={handleSaveToResearch}
+              disabled={isLoading}
+            >
+              Save to My Research
+            </Button>
             <Button variant="outline" size="sm" onClick={handleClear}>
               Clear Results
             </Button>
