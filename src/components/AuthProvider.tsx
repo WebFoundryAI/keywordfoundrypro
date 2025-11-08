@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             
             if (shouldRedirect) {
               didRedirectRef.current = true;
-              const redirectPath = adminRole ? '/admin' : '/research';
+              const redirectPath = '/research';
               logger.log('Centralized redirect from', currentPath, '->', redirectPath);
               window.location.replace(redirectPath);
             } else {
