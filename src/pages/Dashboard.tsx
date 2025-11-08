@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from '@/hooks/useSubscription';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { Search, TrendingUp, Link2, AlertCircle, Crown, ArrowUpRight, Plus } from 'lucide-react';
+import { Search, TrendingUp, Link2, AlertCircle, Crown, ArrowUpRight, Plus, FileText, MapPin, DollarSign } from 'lucide-react';
 import { useState, useMemo } from "react";
 import { ResearchRow } from "@/types/research";
 import { BulkDeleteToolbar } from "@/components/my-research/BulkDeleteToolbar";
@@ -46,6 +46,29 @@ export default function Dashboard() {
   const rowIds = useMemo(() => research?.map((r) => r.id) ?? [], [research]);
   const selectedIds = useMemo(() => rowIds.filter((id) => selected[id]), [rowIds, selected]);
   const allOnPageSelected = rowIds.length > 0 && selectedIds.length === rowIds.length;
+
+  const stats = useMemo(() => {
+    if (!research || research.length === 0) {
+      return { totalResearches: 0, mostUsedLocation: 'N/A', totalCost: 0 };
+    }
+
+    const locationCounts: Record<string, number> = {};
+    let totalCost = 0;
+
+    research.forEach((item) => {
+      const location = item.location_name || 'Unknown';
+      locationCounts[location] = (locationCounts[location] || 0) + 1;
+      totalCost += Number(item.api_cost || 0);
+    });
+
+    const mostUsedLocation = Object.entries(locationCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || 'N/A';
+
+    return {
+      totalResearches: research.length,
+      mostUsedLocation,
+      totalCost: totalCost.toFixed(2),
+    };
+  }, [research]);
 
   const toggleRow = (id: string, checked: boolean) => {
     setSelected((s) => ({ ...s, [id]: checked }));
@@ -103,6 +126,39 @@ export default function Dashboard() {
           Monitor your usage and manage your subscription
         </p>
       </div>
+
+      {/* Quick Stats */}
+      {research && research.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Researches</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalResearches}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Most Used Location</CardTitle>
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.mostUsedLocation}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total API Cost</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${stats.totalCost}</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Research History Section */}
       <Card>
