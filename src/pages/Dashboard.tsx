@@ -10,12 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSubscription } from '@/hooks/useSubscription';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { Search, TrendingUp, Link2, AlertCircle, Crown, ArrowUpRight, Plus, FileText, MapPin, DollarSign } from 'lucide-react';
+import { Search, TrendingUp, Link2, AlertCircle, Crown, ArrowUpRight, Plus, FileText, MapPin, DollarSign, Download } from 'lucide-react';
 import { useState, useMemo } from "react";
 import { ResearchRow } from "@/types/research";
 import { BulkDeleteToolbar } from "@/components/my-research/BulkDeleteToolbar";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -108,6 +110,64 @@ export default function Dashboard() {
     navigate('/research');
   };
 
+  const exportResearch = (format: 'csv' | 'excel' | 'text') => {
+    if (!research || research.length === 0) {
+      toast.error('No research data to export');
+      return;
+    }
+
+    let content = '';
+    let filename = '';
+    const timestamp = new Date().toISOString().split('T')[0];
+
+    if (format === 'csv' || format === 'excel') {
+      const headers = ['Keyword', 'Query Source', 'Results', 'Location', 'Language', 'API Cost', 'Created Date'];
+      const rows = research.map(item => [
+        item.seed_keyword,
+        (item as any).query_source || '',
+        item.total_results || 0,
+        item.location_name || 'N/A',
+        item.language_name || 'N/A',
+        item.api_cost || 0,
+        new Date(item.created_at).toLocaleDateString()
+      ]);
+      
+      content = [headers, ...rows].map(row => 
+        row.map(cell => {
+          const str = String(cell);
+          return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+        }).join(',')
+      ).join('\n');
+      
+      filename = `research-history-${timestamp}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    } else if (format === 'text') {
+      content = research.map(item => 
+        `Keyword: ${item.seed_keyword}\n` +
+        `Query Source: ${(item as any).query_source || 'N/A'}\n` +
+        `Results: ${item.total_results || 0}\n` +
+        `Location: ${item.location_name || 'N/A'}\n` +
+        `Language: ${item.language_name || 'N/A'}\n` +
+        `API Cost: $${item.api_cost || 0}\n` +
+        `Created: ${new Date(item.created_at).toLocaleDateString()}\n` +
+        `${'='.repeat(50)}\n`
+      ).join('\n');
+      
+      filename = `research-history-${timestamp}.txt`;
+    }
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Research history exported as ${format.toUpperCase()}`);
+  };
+
   const isNearLimit = (percentage: number) => percentage >= 80;
   const isOverLimit = (percentage: number) => percentage >= 100;
   
@@ -173,10 +233,33 @@ export default function Dashboard() {
                 }
               </CardDescription>
             </div>
-            <Button onClick={handleNewResearch}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Research
-            </Button>
+            <div className="flex gap-2">
+              {research && research.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-popover z-50">
+                    <DropdownMenuItem onClick={() => exportResearch('csv')}>
+                      Export as CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportResearch('excel')}>
+                      Export as Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportResearch('text')}>
+                      Export as Text
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              <Button onClick={handleNewResearch}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Research
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
