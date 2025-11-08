@@ -1078,6 +1078,14 @@ export type Database = {
           trigger_name: string
         }[]
       }
+      delete_all_non_admin_users: {
+        Args: never
+        Returns: {
+          email: string
+          status: string
+          user_id: string
+        }[]
+      }
       delete_old_system_logs: { Args: never; Returns: undefined }
       delete_user_completely: {
         Args: { target_user_id: string }
@@ -1147,6 +1155,13 @@ export type Database = {
       is_project_member: {
         Args: { p_min_role?: string; p_project_id: string; p_user_id: string }
         Returns: boolean
+      }
+      purge_soft_deleted_entries: {
+        Args: never
+        Returns: {
+          rows_deleted: number
+          table_name: string
+        }[]
       }
       refresh_analytics_funnel_view: { Args: never; Returns: undefined }
       update_api_key_last_used: {
