@@ -185,12 +185,12 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
-    console.error('Bulk checker error:', error);
+  } catch (err: any) {
+    console.error('Bulk checker error:', err);
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message || 'Internal server error' 
+        error: err.message || 'Internal server error' 
       }),
       { 
         status: 500, 

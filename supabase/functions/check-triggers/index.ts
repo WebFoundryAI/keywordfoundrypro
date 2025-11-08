@@ -79,10 +79,10 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
-    console.error('Error checking triggers:', error);
+  } catch (err: any) {
+    console.error('Error checking triggers:', err);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: err.message || 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { Resend } from "npm:resend@2.0.0";
+import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -133,9 +133,9 @@ serve(async (req) => {
 
         emailsSent.push(alert.email);
         console.log(`Sent ${alert.usage_type} alert to ${alert.email}`);
-      } catch (error) {
-        console.error(`Error processing alert for ${alert.email}:`, error);
-        errors.push(`${alert.email}: ${error.message}`);
+      } catch (err: any) {
+        console.error(`Error processing alert for ${alert.email}:`, err);
+        errors.push(`${alert.email}: ${err.message || 'Unknown error'}`);
       }
     }
 
@@ -151,10 +151,10 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
-    console.error("Error in send-usage-alerts:", error);
+  } catch (err: any) {
+    console.error("Error in send-usage-alerts:", err);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: err.message || 'Internal server error' }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
