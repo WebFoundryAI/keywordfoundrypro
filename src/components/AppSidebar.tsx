@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useNotificationCounts } from "@/hooks/useNotificationCounts";
 import {
   Sidebar,
   SidebarContent,
@@ -85,6 +86,7 @@ export function AppSidebar() {
   const { isAdmin } = useAdmin();
   const { state, isMobile, open, setOpen } = useSidebar();
   const { toast } = useToast();
+  const { counts } = useNotificationCounts();
   const [searchQuery, setSearchQuery] = useState("");
   const [isPinned, setIsPinned] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -142,6 +144,23 @@ export function AppSidebar() {
       .split("@")[0]
       .substring(0, 2)
       .toUpperCase();
+  };
+
+  // Get notification count for a specific path
+  const getNotificationCount = (path: string): number => {
+    if (path === '/research' || path === '/keyword-results') {
+      return counts.newResearch;
+    }
+    if (path === '/project-members') {
+      return counts.pendingInvites;
+    }
+    if (path === '/dashboard') {
+      return counts.usageAlerts;
+    }
+    if (path === '/admin' && isAdmin) {
+      return counts.adminAlerts;
+    }
+    return 0;
   };
 
   return (
@@ -222,6 +241,7 @@ export function AppSidebar() {
                 {visibleHeader.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.path;
+                  const notificationCount = getNotificationCount(item.path);
 
                   return (
                     <SidebarMenuItem key={item.path}>
@@ -230,9 +250,26 @@ export function AppSidebar() {
                         isActive={isActive}
                         tooltip={isCollapsed ? item.label : undefined}
                       >
-                        <Link to={item.path} data-tour={item.tourId}>
+                        <Link to={item.path} data-tour={item.tourId} className="relative">
                           <Icon className="h-4 w-4" />
-                          {isExpanded && <span>{item.label}</span>}
+                          {isExpanded && (
+                            <>
+                              <span className="flex-1">{item.label}</span>
+                              {notificationCount > 0 && (
+                                <Badge
+                                  variant="destructive"
+                                  className="ml-auto h-5 min-w-5 px-1 text-xs flex items-center justify-center"
+                                >
+                                  {notificationCount > 99 ? '99+' : notificationCount}
+                                </Badge>
+                              )}
+                            </>
+                          )}
+                          {isCollapsed && notificationCount > 0 && (
+                            <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full text-[10px] flex items-center justify-center font-semibold">
+                              {notificationCount > 9 ? '9+' : notificationCount}
+                            </span>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -255,6 +292,7 @@ export function AppSidebar() {
                     {visibleAdvanced.map((item) => {
                       const Icon = item.icon;
                       const isActive = location.pathname === item.path;
+                      const notificationCount = getNotificationCount(item.path);
 
                       return (
                         <SidebarMenuItem key={item.path}>
@@ -263,18 +301,33 @@ export function AppSidebar() {
                             isActive={isActive}
                             tooltip={isCollapsed ? item.label : undefined}
                           >
-                            <Link to={item.path}>
+                            <Link to={item.path} className="relative">
                               <Icon className="h-4 w-4" />
                               {isExpanded && (
-                                <span className="flex-1">{item.label}</span>
+                                <>
+                                  <span className="flex-1">{item.label}</span>
+                                  {item.requiresAdmin && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="ml-auto text-xs"
+                                    >
+                                      Admin
+                                    </Badge>
+                                  )}
+                                  {notificationCount > 0 && (
+                                    <Badge
+                                      variant="destructive"
+                                      className="ml-2 h-5 min-w-5 px-1 text-xs flex items-center justify-center"
+                                    >
+                                      {notificationCount > 99 ? '99+' : notificationCount}
+                                    </Badge>
+                                  )}
+                                </>
                               )}
-                              {isExpanded && item.requiresAdmin && (
-                                <Badge
-                                  variant="secondary"
-                                  className="ml-auto text-xs"
-                                >
-                                  Admin
-                                </Badge>
+                              {isCollapsed && notificationCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full text-[10px] flex items-center justify-center font-semibold">
+                                  {notificationCount > 9 ? '9+' : notificationCount}
+                                </span>
                               )}
                             </Link>
                           </SidebarMenuButton>
@@ -300,6 +353,7 @@ export function AppSidebar() {
                     {visibleAccount.map((item) => {
                       const Icon = item.icon;
                       const isActive = location.pathname === item.path;
+                      const notificationCount = getNotificationCount(item.path);
 
                       return (
                         <SidebarMenuItem key={item.path}>
@@ -308,9 +362,26 @@ export function AppSidebar() {
                             isActive={isActive}
                             tooltip={isCollapsed ? item.label : undefined}
                           >
-                            <Link to={item.path}>
+                            <Link to={item.path} className="relative">
                               <Icon className="h-4 w-4" />
-                              {isExpanded && <span>{item.label}</span>}
+                              {isExpanded && (
+                                <>
+                                  <span className="flex-1">{item.label}</span>
+                                  {notificationCount > 0 && (
+                                    <Badge
+                                      variant="destructive"
+                                      className="ml-auto h-5 min-w-5 px-1 text-xs flex items-center justify-center"
+                                    >
+                                      {notificationCount > 99 ? '99+' : notificationCount}
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+                              {isCollapsed && notificationCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full text-[10px] flex items-center justify-center font-semibold">
+                                  {notificationCount > 9 ? '9+' : notificationCount}
+                                </span>
+                              )}
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -337,6 +408,7 @@ export function AppSidebar() {
                     {visibleAdmin.map((item) => {
                       const Icon = item.icon;
                       const isActive = location.pathname === item.path;
+                      const notificationCount = getNotificationCount(item.path);
 
                       return (
                         <SidebarMenuItem key={item.path}>
@@ -345,9 +417,26 @@ export function AppSidebar() {
                             isActive={isActive}
                             tooltip={isCollapsed ? item.label : undefined}
                           >
-                            <Link to={item.path}>
+                            <Link to={item.path} className="relative">
                               <Icon className="h-4 w-4" />
-                              {isExpanded && <span>{item.label}</span>}
+                              {isExpanded && (
+                                <>
+                                  <span className="flex-1">{item.label}</span>
+                                  {notificationCount > 0 && (
+                                    <Badge
+                                      variant="destructive"
+                                      className="ml-auto h-5 min-w-5 px-1 text-xs flex items-center justify-center"
+                                    >
+                                      {notificationCount > 99 ? '99+' : notificationCount}
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+                              {isCollapsed && notificationCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full text-[10px] flex items-center justify-center font-semibold">
+                                  {notificationCount > 9 ? '9+' : notificationCount}
+                                </span>
+                              )}
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
