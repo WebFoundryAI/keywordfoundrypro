@@ -8,6 +8,8 @@ import { OAuthButtons } from '@/components/auth/OAuthButtons'
 import { OrDivider } from '@/components/auth/OrDivider'
 import { getAppBaseUrl } from '@/lib/env'
 import { trackSignIn } from '@/lib/analytics'
+import { setRememberMePreference } from '@/lib/auth/rememberMe'
+import { Checkbox } from '@/components/ui/checkbox'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -16,6 +18,7 @@ export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true) // Default to true for better UX
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -38,6 +41,9 @@ export default function SignIn() {
         password,
       })
       if (error) throw error
+
+      // Set Remember Me preference
+      setRememberMePreference(rememberMe);
 
       // Track successful sign in
       trackSignIn('email');
@@ -218,6 +224,21 @@ export default function SignIn() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+              </div>
+
+              {/* Remember Me Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="remember-me" 
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                />
+                <label
+                  htmlFor="remember-me"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Remember me
+                </label>
               </div>
 
               {/* Links Row */}

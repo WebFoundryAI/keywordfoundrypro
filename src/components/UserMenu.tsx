@@ -1,5 +1,6 @@
 import { LogOut, Shield } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAdmin } from '@/hooks/useAdmin';
 import {
@@ -10,6 +11,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/AuthProvider';
@@ -23,10 +34,12 @@ export const UserMenu = () => {
   const { isAdmin } = useAdmin();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const handleSignOut = async () => {
     try {
       await signOut();
+      setShowLogoutDialog(false);
       navigate('/');
       toast({
         title: "Signed out successfully",
@@ -54,59 +67,76 @@ export const UserMenu = () => {
   const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          {profileLoading ? (
-            <Skeleton className="h-10 w-10 rounded-full" />
-          ) : (
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={avatarUrl} alt={userDisplayName} />
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+            {profileLoading ? (
+              <Skeleton className="h-10 w-10 rounded-full" />
+            ) : (
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={avatarUrl} alt={userDisplayName} />
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  {userInitials}
+                </AvatarFallback>
+              </Avatar>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{userDisplayName}</p>
+              <p className="text-xs leading-none text-muted-foreground">
+                {user.email}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {accountNav.map((item) => {
+            const Icon = item.icon;
+            return (
+              <DropdownMenuItem key={item.path} asChild>
+                <Link to={item.path} className="cursor-pointer">
+                  <Icon className="mr-2 h-4 w-4" />
+                  <span>{item.label}</span>
+                </Link>
+              </DropdownMenuItem>
+            );
+          })}
+          {isAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/admin" className="cursor-pointer">
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>Admin Panel</span>
+                </Link>
+              </DropdownMenuItem>
+            </>
           )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{userDisplayName}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
-            </p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {accountNav.map((item) => {
-          const Icon = item.icon;
-          return (
-            <DropdownMenuItem key={item.path} asChild>
-              <Link to={item.path} className="cursor-pointer">
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{item.label}</span>
-              </Link>
-            </DropdownMenuItem>
-          );
-        })}
-        {isAdmin && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/admin" className="cursor-pointer">
-                <Shield className="mr-2 h-4 w-4" />
-                <span>Admin Panel</span>
-              </Link>
-            </DropdownMenuItem>
-          </>
-        )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Sign out</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="cursor-pointer" onClick={() => setShowLogoutDialog(true)}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sign out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out of your account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to sign out? You'll need to sign in again to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut}>Sign out</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
