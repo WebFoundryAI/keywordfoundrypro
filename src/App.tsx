@@ -20,6 +20,12 @@ import RelatedKeywords from "./pages/RelatedKeywords";
 import BulkChecker from "./pages/BulkChecker";
 import CompetitorAnalyzer from "./pages/CompetitorAnalyzer";
 import DemoCompetitorAnalyzer from "./pages/DemoCompetitorAnalyzer";
+import KeywordsForSite from "./pages/advanced/KeywordsForSite";
+import KeywordsForKeywords from "./pages/advanced/KeywordsForKeywords";
+import AdTrafficByKeywords from "./pages/advanced/AdTrafficByKeywords";
+import GoogleAdsStatus from "./pages/advanced/GoogleAdsStatus";
+import DataForSEOSearchVolume from "./pages/advanced/DataForSEOSearchVolume";
+import SearchVolumeAdvanced from "./pages/advanced/SearchVolumeAdvanced";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -101,6 +107,15 @@ const App = () => (
                   <Route path="/bulk-checker" element={<ProtectedRoute><BulkChecker /></ProtectedRoute>} />
                   <Route path="/competitor-analyzer" element={<ProtectedRoute><CompetitorAnalyzer /></ProtectedRoute>} />
                   <Route path="/demo/competitor" element={<DemoCompetitorAnalyzer />} />
+                  
+                  {/* Advanced tools routes */}
+                  <Route path="/advanced/keywords-for-site" element={<ProtectedRoute><KeywordsForSite /></ProtectedRoute>} />
+                  <Route path="/advanced/keywords-for-keywords" element={<ProtectedRoute><KeywordsForKeywords /></ProtectedRoute>} />
+                  <Route path="/advanced/ad-traffic-by-keywords" element={<ProtectedRoute><AdTrafficByKeywords /></ProtectedRoute>} />
+                  <Route path="/advanced/google-ads-status" element={<ProtectedRoute><GoogleAdsStatus /></ProtectedRoute>} />
+                  <Route path="/advanced/dataforseo-search-volume" element={<ProtectedRoute><DataForSEOSearchVolume /></ProtectedRoute>} />
+                  <Route path="/advanced/search-volume-advanced" element={<ProtectedRoute><SearchVolumeAdvanced /></ProtectedRoute>} />
+                  
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
                   <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />

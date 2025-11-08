@@ -21,7 +21,13 @@ import {
   Lock,
   Cookie,
   LayoutDashboard,
-  ListChecks
+  ListChecks,
+  Zap,
+  Globe,
+  Key,
+  TrendingDown,
+  Info,
+  BarChart2
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -95,6 +101,52 @@ export const headerNav: NavItem[] = [
     description: "View pricing plans"
   }
   // Removed: Docs, Status, Changelog, Roadmap (admins see same nav as regular users)
+];
+
+// Advanced tools navigation
+export const advancedNav: NavItem[] = [
+  {
+    path: "/advanced/keywords-for-site",
+    label: "Keywords for Site",
+    icon: Globe,
+    description: "Find keywords a domain ranks for",
+    requiresAuth: true
+  },
+  {
+    path: "/advanced/keywords-for-keywords",
+    label: "Keywords for Keywords",
+    icon: Key,
+    description: "Generate keyword suggestions",
+    requiresAuth: true
+  },
+  {
+    path: "/advanced/ad-traffic-by-keywords",
+    label: "Ad Traffic Forecast",
+    icon: TrendingDown,
+    description: "Forecast ad traffic for keywords",
+    requiresAuth: true
+  },
+  {
+    path: "/advanced/google-ads-status",
+    label: "Google Ads Status",
+    icon: Info,
+    description: "Check Google Ads data freshness",
+    requiresAuth: true
+  },
+  {
+    path: "/advanced/dataforseo-search-volume",
+    label: "DataForSEO Volume",
+    icon: BarChart2,
+    description: "Get search volume from DataForSEO",
+    requiresAuth: true
+  },
+  {
+    path: "/advanced/search-volume-advanced",
+    label: "Advanced Search Volume",
+    icon: Zap,
+    description: "Search volume with advanced filters",
+    requiresAuth: true
+  }
 ];
 
 // Account menu navigation
