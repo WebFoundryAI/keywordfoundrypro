@@ -13,6 +13,25 @@ interface BulkCheckRequest {
   sandbox?: boolean;
 }
 
+// Location code mapping
+const LOCATION_MAP: Record<string, number> = {
+  "United Kingdom": 2826,
+  "United States": 2840,
+  "Canada": 2124,
+  "Australia": 2036,
+  "Germany": 2276,
+  "France": 2250,
+  "Spain": 2724
+};
+
+// Language code mapping
+const LANGUAGE_MAP: Record<string, string> = {
+  "English": "en",
+  "Spanish": "es",
+  "French": "fr",
+  "German": "de"
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -63,6 +82,12 @@ serve(async (req) => {
       );
     }
 
+    // Map location and language to codes
+    const locationCode = LOCATION_MAP[location] || 2826; // Default to UK
+    const languageCode = LANGUAGE_MAP[language] || 'en'; // Default to English
+
+    console.log('Mapped codes:', { location, locationCode, language, languageCode });
+
     // Get DataForSEO credentials
     const dataForSeoLogin = Deno.env.get('DATAFORSEO_LOGIN');
     const dataForSeoPassword = Deno.env.get('DATAFORSEO_PASSWORD');
@@ -79,11 +104,11 @@ serve(async (req) => {
 
     const payload = [{
       keywords: keywords,
-      location_name: location,
-      language_name: language
+      location_code: locationCode,
+      language_code: languageCode
     }];
 
-    console.log('Calling DataForSEO API:', { endpoint, keywordCount: keywords.length, location, language });
+    console.log('Calling DataForSEO API:', { endpoint, keywordCount: keywords.length, locationCode, languageCode });
 
     // Make API request to DataForSEO
     const response = await fetch(endpoint, {
@@ -111,8 +136,11 @@ serve(async (req) => {
       throw new Error(apiData.status_message || 'DataForSEO API error');
     }
 
-    // Extract and format results
-    const results = apiData.tasks?.[0]?.result?.[0]?.items || [];
+    // Extract and format results from DataForSEO response
+    // Response structure: tasks[0].result is an array of keyword objects
+    const results = apiData.tasks?.[0]?.result || [];
+    
+    console.log(`Raw results count: ${results.length}`);
     
     const formattedResults = results.map((item: any) => ({
       keyword: item.keyword || '',
