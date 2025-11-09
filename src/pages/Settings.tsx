@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,6 +19,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/AuthProvider';
@@ -150,7 +152,7 @@ export default function Settings() {
     enabled: !!user && activeTab === 'activity',
   });
 
-  // Query for API usage
+  // Query for API usage (extended to 90 days for better charts)
   const { data: apiUsage, isLoading: apiLoading } = useQuery({
     queryKey: ['dataforseo-usage', user?.id],
     queryFn: async () => {
@@ -160,13 +162,61 @@ export default function Settings() {
         .select('*')
         .eq('user_id', user.id)
         .order('timestamp', { ascending: false })
-        .limit(20);
+        .limit(100);
       
       if (error) throw error;
       return data || [];
     },
     enabled: !!user && activeTab === 'activity',
   });
+
+  // Process data for charts
+  const chartData = React.useMemo(() => {
+    if (!apiUsage || apiUsage.length === 0) {
+      return { dailyUsage: [], moduleBreakdown: [], costOverTime: [] };
+    }
+
+    // Group by date
+    const dailyMap = new Map();
+    const moduleMap = new Map();
+    
+    apiUsage.forEach((usage) => {
+      const date = new Date(usage.timestamp).toLocaleDateString();
+      const module = usage.module || 'Unknown';
+      
+      // Daily usage
+      if (!dailyMap.has(date)) {
+        dailyMap.set(date, { date, calls: 0, cost: 0, credits: 0 });
+      }
+      const daily = dailyMap.get(date);
+      daily.calls += 1;
+      daily.cost += Number(usage.cost_usd || 0);
+      daily.credits += Number(usage.credits_used || 0);
+      
+      // Module breakdown
+      if (!moduleMap.has(module)) {
+        moduleMap.set(module, { name: module, calls: 0, cost: 0, credits: 0 });
+      }
+      const moduleData = moduleMap.get(module);
+      moduleData.calls += 1;
+      moduleData.cost += Number(usage.cost_usd || 0);
+      moduleData.credits += Number(usage.credits_used || 0);
+    });
+
+    const dailyUsage = Array.from(dailyMap.values())
+      .reverse()
+      .slice(-30); // Last 30 days
+
+    const moduleBreakdown = Array.from(moduleMap.values())
+      .sort((a, b) => b.cost - a.cost);
+
+    const costOverTime = dailyUsage.map(d => ({
+      date: d.date,
+      cost: Number(d.cost.toFixed(4)),
+    }));
+
+    return { dailyUsage, moduleBreakdown, costOverTime };
+  }, [apiUsage]);
 
   const userInitials = () => {
     if (profile?.display_name) {
@@ -658,6 +708,173 @@ export default function Settings() {
 
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
+          {/* API Usage Charts */}
+          {apiUsage && apiUsage.length > 0 && (
+            <>
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Daily API Calls & Credits */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Daily API Usage</CardTitle>
+                    <CardDescription>
+                      API calls and credits used over the last 30 days
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={chartData.dailyUsage}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="date" 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="calls" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={2}
+                          name="API Calls"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="credits" 
+                          stroke="hsl(var(--chart-2))" 
+                          strokeWidth={2}
+                          name="Credits Used"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Cost Over Time */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Cost Trends</CardTitle>
+                    <CardDescription>
+                      Daily API costs over the last 30 days
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={chartData.costOverTime}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="date" 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                          formatter={(value: number) => [`$${value.toFixed(4)}`, 'Cost']}
+                        />
+                        <Bar 
+                          dataKey="cost" 
+                          fill="hsl(var(--chart-1))" 
+                          radius={[8, 8, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Module Breakdown */}
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Cost by Module</CardTitle>
+                    <CardDescription>
+                      Distribution of API costs across different modules
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={chartData.moduleBreakdown}
+                          dataKey="cost"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          label={(entry) => `${entry.name}: $${entry.cost.toFixed(3)}`}
+                        >
+                          {chartData.moduleBreakdown.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={`hsl(var(--chart-${(index % 5) + 1}))`}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                          formatter={(value: number) => `$${value.toFixed(4)}`}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Module Statistics</CardTitle>
+                    <CardDescription>
+                      Detailed breakdown by module
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {chartData.moduleBreakdown.map((module, index) => (
+                        <div key={module.name} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="h-3 w-3 rounded-full" 
+                                style={{ backgroundColor: `hsl(var(--chart-${(index % 5) + 1}))` }}
+                              />
+                              <span className="text-sm font-medium">{module.name}</span>
+                            </div>
+                            <Badge variant="outline">{module.calls} calls</Badge>
+                          </div>
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Cost: ${module.cost.toFixed(4)}</span>
+                            <span>Credits: {module.credits.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+
           {/* Recent Actions */}
           <Card>
             <CardHeader>
