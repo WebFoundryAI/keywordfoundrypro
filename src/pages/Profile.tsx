@@ -37,6 +37,11 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 export default function Profile() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Redirect to new unified Settings page
+  useEffect(() => {
+    navigate('/settings?tab=account', { replace: true });
+  }, [navigate]);
   const { profile, isLoading: profileLoading, updateProfile } = useProfile();
   const { toast } = useToast();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -222,6 +227,14 @@ export default function Profile() {
 
   if (!user) return null;
 
+  // Show loading while redirecting
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl flex items-center justify-center min-h-[50vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+
+  // Old content preserved for reference but not rendered
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="grid gap-6 md:grid-cols-2">

@@ -21,6 +21,20 @@ import { supabase } from '@/integrations/supabase/client';
 export default function PrivacySettings() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Redirect to new unified Settings page
+  useEffect(() => {
+    navigate('/settings?tab=privacy', { replace: true });
+  }, [navigate]);
+
+  // Show loading while redirecting
+  return (
+    <div className="container mx-auto py-8 max-w-4xl flex items-center justify-center min-h-[50vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+
+  // Old content preserved for reference but not rendered
   const { profile, isLoading: profileLoading, updateProfile } = useProfile();
   const { toast } = useToast();
 

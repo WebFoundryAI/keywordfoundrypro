@@ -22,6 +22,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 
 export default function Account() {
+  const navigate = useNavigate();
+
+  // Redirect to new unified Settings page
+  useEffect(() => {
+    navigate('/settings?tab=privacy', { replace: true });
+  }, [navigate]);
+
+  // Show loading while redirecting
+  return (
+    <div className="container mx-auto py-8 max-w-4xl flex items-center justify-center min-h-[50vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+
+  // Old content preserved for reference but not rendered
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -29,7 +44,6 @@ export default function Account() {
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   // Load onboarding preference
   useEffect(() => {

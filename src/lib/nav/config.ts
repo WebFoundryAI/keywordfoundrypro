@@ -155,14 +155,14 @@ export const advancedNav: NavItem[] = [
 // Account menu navigation
 export const accountNav: NavItem[] = [
   {
-    path: "/profile",
+    path: "/settings?tab=account",
     label: "Profile",
     icon: User,
     description: "Manage your profile",
     requiresAuth: true
   },
   {
-    path: "/account",
+    path: "/settings?tab=privacy",
     label: "Settings",
     icon: Settings,
     description: "Account settings",
