@@ -1,0 +1,697 @@
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Loader2, Camera, Download, Trash2, Shield, Bell, User, Lock, CreditCard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { logger } from '@/lib/logger';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/AuthProvider';
+import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
+import { onboardingStorage } from '@/lib/onboardingStorage';
+import { SubscriptionStatus } from '@/components/SubscriptionStatus';
+import { exportUserData, downloadDataExport } from '@/lib/account/dataExport';
+import { deleteUserAccount } from '@/lib/account/deleteAccount';
+
+const profileSchema = z.object({
+  display_name: z
+    .string()
+    .trim()
+    .min(2, 'Display name must be at least 2 characters')
+    .max(50, 'Display name must be less than 50 characters')
+    .regex(/^[a-zA-Z0-9\s]+$/, 'Display name can only contain letters, numbers, and spaces'),
+});
+
+type ProfileFormData = z.infer<typeof profileSchema>;
+
+export default function Settings() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { profile, isLoading: profileLoading, updateProfile } = useProfile();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'account');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [loadingOnboarding, setLoadingOnboarding] = useState(true);
+  const [privacyOptOut, setPrivacyOptOut] = useState(false);
+  const [dataRetentionDays, setDataRetentionDays] = useState<string>('90');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+  });
+
+  // Update URL when tab changes
+  useEffect(() => {
+    setSearchParams({ tab: activeTab });
+  }, [activeTab, setSearchParams]);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  // Load profile data
+  useEffect(() => {
+    if (profile) {
+      reset({
+        display_name: profile.display_name || '',
+      });
+    }
+  }, [profile, reset]);
+
+  // Load onboarding preference
+  useEffect(() => {
+    const loadOnboardingPreference = async () => {
+      if (user) {
+        setLoadingOnboarding(true);
+        try {
+          const isCompleted = await onboardingStorage.isCompleted(user.id);
+          setShowOnboarding(!isCompleted);
+        } catch (error) {
+          logger.error('Error loading onboarding preference:', error);
+        } finally {
+          setLoadingOnboarding(false);
+        }
+      }
+    };
+    loadOnboardingPreference();
+  }, [user]);
+
+  // Load privacy settings
+  useEffect(() => {
+    const loadPrivacySettings = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('privacy_opt_out, data_retention_days')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        
+        if (data) {
+          setPrivacyOptOut(data.privacy_opt_out || false);
+          setDataRetentionDays(data.data_retention_days?.toString() || '90');
+        }
+      } catch (error) {
+        logger.error('Error loading privacy settings:', error);
+      }
+    };
+    loadPrivacySettings();
+  }, [user]);
+
+  const userInitials = () => {
+    if (profile?.display_name) {
+      return profile.display_name
+        .split(' ')
+        .map((name) => name[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (profile?.email) {
+      return profile.email[0].toUpperCase();
+    }
+    return 'U';
+  };
+
+  const extractPathFromUrl = (url: string | null): string | null => {
+    if (!url) return null;
+    try {
+      const urlObj = new URL(url);
+      return urlObj.pathname.split('/').slice(3).join('/');
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a JPEG, PNG, WEBP, or GIF image',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: 'File too large',
+        description: 'Image must be less than 2MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const oldAvatarPath = extractPathFromUrl(profile?.avatar_url || null);
+      if (oldAvatarPath) {
+        await supabase.storage.from('avatars').remove([oldAvatarPath]);
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+
+      await updateProfile.mutateAsync({ avatar_url: publicUrl });
+
+      toast({
+        title: 'Avatar updated',
+        description: 'Your profile picture has been updated successfully',
+      });
+    } catch (error: any) {
+      logger.error('Error uploading avatar:', error);
+      toast({
+        title: 'Upload failed',
+        description: error.message || 'Failed to upload avatar',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const onSubmit = async (data: ProfileFormData) => {
+    try {
+      await updateProfile.mutateAsync({ display_name: data.display_name });
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been updated successfully',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Update failed',
+        description: error.message || 'Failed to update profile',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleOnboardingToggle = async (checked: boolean) => {
+    setShowOnboarding(checked);
+    if (user) {
+      try {
+        if (checked) {
+          await onboardingStorage.reset(user.id);
+        } else {
+          await onboardingStorage.markCompleted(user.id);
+        }
+        toast({
+          title: checked ? 'Onboarding enabled' : 'Onboarding disabled',
+          description: checked
+            ? 'You will see the tour on your next visit to the research page'
+            : 'The onboarding tour has been disabled',
+        });
+      } catch (error) {
+        logger.error('Error updating onboarding preference:', error);
+        setShowOnboarding(!checked);
+        toast({
+          title: 'Update failed',
+          description: 'Failed to update onboarding preference',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const handleSavePrivacySettings = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          privacy_opt_out: privacyOptOut,
+          data_retention_days: parseInt(dataRetentionDays),
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Privacy settings saved',
+        description: 'Your privacy preferences have been updated successfully',
+      });
+    } catch (error: any) {
+      logger.error('Error saving privacy settings:', error);
+      toast({
+        title: 'Save failed',
+        description: error.message || 'Failed to save privacy settings',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    if (!user) return;
+
+    setIsExporting(true);
+    try {
+      const result = await exportUserData();
+      
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Export failed');
+      }
+      
+      downloadDataExport(result.data);
+      
+      toast({
+        title: 'Export successful',
+        description: 'Your data has been downloaded successfully',
+      });
+    } catch (error: any) {
+      logger.error('Error exporting data:', error);
+      toast({
+        title: 'Export failed',
+        description: error.message || 'Failed to export your data',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteUserAccount();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Deletion failed');
+      }
+      
+      toast({
+        title: 'Account deleted',
+        description: 'Your account has been permanently deleted',
+      });
+      
+      navigate('/', { replace: true });
+    } catch (error: any) {
+      logger.error('Error deleting account:', error);
+      toast({
+        title: 'Deletion failed',
+        description: error.message || 'Failed to delete your account',
+        variant: 'destructive',
+      });
+      setIsDeleting(false);
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground mt-2">
+          Manage your account settings and preferences
+        </p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+          <TabsTrigger value="account" className="gap-2">
+            <User className="h-4 w-4" />
+            <span className="hidden sm:inline">Account</span>
+          </TabsTrigger>
+          <TabsTrigger value="preferences" className="gap-2">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">Preferences</span>
+          </TabsTrigger>
+          <TabsTrigger value="privacy" className="gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Privacy</span>
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="gap-2">
+            <CreditCard className="h-4 w-4" />
+            <span className="hidden sm:inline">Billing</span>
+          </TabsTrigger>
+          <TabsTrigger value="security" className="gap-2">
+            <Lock className="h-4 w-4" />
+            <span className="hidden sm:inline">Security</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Account Tab */}
+        <TabsContent value="account" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile Information</CardTitle>
+              <CardDescription>
+                Update your personal information and profile picture
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {profileLoading ? (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-6">
+                    <div className="h-24 w-24 rounded-full bg-muted animate-pulse" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 bg-muted rounded w-1/3 animate-pulse" />
+                      <div className="h-3 bg-muted rounded w-1/4 animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-start gap-6 mb-6">
+                    <div className="relative">
+                      <Avatar className="h-24 w-24">
+                        <AvatarImage src={profile?.avatar_url || ''} alt="Profile" />
+                        <AvatarFallback className="text-xl">
+                          {userInitials()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="absolute bottom-0 right-0 rounded-full h-8 w-8"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingAvatar}
+                      >
+                        {uploadingAvatar ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Camera className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={handleAvatarUpload}
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium">Profile Picture</p>
+                      <p className="text-sm text-muted-foreground">
+                        Click the camera icon to update your avatar
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Recommended: Square image, at least 400x400px, max 2MB
+                      </p>
+                    </div>
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="display_name">Display Name</Label>
+                        <Input
+                          id="display_name"
+                          {...register('display_name')}
+                          placeholder="Enter your display name"
+                        />
+                        {errors.display_name && (
+                          <p className="text-sm text-destructive">
+                            {errors.display_name.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={profile?.email || ''}
+                          disabled
+                          className="bg-muted"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Email address cannot be changed
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3">
+                      <Button type="button" variant="outline" onClick={() => reset()}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                      </Button>
+                    </div>
+                  </form>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Preferences Tab */}
+        <TabsContent value="preferences" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Onboarding & Tours</CardTitle>
+              <CardDescription>
+                Control your onboarding experience
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5 flex-1">
+                  <Label htmlFor="show-onboarding">Show onboarding tour</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable this to see the product tour again when you visit the research page
+                  </p>
+                </div>
+                <Switch
+                  id="show-onboarding"
+                  checked={showOnboarding}
+                  disabled={loadingOnboarding}
+                  onCheckedChange={handleOnboardingToggle}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Privacy Tab */}
+        <TabsContent value="privacy" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Privacy Settings</CardTitle>
+              <CardDescription>
+                Manage how your data is collected and stored
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5 flex-1">
+                  <Label htmlFor="privacy-opt-out">Analytics Opt-Out</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Disable analytics tracking for your account
+                  </p>
+                </div>
+                <Switch
+                  id="privacy-opt-out"
+                  checked={privacyOptOut}
+                  onCheckedChange={setPrivacyOptOut}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label htmlFor="data-retention">Data Retention Period</Label>
+                <Select value={dataRetentionDays} onValueChange={setDataRetentionDays}>
+                  <SelectTrigger id="data-retention">
+                    <SelectValue placeholder="Select retention period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30">30 days</SelectItem>
+                    <SelectItem value="60">60 days</SelectItem>
+                    <SelectItem value="90">90 days</SelectItem>
+                    <SelectItem value="180">180 days</SelectItem>
+                    <SelectItem value="365">1 year</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  How long we keep your research data before automatic deletion
+                </p>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Export Your Data</h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Download a copy of all your data in JSON format
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={handleExportData}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-4 w-4" />
+                    )}
+                    Export My Data
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <Button
+                  onClick={handleSavePrivacySettings}
+                  disabled={isSaving}
+                >
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Privacy Settings
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Billing Tab */}
+        <TabsContent value="billing" className="space-y-6">
+          <SubscriptionStatus />
+        </TabsContent>
+
+        {/* Security Tab */}
+        <TabsContent value="security" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Password & Authentication</CardTitle>
+              <CardDescription>
+                Manage your password and authentication settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/update-password')}
+              >
+                Change Password
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+              <CardDescription>
+                Irreversible actions that will permanently affect your account
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <AlertDescription>
+                  Deleting your account is permanent and cannot be undone. All your data will be permanently removed.
+                </AlertDescription>
+              </Alert>
+
+              <Button
+                variant="destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Account
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+              </p>
+              <p className="font-semibold text-destructive">
+                This includes:
+              </p>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                <li>Your profile and account information</li>
+                <li>All keyword research and analysis data</li>
+                <li>Competitor analysis reports</li>
+                <li>AI insights and recommendations</li>
+                <li>Research history and saved projects</li>
+                <li>All files and exports</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete My Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

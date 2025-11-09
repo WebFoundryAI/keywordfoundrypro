@@ -31,6 +31,7 @@ import SignUp from "./pages/SignUp";
 import UpdatePassword from "./pages/UpdatePassword";
 import AuthCallback from "./pages/AuthCallback";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import Pricing from "./pages/Pricing";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
@@ -116,6 +117,7 @@ const App = () => (
                   <Route path="/advanced/dataforseo-search-volume" element={<ProtectedRoute><DataForSEOSearchVolume /></ProtectedRoute>} />
                   <Route path="/advanced/search-volume-advanced" element={<ProtectedRoute><SearchVolumeAdvanced /></ProtectedRoute>} />
                   
+                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
                   <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
