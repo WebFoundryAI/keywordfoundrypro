@@ -58,6 +58,8 @@ export const useSubscription = () => {
       return tier;
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   const { data: subscription, isLoading: subscriptionLoading } = useQuery({
@@ -81,6 +83,8 @@ export const useSubscription = () => {
       return sub;
     },
     enabled: !!user && effectiveTier !== undefined,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const { data: plan, isLoading: planLoading } = useQuery({
@@ -101,6 +105,8 @@ export const useSubscription = () => {
       return data as SubscriptionPlan;
     },
     enabled: !!effectiveTier,
+    staleTime: 10 * 60 * 1000, // 10 minutes (plans rarely change)
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
   const { data: usage, isLoading: usageLoading } = useQuery({
@@ -120,6 +126,9 @@ export const useSubscription = () => {
       return data as Usage | null;
     },
     enabled: !!user,
+    staleTime: 30 * 1000, // 30 seconds (usage updates frequently)
+    gcTime: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: 60 * 1000, // Auto-refetch every minute
   });
 
   const getUsagePercentage = (used: number, limit: number) => {

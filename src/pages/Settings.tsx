@@ -703,7 +703,7 @@ export default function Settings() {
 
         {/* Billing Tab */}
         <TabsContent value="billing" className="space-y-6">
-          <SubscriptionStatus />
+          {activeTab === 'billing' && <SubscriptionStatus />}
         </TabsContent>
 
         {/* Activity Tab */}
