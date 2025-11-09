@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CardSkeleton } from '@/components/ui/card-skeleton';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
@@ -703,7 +704,13 @@ export default function Settings() {
 
         {/* Billing Tab */}
         <TabsContent value="billing" className="space-y-6">
-          {activeTab === 'billing' && <SubscriptionStatus />}
+          {activeTab === 'billing' ? (
+            <React.Suspense fallback={<CardSkeleton hasHeader={true} lines={8} />}>
+              <SubscriptionStatus />
+            </React.Suspense>
+          ) : (
+            <CardSkeleton hasHeader={true} lines={8} />
+          )}
         </TabsContent>
 
         {/* Activity Tab */}
