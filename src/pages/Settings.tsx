@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Camera, Download, Trash2, Shield, Bell, User, Lock, CreditCard } from 'lucide-react';
+import { Loader2, Camera, Download, Trash2, Shield, Bell, User, Lock, CreditCard, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,9 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/AuthProvider';
@@ -24,6 +27,7 @@ import { onboardingStorage } from '@/lib/onboardingStorage';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { exportUserData, downloadDataExport } from '@/lib/account/dataExport';
 import { deleteUserAccount } from '@/lib/account/deleteAccount';
+import { useQuery } from '@tanstack/react-query';
 
 const profileSchema = z.object({
   display_name: z
@@ -127,6 +131,42 @@ export default function Settings() {
     };
     loadPrivacySettings();
   }, [user]);
+
+  // Query for recent audit events
+  const { data: auditEvents, isLoading: auditLoading } = useQuery({
+    queryKey: ['audit-events', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('audit_events')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user && activeTab === 'activity',
+  });
+
+  // Query for API usage
+  const { data: apiUsage, isLoading: apiLoading } = useQuery({
+    queryKey: ['dataforseo-usage', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('dataforseo_usage')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user && activeTab === 'activity',
+  });
 
   const userInitials = () => {
     if (profile?.display_name) {
@@ -364,7 +404,7 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
           <TabsTrigger value="account" className="gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Account</span>
@@ -380,6 +420,10 @@ export default function Settings() {
           <TabsTrigger value="billing" className="gap-2">
             <CreditCard className="h-4 w-4" />
             <span className="hidden sm:inline">Billing</span>
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="gap-2">
+            <Activity className="h-4 w-4" />
+            <span className="hidden sm:inline">Activity</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-2">
             <Lock className="h-4 w-4" />
@@ -610,6 +654,125 @@ export default function Settings() {
         {/* Billing Tab */}
         <TabsContent value="billing" className="space-y-6">
           <SubscriptionStatus />
+        </TabsContent>
+
+        {/* Activity Tab */}
+        <TabsContent value="activity" className="space-y-6">
+          {/* Recent Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Actions</CardTitle>
+              <CardDescription>
+                Your recent account activities and actions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {auditLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : auditEvents && auditEvents.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Details</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {auditEvents.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell className="font-medium">
+                          <Badge variant="outline">
+                            {event.action.replace(/_/g, ' ').toUpperCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {event.metadata && typeof event.metadata === 'object' ? (
+                            <span>{JSON.stringify(event.metadata).substring(0, 100)}</span>
+                          ) : (
+                            <span>-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(event.created_at).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No recent actions found</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* API Usage */}
+          <Card>
+            <CardHeader>
+              <CardTitle>API Usage</CardTitle>
+              <CardDescription>
+                Your recent DataForSEO API usage and costs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {apiLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : apiUsage && apiUsage.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Endpoint</TableHead>
+                      <TableHead>Module</TableHead>
+                      <TableHead>Credits</TableHead>
+                      <TableHead>Cost</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {apiUsage.map((usage) => (
+                      <TableRow key={usage.id}>
+                        <TableCell className="font-medium text-sm">
+                          {usage.endpoint}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <Badge variant="secondary">{usage.module}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {usage.credits_used ? Number(usage.credits_used).toFixed(2) : '-'}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {usage.cost_usd ? `$${Number(usage.cost_usd).toFixed(4)}` : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={usage.response_status === 200 ? 'default' : 'destructive'}>
+                            {usage.response_status || 'Unknown'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(usage.timestamp).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No API usage found</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Security Tab */}
