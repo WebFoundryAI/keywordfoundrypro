@@ -1121,6 +1121,10 @@ export type Database = {
           trial_ends_at: string
         }[]
       }
+      get_user_subscription_details: {
+        Args: { user_id_param: string }
+        Returns: Json
+      }
       get_users_near_limits: {
         Args: never
         Returns: {
