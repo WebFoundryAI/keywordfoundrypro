@@ -32,7 +32,7 @@ function isValidUrl(url: string, requireHttps: boolean = false): boolean {
  */
 export function validateEnv(): EnvConfig | null {
   // Get values from environment variables
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vhjffdzroebdkbmvcpgv.supabase.co';
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://oobxytqzbnvtspodjjop.supabase.co';
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
   
   // App base URL from env (with fallback)
