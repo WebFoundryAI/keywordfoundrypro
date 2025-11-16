@@ -1,5 +1,8 @@
 project_id = "vhjffdzroebdkbmvcpgv"
 
+[functions.run-backup]
+verify_jwt = true
+
 [functions.keyword-research]
 verify_jwt = true
 
