@@ -38,15 +38,72 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Validate environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing required environment variables');
+      return new Response(
+        JSON.stringify({
+          error: 'Configuration error: Missing required environment variables',
+          status: 'failed',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    // Create Supabase client
+    let supabase;
+    try {
+      supabase = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to create Supabase client:', error);
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to initialize database connection',
+          status: 'failed',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 503,
+        }
+      );
+    }
+
+    // Health check - test database connectivity
+    try {
+      const { error: healthError } = await supabase
+        .from('backup_manifests')
+        .select('id')
+        .limit(1);
+      
+      if (healthError && healthError.message.includes('relation') === false) {
+        // Database exists but table might not - that's okay during rebuild
+        console.warn('Database health check warning:', healthError.message);
+      }
+    } catch (error) {
+      console.error('Database is unavailable:', error);
+      return new Response(
+        JSON.stringify({
+          error: 'Database is currently unavailable. This is expected during database rebuild.',
+          status: 'unavailable',
+          message: 'The backup function will work once the database is restored.',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 503,
+        }
+      );
+    }
 
     console.log('Starting database backup...');
     const startTime = Date.now();
