@@ -137,7 +137,7 @@ export const onboardingStorage = {
 
       // Call Supabase Edge Function to set show_onboarding = true
       const response = await fetch(
-        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/onboarding-preferences`,
+        `https://oobxytqzbnvtspodjjop.supabase.co/functions/v1/onboarding-preferences`,
         {
           method: 'POST',
           headers: {
