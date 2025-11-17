@@ -6,7 +6,7 @@ import { DataForSEOError } from "../_shared/dataforseo/types.ts";
 
 // CORS - Allowed origins
 const allowedOrigins = [
-  'https://vhjffdzroebdkbmvcpgv.supabase.co',
+  'https://oobxytqzbnvtspodjjop.supabase.co',
   'https://keywordfoundrypro.com',
   'http://localhost:5173',
   'http://localhost:8080',
