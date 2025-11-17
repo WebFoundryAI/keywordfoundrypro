@@ -55,7 +55,7 @@ export default function AdminLogs() {
       }
 
       const response = await fetch(
-        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/fetch-logs?${params}`,
+        `https://oobxytqzbnvtspodjjop.supabase.co/functions/v1/fetch-logs?${params}`,
         {
           headers: {
             'Authorization': `Bearer ${session.access_token}`,

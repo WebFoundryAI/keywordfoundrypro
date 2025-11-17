@@ -24,7 +24,7 @@ export function BulkDeleteToolbar({ selectedIds, onClear, onAfterDelete }: Props
       }
 
       const res = await fetch(
-        `https://vhjffdzroebdkbmvcpgv.supabase.co/functions/v1/bulk-delete-research`,
+        `https://oobxytqzbnvtspodjjop.supabase.co/functions/v1/bulk-delete-research`,
         {
           method: 'POST',
           headers: {

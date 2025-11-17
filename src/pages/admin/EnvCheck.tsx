@@ -190,7 +190,7 @@ const EnvCheck = () => {
           </a>
           {' '}or configure secrets in{' '}
           <a 
-            href="https://supabase.com/dashboard/project/vhjffdzroebdkbmvcpgv/settings/functions"
+            href="https://supabase.com/dashboard/project/oobxytqzbnvtspodjjop/settings/functions"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium underline"
